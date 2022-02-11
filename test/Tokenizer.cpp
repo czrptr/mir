@@ -103,19 +103,19 @@ TEST_CASE("symbols (builtins) wrong format")
 
 TEST_CASE("operator (runes)")
 {
-  std::string const text = "=<>+-*%!|^&~?. try not orelse catch and or return break continue defer";
+  std::string const text = "*%= try not orelse catch and or return break continue defer";
   Tokenizer tk(text, "<file>");
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 0, 0, 14, "=<>+-*%!|^&~?."));
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 15, 0, 18, "try"));
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 19, 0, 22, "not"));
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 23, 0, 29, "orelse"));
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 30, 0, 35, "catch"));
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 36, 0, 39, "and"));
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 40, 0, 42, "or"));
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 43, 0, 49, "return"));
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 50, 0, 55, "break"));
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 56, 0, 64, "continue"));
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 65, 0, 70, "defer"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 0, 0, 3, "*%="));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 4, 0, 7, "try"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 8, 0, 11, "not"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 12, 0, 18, "orelse"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 19, 0, 24, "catch"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 25, 0, 28, "and"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 29, 0, 31, "or"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 32, 0, 38, "return"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 39, 0, 44, "break"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 45, 0, 53, "continue"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 54, 0, 59, "defer"));
 }
 
 TEST_CASE("operator (keywords)")
@@ -425,6 +425,24 @@ TEST_CASE("line info is correct")
     "*/"));
   REQUIRE_EQ(tk.next(), t(Token::Symbol, 8, 3, 8, 4, "i"));
   REQUIRE_EQ(tk.next(), t(Token::Symbol, 9, 0, 9, 1, "i"));
+}
+
+TEST_CASE("operators (runes) must be valid")
+{
+  std::string const text = "<==^|^==>";
+  Tokenizer tk(text, "<file>");
+  try
+  {
+    tk.next();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:0: error: unknown operator '<==^|^==>'";
+
+    REQUIRE(msg.substr(0, expectedMsg.length()) == expectedMsg);
+  }
 }
 
 TEST_SUITE_END();

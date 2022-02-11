@@ -2,6 +2,7 @@
 
 #include <tuple>
 #include <vector>
+#include <string_view>
 
 // TODO: make constexpr
 template <typename InputT, typename ResultT>
@@ -38,3 +39,5 @@ public:
     return fallback;
   }
 };
+
+size_t levenshteinDistance(std::string_view str1, std::string_view str2);

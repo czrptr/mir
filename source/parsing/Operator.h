@@ -164,7 +164,7 @@ public:
   static Associativity associativity(Operator::Tag tag);
   static bool chainable(Operator::Tag tag);
 
-  static void validate(std::string_view text);
+  static std::string validate(std::string_view text);
 };
 
 template<>

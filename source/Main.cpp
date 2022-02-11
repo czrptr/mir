@@ -47,6 +47,6 @@ int main()
   }
   catch (Error const& err)
 	{
-		fmt::print("{}", err);
+		fmt::print("\n{}", err);
 	}
 }

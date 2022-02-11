@@ -1,7 +1,10 @@
 #include "parsing/Operator.h"
 
+#include <Utils.h>
 #include <parsing/Error.h>
 
+#include <map>
+#include <limits>
 #include <cassert>
 
 Operator::Operator(Token token)
@@ -34,15 +37,18 @@ size_t Operator::precedence(Operator::Tag tag)
   static constexpr size_t thresholds[] = {
     PtrDeref, 0,
     Not_ErrorUnion, 1,
-    PtrTo, 3,
-    OrOr_ErrorSet, 4,
-    Sub, 5,
-    BitShl, 6,
-    Catch, 7,
-    LeEq, 8,
-    And, 9,
-    Or, 10,
-    Eq, 11,
+    Try, 3,
+    PtrTo, 4,
+    OrOr_ErrorSet, 5,
+    SubBar, 6,
+    BitShlBar, 7,
+    Catch, 8,
+    LeEq, 9,
+    And, 10,
+    Or, 11,
+    DotDot, 12,
+    BitXorEq, 13,
+    Defer, 14
   };
   // ensure table is well formed
   static_assert(sizeof(thresholds) % 2 == 0);
@@ -209,7 +215,47 @@ bool Operator::chainable(Operator::Tag tag)
   assert(false); // unreachable
 }
 
-void Operator::validate(std::string_view text)
+std::string Operator::validate(std::string_view text)
 {
-  // TODO
+  auto const
+    beginTag = static_cast<size_t>(Tag::Dot),
+    endTag = static_cast<size_t>(Tag::Defer);
+
+  std::map<size_t, std::vector<Tag>> dist;
+  auto minDistance = std::numeric_limits<size_t>::max();
+
+  for (size_t i = beginTag; i <= endTag; i += 1)
+  {
+    auto const tag = static_cast<Tag>(i);
+    auto const distance = levenshteinDistance(text, fmt::to_string(tag));
+    if (distance == 0)
+    {
+      return std::string();
+    }
+    dist[distance].push_back(tag);
+    minDistance = std::min({distance, minDistance});
+  }
+
+  if (minDistance > 3)
+  {
+    // if the distance is too large then too many alternatives
+    // will be displayed, if the given operator is to dissimilar
+    // to any other known operator than we just error without
+    // any suggestions
+    return fmt::format("unknown operator '{}'", text);
+  }
+
+  auto& alts = dist[minDistance];
+  assert(alts.size() > 0);
+
+  std::string res = fmt::format("'{}'", alts[0]);
+  for (size_t i = 1; i < alts.size() - 1; i+= 1)
+  {
+    res += fmt::format(", '{}'", alts[i]);
+  }
+  if (alts.size() > 1)
+  {
+    res += fmt::format(" or '{}'", alts.back());
+  }
+  return fmt::format("unknown operator '{}', did you mean {}?", text, res);
 }

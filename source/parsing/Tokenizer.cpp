@@ -628,7 +628,11 @@ Token Tokenizer::tokenEnd()
 
   if (d_currentToken.d_tag == Token::Operator)
   {
-    Operator::validate(d_currentToken.d_text);
+    auto const errMsg = Operator::validate(d_currentToken.d_text);
+    if (!errMsg.empty())
+    {
+      throw Error(d_sourcePath, d_currentToken.d_start, d_currentToken.d_end, errMsg);
+    }
   }
 
   return d_currentToken;
