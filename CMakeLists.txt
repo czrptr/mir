@@ -18,8 +18,6 @@ include_directories(${VENDOR_FMT}/include)
 
 set(VENDOR_DOCTEST ${CMAKE_SOURCE_DIR}/vendor/doctest/)
 
-include_directories(${VENDOR_DOCTEST}/include)
-
 # MIR
 
 set(MIR_SOURCES
@@ -39,3 +37,5 @@ set(TEST_SOURCES
   ${CMAKE_SOURCE_DIR}/test/Main.cpp)
 
 add_executable(test ${TEST_SOURCES})
+
+target_include_directories(test PRIVATE ${VENDOR_DOCTEST}/include)
