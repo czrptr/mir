@@ -14,7 +14,13 @@
 std::string sourceText =
 R"SOURCE(
 
-let main = fn (args: ArgsType) void;
+let print = fn () ah;
+
+let main = fn (args: ArgsType) void {
+  let
+    num = 0,
+    str = "Hello, world!";
+};
 
 )SOURCE";
 

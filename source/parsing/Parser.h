@@ -43,6 +43,8 @@ public:
   ast::LetStatement::SPtr letStatement();
   ast::LetStatementPart::SPtr letStatementPart();
 
+  ast::BlockExpression::SPtr blockExpression();
+
   ast::Node::SPtr expression();
 
   ast::Node::SPtr expressionOrField(); // use only int typeExpression()

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <parsing/ast/Node.h>
+#include <parsing/ast/BlockExpression.h>
 
 namespace ast
 {
@@ -20,14 +21,14 @@ private:
   Token d_fn;
   std::vector<Parameter> d_parameters;
   Node::SPtr d_pReturnType;
-  Node::SPtr d_pBody;
+  BlockExpression::SPtr d_pBody;
 
 public:
   FunctionExpression(
     Token fn,
     std::vector<Parameter>&& parameters,
     Node::SPtr pReturnType,
-    Node::SPtr pBody = nullptr,
+    BlockExpression::SPtr pBody = nullptr,
     Node::SPtr pParent = nullptr)
     : Node(pParent)
     , d_fn(fn)
@@ -42,7 +43,7 @@ public:
 
   std::vector<Parameter> const& parameters() const { return d_parameters; }
   Node::SPtr returnType() const { return d_pReturnType; }
-  Node::SPtr body() const { return d_pBody; }
+  BlockExpression::SPtr body() const { return d_pBody; }
 
   using Node::toString;
   virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
@@ -51,7 +52,7 @@ public:
     Token fn,
     std::vector<Parameter>&& arguments,
     Node::SPtr pReturnType,
-    Node::SPtr pBody = nullptr,
+    BlockExpression::SPtr pBody = nullptr,
     Node::SPtr pParent = nullptr);
 };
 

@@ -16,6 +16,12 @@
   WPTR(type) \
   UPTR(type)
 
+// TODO refactor printing into a function that returns a list of nodes
+// and a list of string to append to the header
+// this way you can stop fmt::("{}{}{}", ...)'ing so much and just move that into
+// a single function with logic based on the new virtual method that returns the
+// subnodes and header postfix
+
 namespace ast
 {
 

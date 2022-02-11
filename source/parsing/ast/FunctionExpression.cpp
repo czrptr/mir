@@ -59,7 +59,7 @@ std::string FunctionExpression::toString(size_t indent, std::vector<size_t> line
     "{}{}{}\n{}",
     prefix(indent, lines, isLast),
     header("FunctionLiteral", start(), end(), true),
-    (body() != nullptr ? " type" : ""),
+    (body() == nullptr ? " type" : ""),
     childrenToString(members, indent, lines)
   );
 }
@@ -68,7 +68,7 @@ FunctionExpression::SPtr FunctionExpression::make_shared(
   Token fn,
   std::vector<Parameter>&& parameters,
   Node::SPtr pReturnType,
-  Node::SPtr pBody,
+  BlockExpression::SPtr pBody,
   Node::SPtr pParent)
 {
   auto pRes = std::make_shared<FunctionExpression>(

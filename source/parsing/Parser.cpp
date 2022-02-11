@@ -44,7 +44,7 @@ ast::TokenExpression::SPtr Parser::tokenExpression()
   }
   if (next(Token::NumberLiteral))
   {
-    return std::make_shared<NumberExpression>(match(Token::StringLiteral));
+    return std::make_shared<NumberExpression>(match(Token::NumberLiteral));
   }
   return nullptr;
 }
@@ -238,9 +238,13 @@ ast::FunctionExpression::SPtr Parser::functionExpression()
   match(Token::RParen, ErrorStrategy::DefaultErrorMessage);
   auto pReturnType = expression();
 
-  // TODO body
+  // TODO treat
+  //   case: fn (...) label: {}
+  //   case: fn (...) <expression> label: {}
 
-  return ast::FunctionExpression::make_shared(tokFn, std::move(parameters), pReturnType);
+  auto pBody = blockExpression();
+
+  return ast::FunctionExpression::make_shared(tokFn, std::move(parameters), pReturnType, pBody);
 }
 
 ast::LetStatement::SPtr Parser::letStatement()
@@ -323,8 +327,35 @@ ast::LetStatementPart::SPtr Parser::letStatementPart()
   return LetStatement::Part::make_shared(start, tokSymbol.text(), pType, pValue);
 }
 
+ast::BlockExpression::SPtr Parser::blockExpression()
+{
+  // TODO label
+  std::string_view label;
+
+  Token tokLBrace;
+  if (!next(Token::LBrace))
+  {
+    return nullptr;
+  }
+  tokLBrace = match(Token::LBrace);
+
+  std::vector<ast::Node::SPtr> statements;
+  while (auto pStmt = expression())
+  {
+    statements.push_back(pStmt);
+    while (skip(Token::Semicolon));
+  }
+
+  Token const tokRBrace = match(Token::RBrace, ErrorStrategy::DefaultErrorMessage);
+
+  return ast::BlockExpression::make_shared(
+    tokLBrace.start(), tokRBrace.start(), label, std::move(statements));
+}
+
 ast::Node::SPtr Parser::expression()
 {
+  // TODO parse labels here
+
   ast::Node::SPtr pRes;
   if (pRes = typeExpression(); pRes != nullptr)
   {
@@ -335,6 +366,10 @@ ast::Node::SPtr Parser::expression()
     return pRes;
   }
   else if (pRes = letStatement(); pRes != nullptr)
+  {
+    return pRes;
+  }
+  else if (pRes = blockExpression(); pRes != nullptr)
   {
     return pRes;
   }
