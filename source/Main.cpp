@@ -35,10 +35,10 @@ int main()
 		auto tok = tokenizer.next();
 		while(tok.tag() != Token::Eof)
 		{
-			fmt::print("{:ds}\n", tok);
+			fmt::print("{:s}\n", tok);
 			tok = tokenizer.next();
 		}
-    fmt::print("{:ds}\n\n", tok);
+    fmt::print("{:s}\n\n", tok);
 
     Parser parser(Tokenizer(sourceText, "<file>"));
 
