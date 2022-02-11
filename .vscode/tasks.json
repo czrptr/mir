@@ -7,7 +7,7 @@
         "isDefault": true
       },
       "type": "shell",
-      "command": "exec ${workspaceFolder}/build/mir",
+      "command": "exec ${config:buildFolder}/mir",
       "dependsOn": [ "Build (mir)" ],
       "dependsOrder": "sequence",
       "presentation": {
@@ -24,7 +24,7 @@
       "label": "Test (all)",
       "group": "test",
       "type": "shell",
-      "command": "exec ${workspaceFolder}/build/test",
+      "command": "exec ${config:buildFolder}/test",
       "dependsOn": [ "Build (test)" ],
       "dependsOrder": "sequence",
       "presentation": {
@@ -44,7 +44,7 @@
         "isDefault": true
       },
       "type": "shell",
-      "command": "exec ${workspaceFolder}/build/test -ts=\"${input:testSuite}\" -tc=\"${input:filters}\"",
+      "command": "exec ${config:buildFolder}/test -ts=\"${input:testSuite}\" -tc=\"${input:filters}\"",
       "dependsOn": [ "Build (test)" ],
       "dependsOrder": "sequence",
       "presentation": {
@@ -64,7 +64,7 @@
       "label": "Build (mir)",
       "group": "build",
       "type": "shell",
-      "command": "cd ${workspaceFolder}/build; make mir -j 4",
+      "command": "cd ${config:buildFolder}; make mir -j ${config:makeJobsCount}",
       "problemMatcher": [ "$gcc" ],
       "presentation": {
         "echo": true,
@@ -80,7 +80,7 @@
       "label": "Build (test)",
       "group": "build",
       "type": "shell",
-      "command": "cd ${workspaceFolder}/build; make test -j 4",
+      "command": "cd ${config:buildFolder}; make test -j ${config:makeJobsCount}",
       "problemMatcher": [ "$gcc" ],
       "presentation": {
         "echo": true,
@@ -96,7 +96,7 @@
       "label": "CMake (gcc)",
       "group": "build",
       "type": "shell",
-      "command": "CC=gcc-11 CXX=g++-11 cmake -S ${workspaceFolder} -B ${workspaceFolder}/build",
+      "command": "CC=gcc-11 CXX=g++-11 cmake -S ${workspaceFolder} -B ${config:buildFolder}",
       "presentation": {
         "echo": true,
         "reveal": "always",
@@ -111,7 +111,7 @@
       "label": "CMake (clang)",
       "group": "build",
       "type": "shell",
-      "command": "CC=clang-12 CXX=clang++-12 cmake -S ${workspaceFolder} -B ${workspaceFolder}/build",
+      "command": "CC=clang-12 CXX=clang++-12 cmake -S ${workspaceFolder} -B ${config:buildFolder}",
       "presentation": {
         "echo": true,
         "reveal": "always",
@@ -126,7 +126,7 @@
       "label": "Clean",
       "group": "build",
       "type": "shell",
-      "command": "rm -rf ${workspaceFolder}/build/",
+      "command": "rm -rf ${config:buildFolder}",
       "presentation": {
         "echo": true,
         "reveal": "always",
@@ -148,7 +148,7 @@
         "--show-reachable=yes",
         "--track-origins=yes",
         "--error-exitcode=1",
-        "${workspaceFolder}/build/mir"
+        "${config:buildFolder}/mir"
       ],
       "dependsOn": [ "Build (mir)" ],
       "dependsOrder": "sequence",

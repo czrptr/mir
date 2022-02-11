@@ -11,5 +11,9 @@
   "editor.renderWhitespace": "selection",
   "editor.suggest.insertMode": "replace",
   "files.trimTrailingWhitespace": true,
-  "cmake.configureOnOpen": false
+
+  // project
+  "buildFolder": "${workspaceFolder}/build",
+  "vendorFolder": "${workspaceFolder}/vendor",
+  "makeJobsCount": 8
 }
