@@ -272,9 +272,8 @@ ast::LetStatement::SPtr Parser::letStatement()
     return nullptr;
   }
 
-  if (next(Token::KwMut))
+  if (skip(Token::KwMut))
   {
-    Token tokMut = match(Token::KwMut);
     isMut = true;
   }
 
@@ -356,6 +355,9 @@ ast::Node::SPtr Parser::expression()
 {
   // TODO parse labels here
   // and then check that the expression is block, if or loop
+
+  // TODO parse comptime here
+  // add marked comptime field to Node?
 
   ast::Node::SPtr pRes;
   if (pRes = typeExpression(); pRes != nullptr)

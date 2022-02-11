@@ -23,7 +23,11 @@ struct Position final
   // Operators
   constexpr std::strong_ordering operator<=>(Position const&) const noexcept = default;
 
-  static constexpr Position invalid() { return Position(-1, -1); };
+  static constexpr Position invalid()
+  {
+    constexpr auto pos = static_cast<size_t>(-1);
+    return Position(pos, pos);
+  };
 };
 
 template<>

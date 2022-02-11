@@ -1,5 +1,6 @@
 #include "parsing/Tokenizer.h"
 
+#include <parsing/TokenizerCases.h>
 #include <parsing/Intern.h>
 #include <parsing/Operator.h>
 #include <Utils.h>
@@ -11,32 +12,6 @@
 #include <cstring>
 
 namespace fs = std::filesystem;
-
-#define LETTER \
-       'a' ... 'z': \
-  case 'A' ... 'Z'
-
-#define DIGIT_NO_ZERO \
-  '1' ... '9'
-
-#define DIGIT \
-  '0' ... '9'
-
-#define OPERATOR \
-       '=': \
-  case '<': \
-  case '>': \
-  case '+': \
-  case '-': \
-  case '*': \
-  case '%': \
-  case '!': \
-  case '|': \
-  case '^': \
-  case '&': \
-  case '~': \
-  case '?': \
-  case '.'
 
 #define SWITCH_CURRENT_CHAR(state) case state: { switch (d_currentChar)
 
@@ -536,7 +511,7 @@ char Tokenizer::inputPeek()
   // TODO return \0 on Eof
   try
   {
-    return d_pInputStream->peek();
+    return static_cast<char>(d_pInputStream->peek());
   }
   catch (std::ios::failure const& err)
   {

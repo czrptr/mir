@@ -9,11 +9,6 @@
 namespace
 {
 
-Token t(Token::Tag tag, size_t startLine, size_t startColumn, size_t endLine, size_t endColumn)
-{
-  return Token(tag, {startLine, startColumn}, {endLine, endColumn}, Intern::string(std::move(fmt::format("{}", tag))));
-}
-
 Token t(Token::Tag tag, size_t startLine, size_t startColumn, size_t endLine, size_t endColumn, std::string const& text)
 {
   return Token(tag, {startLine, startColumn}, {endLine, endColumn}, Intern::string(text));
