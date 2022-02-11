@@ -122,13 +122,6 @@ LetStatement::SPtr let(
   return LetStatement::make_shared(Position::invalid(), isPub, isMut, {part(name, type, value)});
 }
 
-FunctionExpression::SPtr fn(
-  list<FunctionExpression::Parameter> parameters, Node::SPtr returnType, BlockExpression::SPtr body = nullptr)
-{
-  Token tok(Token::KwFn, Position::invalid(), Position::invalid(), Intern::string("fn"));
-  return FunctionExpression::make_shared(tok, parameters, returnType, body);
-}
-
 BlockExpression::SPtr block(list<Node::SPtr> statements)
 {
   return BlockExpression::make_shared(Position::invalid(), Position::invalid(), std::string_view(), statements);
@@ -137,6 +130,13 @@ BlockExpression::SPtr block(list<Node::SPtr> statements)
 BlockExpression::SPtr block(std::string const& label, list<Node::SPtr> statements)
 {
   return BlockExpression::make_shared(Position::invalid(), Position::invalid(), Intern::string(label), statements);
+}
+
+FunctionExpression::SPtr fn(
+  list<FunctionExpression::Parameter> parameters, Node::SPtr returnType, BlockExpression::SPtr body = nullptr)
+{
+  Token tok(Token::KwFn, Position::invalid(), Position::invalid(), Intern::string("fn"));
+  return FunctionExpression::make_shared(tok, parameters, returnType, body);
 }
 
 template<typename T>
@@ -222,6 +222,29 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
     for (size_t i = 0; i < n1->statements().size(); i += 1)
     {
       if (!equal(n1->statements()[i], n2->statements()[i]))
+        return false;
+    }
+    return true;
+  }
+
+  if (nodesAre(FunctionExpression))
+  {
+    if (!equal(n1->returnType(), n2->returnType()))
+      return false;
+
+    if (n1->parameters().size() != n2->parameters().size())
+      return false;
+
+    for (size_t i = 0; i < n1->parameters().size(); i += 1)
+    {
+      auto const
+        p1 = n1->parameters()[i],
+        p2 = n2->parameters()[i];
+
+      if (p1.name != p2.name)
+        return false;
+
+      if (!equal(p1.type, p2.type))
         return false;
     }
     return true;

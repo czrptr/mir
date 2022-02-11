@@ -50,3 +50,17 @@ int main()
 		fmt::print("\n{}", err);
 	}
 }
+
+/* TODO
+
+suggest location on missing {[()]} pairs by looking at alignments
+
+{ <-- this stands out
+
+  let a = blk: {
+
+  }
+
+...
+
+*/
