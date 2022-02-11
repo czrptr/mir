@@ -73,10 +73,25 @@
       }
     },
     {
-      "label": "Run Cmake",
+      "label": "Run Cmake (gcc)",
       "group": "build",
       "type": "shell",
       "command": "CC=gcc-11 CXX=g++-11 cmake -S ${workspaceFolder} -B ${workspaceFolder}/build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": false,
+        "group": "Build"
+      }
+    },
+    {
+      "label": "Run Cmake (clang)",
+      "group": "build",
+      "type": "shell",
+      "command": "CC=clang-12 CXX=clang++-12 cmake -S ${workspaceFolder} -B ${workspaceFolder}/build",
       "presentation": {
         "echo": true,
         "reveal": "always",
