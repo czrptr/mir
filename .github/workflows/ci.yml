@@ -48,4 +48,4 @@ jobs:
     # === RUN TESTS ===
 
     - name: Run tests
-      run: cd build; ./test
+      run: .build/test
