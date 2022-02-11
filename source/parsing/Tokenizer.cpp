@@ -107,13 +107,14 @@ Token Tokenizer::next()
 
     if (!d_leftOver)
     {
-      d_currentChar = inputNext(); // also append to d_currentTokenText
+      d_currentChar = inputNext();
       d_nextChar = inputPeek(); // maybe get rid of this?
     }
     else
     {
       d_leftOver = false;
     }
+    d_currentTokenText += d_currentChar;
 
     if (d_currentChar == '\n')
     {
@@ -455,7 +456,6 @@ Token Tokenizer::next()
     END(); // MultiLineComment
     }
   }
-  // while (!inputStreamFinished());
 
   if (!d_currentTokenText.empty())
   {
@@ -463,7 +463,9 @@ Token Tokenizer::next()
     d_currentTokenText += " ";
     // compensate for skipped position update;
     d_currentPos.column += 1;
-    return tokenEnd();
+    Token const res = tokenEnd();
+    d_leftOver = false; // tokenEnd() always assumes a char is left over
+    return res;
   }
 
   auto const eofPos = d_currentPos.nextColumn();
@@ -498,7 +500,6 @@ char Tokenizer::inputNext()
   {
     char res;
     d_pInputStream->get(res);
-    d_currentTokenText += res;
     return res;
   }
   catch (std::ios::failure const& err)
