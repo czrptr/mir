@@ -9,7 +9,16 @@
       "type": "shell",
       "command": "exec ${workspaceFolder}/build/mir",
       "dependsOn": [ "Build (mir)" ],
-      "dependsOrder": "sequence"
+      "dependsOrder": "sequence",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": false,
+        "group": "Execution",
+      }
     },
     {
       "label": "Test",
@@ -20,33 +29,78 @@
       "type": "shell",
       "command": "exec ${workspaceFolder}/build/test",
       "dependsOn": [ "Build (test)" ],
-      "dependsOrder": "sequence"
+      "dependsOrder": "sequence",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": false,
+        "group": "Execution"
+      }
     },
     {
       "label": "Build (mir)",
       "group": "build",
       "type": "shell",
       "command": "cd ${workspaceFolder}/build; make mir -j 4",
-      "problemMatcher": []
+      "problemMatcher": [ "$gcc" ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": false,
+        "group": "Build"
+      }
     },
     {
       "label": "Build (test)",
       "group": "build",
       "type": "shell",
       "command": "cd ${workspaceFolder}/build; make test -j 4",
-      "problemMatcher": []
+      "problemMatcher": [ "$gcc" ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": false,
+        "group": "Build"
+      }
     },
     {
       "label": "Run Cmake",
       "group": "build",
       "type": "shell",
-      "command": "CC=gcc-11 CXX=g++-11 cmake -S ${workspaceFolder} -B ${workspaceFolder}/build"
+      "command": "CC=gcc-11 CXX=g++-11 cmake -S ${workspaceFolder} -B ${workspaceFolder}/build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": false,
+        "group": "Build"
+      }
     },
     {
       "label": "Clean",
       "group": "build",
       "type": "shell",
-      "command": "rm -rf ${workspaceFolder}/build/"
+      "command": "rm -rf ${workspaceFolder}/build/",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": false,
+        "group": "Build"
+      }
     }
   ],
   "version": "2.0.0"

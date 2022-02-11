@@ -1,6 +1,6 @@
 {
   "files.exclude": {
-    "**/.build": true,
+    "build": true,
     "**/.git": true
   },
   "editor.tabSize": 2,
@@ -74,6 +74,13 @@
     "list": "cpp",
     "set": "cpp",
     "typeindex": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "condition_variable": "cpp",
+    "csignal": "cpp",
+    "mutex": "cpp",
+    "stop_token": "cpp",
+    "thread": "cpp",
+    "cinttypes": "cpp",
+    "semaphore": "cpp"
   }
 }

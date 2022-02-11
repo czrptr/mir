@@ -4,7 +4,28 @@
       "name": "Debug",
       "type": "cppdbg",
       "request": "launch",
+      "preLaunchTask": "Build (mir)",
       "program": "${workspaceFolder}/build/mir",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${fileDirname}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "Debug (test)",
+      "type": "cppdbg",
+      "request": "launch",
+      "preLaunchTask": "Build (mir)",
+      "program": "${workspaceFolder}/build/test",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${fileDirname}",
