@@ -73,7 +73,7 @@
       }
     },
     {
-      "label": "Run Cmake (gcc)",
+      "label": "CMake (gcc)",
       "group": "build",
       "type": "shell",
       "command": "CC=gcc-11 CXX=g++-11 cmake -S ${workspaceFolder} -B ${workspaceFolder}/build",
@@ -88,7 +88,7 @@
       }
     },
     {
-      "label": "Run Cmake (clang)",
+      "label": "CMake (clang)",
       "group": "build",
       "type": "shell",
       "command": "CC=clang-12 CXX=clang++-12 cmake -S ${workspaceFolder} -B ${workspaceFolder}/build",
