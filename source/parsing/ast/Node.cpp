@@ -57,7 +57,7 @@ std::string prefix(size_t indent, std::vector<size_t> lines, bool isLast)
   size_t front = 0;
   for (size_t i = 0; i < indent - 1; i += 1)
   {
-    if (!lines.empty() && lines[front] == i)
+    if (front < lines.size() && lines[front] == i)
     {
       res += longLine;
       front += 1;
