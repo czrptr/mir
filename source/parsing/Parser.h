@@ -63,5 +63,5 @@ private:
   // TODO make these const
   Error error(Token token, std::string const& message);
   Error error(ast::Node::SPtr pNode, std::string const& message);
-  void throwErrorIfNullOrNotExpression(ast::Node::SPtr pNode, Token fallbackPosition, std::string const& message);
+  void throwErrorIfNullOrNotExpression(ast::Node::SPtr pNode, Token fallbackToken, std::string const& message);
 };

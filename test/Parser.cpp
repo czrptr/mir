@@ -3,8 +3,6 @@
 #include <NodeBuilder.h>
 #include <parsing/Parser.h>
 
-// TODO test errors
-
 namespace
 {
 
@@ -97,7 +95,61 @@ TEST_CASE("unreachable")
 
 /* ================== LetStatement ================== */
 
-TEST_CASE("pub lets")
+TEST_CASE("let statements cannot be empty")
+{
+  auto prs = parser("let");
+
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:0: error: let statement cannot be empty";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("let statement parts must be assigned")
+{
+  auto prs = parser("let a");
+
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:5: error: assignement operator '=' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("let statement parts must be assigned a value")
+{
+  auto prs = parser("let a = ");
+
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:7: error: expression expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("pub let statements")
 {
   auto prs = parser("pub let a = 0");
   auto l = prs.expression();
@@ -106,7 +158,7 @@ TEST_CASE("pub lets")
     let(true, false, "a", number("0")));
 }
 
-TEST_CASE("mut lets")
+TEST_CASE("mut let statements")
 {
   auto prs = parser("let mut a = 0");
   auto l = prs.expression();
@@ -115,7 +167,7 @@ TEST_CASE("mut lets")
     let(false, true, "a", number("0")));
 }
 
-TEST_CASE("pub mut lets")
+TEST_CASE("pub mut let statements")
 {
   auto prs = parser("pub let mut a = 0");
   auto l = prs.expression();
@@ -124,7 +176,7 @@ TEST_CASE("pub mut lets")
     let(true, true, "a", number("0")));
 }
 
-TEST_CASE("lets with types")
+TEST_CASE("let statements with types")
 {
   auto prs = parser("let a: isize = 0");
   auto l = prs.expression();
@@ -133,7 +185,7 @@ TEST_CASE("lets with types")
     let(false, false, "a", symbol("isize"), number("0")));
 }
 
-TEST_CASE("lets (multiple parts)")
+TEST_CASE("let statements (multiple parts)")
 {
   auto prs = parser("let a = 0, b = c, d = \"AAH\"");
   auto l = prs.expression();
@@ -146,7 +198,7 @@ TEST_CASE("lets (multiple parts)")
     }));
 }
 
-TEST_CASE("lets (complex)")
+TEST_CASE("let statements (complex)")
 {
   auto prs = parser("pub let mut a: isize = 0, b = c, d: string = \"AAH\"");
   auto l = prs.expression();
@@ -235,7 +287,7 @@ TEST_CASE("blocks (complex)")
 
 /* ================== FunctionExpression ================== */
 
-TEST_CASE("simple function type")
+TEST_CASE("function type")
 {
   auto prs = parser("fn () void");
   auto f = prs.expression();
@@ -243,12 +295,34 @@ TEST_CASE("simple function type")
   REQUIRE_AST_EQ(f, fn({}, symbol("void")));
 }
 
-TEST_CASE("simple function")
+TEST_CASE("function type (complex)")
+{
+  auto prs = parser("fn (arg1: Type1, arg2: char) fn () void");
+  auto f = prs.expression();
+
+  REQUIRE_AST_EQ(f,
+    fn({{"arg1", symbol("Type1")}, {"arg2", symbol("char")}},
+      fn({}, symbol("void"))));
+}
+
+TEST_CASE("function")
 {
   auto prs = parser("fn () void {}");
   auto f = prs.expression();
 
   REQUIRE_AST_EQ(f, fn({}, symbol("void"), block({})));
+}
+
+TEST_CASE("function (complex)")
+{
+  auto prs = parser(
+    "fn () void {\n"
+    "  let a = b;\n"
+    "}");
+  auto f = prs.expression();
+
+  REQUIRE_AST_EQ(f, fn({}, symbol("void"),
+    block({let(false, false, "a", symbol("b"))})));
 }
 
 // TODO "fn() blk: {}" and "fn() Type {}" not being parsed as "fn() (Type{})""

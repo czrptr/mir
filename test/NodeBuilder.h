@@ -133,10 +133,22 @@ BlockExpression::SPtr block(std::string const& label, list<Node::SPtr> statement
 }
 
 FunctionExpression::SPtr fn(
-  list<FunctionExpression::Parameter> parameters, Node::SPtr returnType, BlockExpression::SPtr body = nullptr)
+  list<std::tuple<std::string, Node::SPtr>> parameters, Node::SPtr returnType, BlockExpression::SPtr body = nullptr)
 {
+  std::vector<FunctionExpression::Parameter> params;
+  params.reserve(parameters.size());
+  for (auto const& param : parameters)
+  {
+    auto const tokArgName = Token(
+      Token::Symbol,
+      Position::invalid(), Position::invalid(),
+      Intern::string(std::get<0>(param)));
+
+    params.push_back({tokArgName, std::get<1>(param)});
+  }
+
   Token tok(Token::KwFn, Position::invalid(), Position::invalid(), Intern::string("fn"));
-  return FunctionExpression::make_shared(tok, parameters, returnType, body);
+  return FunctionExpression::make_shared(tok, std::move(params), returnType, body);
 }
 
 template<typename T>
@@ -241,7 +253,7 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
         p1 = n1->parameters()[i],
         p2 = n2->parameters()[i];
 
-      if (p1.name != p2.name)
+      if (p1.name.text() != p2.name.text())
         return false;
 
       if (!equal(p1.type, p2.type))

@@ -311,9 +311,9 @@ ast::LetStatementPart::SPtr Parser::letStatementPart()
     pType = expression();
   }
 
-  // TODO default error messages for operators
+  // TODO match(Operator::Tag)
   Token const tokEq = match(Token::Operator, "assignement operator '=' expected");
-  if (tokEq.text() != "=") // TODO better API
+  if (tokEq.text() != "=")
   {
     throw error(tokEq, "assignement operator '=' expected");
   }
@@ -524,11 +524,11 @@ Error Parser::error(ast::Node::SPtr pNode, std::string const& message)
   return Error(d_tokenizer.sourcePath(), pNode->start(), pNode->end(), message);
 }
 
-void Parser::throwErrorIfNullOrNotExpression(ast::Node::SPtr pNode, Token fallbackPosition, std::string const& message)
+void Parser::throwErrorIfNullOrNotExpression(ast::Node::SPtr pNode, Token fallbackToken, std::string const& message)
 {
   if (pNode == nullptr)
   {
-    throw error(fallbackPosition, message);
+    throw Error(d_tokenizer.sourcePath(), fallbackToken.end(), fallbackToken.end(), message);
   }
   if (!pNode->isExpression())
   {
