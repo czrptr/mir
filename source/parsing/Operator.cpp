@@ -1,5 +1,7 @@
 #include "parsing/Operator.h"
 
+#include <parsing/Error.h>
+
 #include <cassert>
 
 Operator::Operator(Token token)
@@ -60,7 +62,7 @@ Operator::Associativity Operator::associativity(Operator::Tag tag)
 {
   // use LeftToRight as None because parsing LeftToRight doesn't
   // require a recursive call
-  constexpr auto None = Associativity::LeftToRight;
+  constexpr auto NoneBecauseUnchainable = Associativity::LeftToRight;
 
   switch (tag)
   {
@@ -68,59 +70,103 @@ Operator::Associativity Operator::associativity(Operator::Tag tag)
   case Operator::Tag::Opt: return Associativity::LeftToRight;
   case Operator::Tag::PtrDeref: return Associativity::LeftToRight;
   case Operator::Tag::Not_ErrorUnion: return Associativity::RightToLeft; // !!
+  case Operator::Tag::Try: return Associativity::RightToLeft; // !!
   case Operator::Tag::Not: return Associativity::RightToLeft;
   case Operator::Tag::UnaryMinus: return Associativity::RightToLeft;
+  case Operator::Tag::UnaryMinusMod: return NoneBecauseUnchainable;
   case Operator::Tag::UnaryPlus: return Associativity::RightToLeft;
   case Operator::Tag::BitNot: return Associativity::RightToLeft;
-  case Operator::Tag::PtrTo: return None; // unchainable
+  case Operator::Tag::PtrTo: return NoneBecauseUnchainable;
   case Operator::Tag::Mul: return Associativity::LeftToRight;
+  case Operator::Tag::MulMod: return Associativity::LeftToRight;
+  case Operator::Tag::MulBar: return Associativity::LeftToRight;
   case Operator::Tag::Div: return Associativity::LeftToRight;
   case Operator::Tag::Mod: return Associativity::LeftToRight;
   case Operator::Tag::OrOr_ErrorSet: return Associativity::LeftToRight;
   case Operator::Tag::Add: return Associativity::LeftToRight;
+  case Operator::Tag::AddMod: return Associativity::LeftToRight;
+  case Operator::Tag::AddBar: return Associativity::LeftToRight;
   case Operator::Tag::Sub: return Associativity::LeftToRight;
+  case Operator::Tag::SubMod: return Associativity::LeftToRight;
+  case Operator::Tag::SubBar: return Associativity::LeftToRight;
   case Operator::Tag::BitShr: return Associativity::LeftToRight;
+  case Operator::Tag::BitRor: return Associativity::LeftToRight;
   case Operator::Tag::BitShl: return Associativity::LeftToRight;
+  case Operator::Tag::BitRol: return Associativity::LeftToRight;
+  case Operator::Tag::BitShlBar: return Associativity::LeftToRight;
   case Operator::Tag::BitAnd: return Associativity::LeftToRight;
   case Operator::Tag::BitOr: return Associativity::LeftToRight;
   case Operator::Tag::BitXor: return Associativity::LeftToRight;
   case Operator::Tag::Orelse: return Associativity::RightToLeft; // !!
   case Operator::Tag::Catch: return Associativity::RightToLeft;  // !!
-  case Operator::Tag::EqEq: return None;   // unchainable
-  case Operator::Tag::NotEq: return None;  // unchainable
-  case Operator::Tag::Ge: return None;     // unchainable
-  case Operator::Tag::Le: return None;     // unchainable
-  case Operator::Tag::GeEq: return None;   // unchainable
-  case Operator::Tag::LeEq: return None;   // unchainable
+  case Operator::Tag::EqEq: return NoneBecauseUnchainable;
+  case Operator::Tag::NotEq: return NoneBecauseUnchainable;
+  case Operator::Tag::Ge: return NoneBecauseUnchainable;
+  case Operator::Tag::Le: return NoneBecauseUnchainable;
+  case Operator::Tag::GeEq: return NoneBecauseUnchainable;
+  case Operator::Tag::LeEq: return NoneBecauseUnchainable;
   case Operator::Tag::And: return Associativity::LeftToRight;
   case Operator::Tag::Or: return Associativity::LeftToRight;
-  case Operator::Tag::DotDot: return None; // unchainable
-  case Operator::Tag::Eq: return None;     // unchainable
+  case Operator::Tag::DotDot: return NoneBecauseUnchainable;
+  case Operator::Tag::Eq: return NoneBecauseUnchainable;
+  case Operator::Tag::MulEq: return NoneBecauseUnchainable;
+  case Operator::Tag::MulModEq: return NoneBecauseUnchainable;
+  case Operator::Tag::MulBarEq: return NoneBecauseUnchainable;
+  case Operator::Tag::MulDivEq: return NoneBecauseUnchainable;
+  case Operator::Tag::ModEq: return NoneBecauseUnchainable;
+  case Operator::Tag::AddEq: return NoneBecauseUnchainable;
+  case Operator::Tag::AddModEq: return NoneBecauseUnchainable;
+  case Operator::Tag::AddBarEq: return NoneBecauseUnchainable;
+  case Operator::Tag::SubEq: return NoneBecauseUnchainable;
+  case Operator::Tag::SubModEq: return NoneBecauseUnchainable;
+  case Operator::Tag::SubBarEq: return NoneBecauseUnchainable;
+  case Operator::Tag::BitShrEq: return NoneBecauseUnchainable;
+  case Operator::Tag::BitRorEq: return NoneBecauseUnchainable;
+  case Operator::Tag::BitShlEq: return NoneBecauseUnchainable;
+  case Operator::Tag::BitRolEq: return NoneBecauseUnchainable;
+  case Operator::Tag::BitShlBarEq: return NoneBecauseUnchainable;
+  case Operator::Tag::BitAndEq: return NoneBecauseUnchainable;
+  case Operator::Tag::BitOrEq: return NoneBecauseUnchainable;
+  case Operator::Tag::BitXorEq: return NoneBecauseUnchainable;
+  case Operator::Tag::Return: return NoneBecauseUnchainable;
+  case Operator::Tag::Break: return NoneBecauseUnchainable;
+  case Operator::Tag::Continue: return NoneBecauseUnchainable;
+  case Operator::Tag::Defer: return NoneBecauseUnchainable;
   }
   assert(false); // unreachable
 }
 
 bool Operator::chainable(Operator::Tag tag)
 {
-    switch (tag)
+  switch (tag)
   {
   case Operator::Tag::Dot: return true;
   case Operator::Tag::Opt: return true;
   case Operator::Tag::PtrDeref: return true;
   case Operator::Tag::Not_ErrorUnion: return true;
-  case Operator::Tag::Not: return true;         // TODO make false
-  case Operator::Tag::UnaryMinus: return true;  // TODO make false
-  case Operator::Tag::UnaryPlus: return true;   // TODO make false
-  case Operator::Tag::BitNot: return true;      // TODO make false
+  case Operator::Tag::Not: return false;
+  case Operator::Tag::UnaryMinus: return false;
+  case Operator::Tag::UnaryMinusMod: return false;
+  case Operator::Tag::UnaryPlus: return false;
+  case Operator::Tag::BitNot: return false;
   case Operator::Tag::PtrTo: return false;
   case Operator::Tag::Mul: return true;
+  case Operator::Tag::MulMod: return true;
+  case Operator::Tag::MulBar: return true;
   case Operator::Tag::Div: return true;
   case Operator::Tag::Mod: return true;
   case Operator::Tag::OrOr_ErrorSet: return true;
   case Operator::Tag::Add: return true;
+  case Operator::Tag::AddMod: return true;
+  case Operator::Tag::AddBar: return true;
   case Operator::Tag::Sub: return true;
+  case Operator::Tag::SubMod: return true;
+  case Operator::Tag::SubBar: return true;
   case Operator::Tag::BitShr: return true;
+  case Operator::Tag::BitRor: return true;
   case Operator::Tag::BitShl: return true;
+  case Operator::Tag::BitRol: return true;
+  case Operator::Tag::BitShlBar: return true;
   case Operator::Tag::BitAnd: return true;
   case Operator::Tag::BitOr: return true;
   case Operator::Tag::BitXor: return true;
@@ -136,6 +182,34 @@ bool Operator::chainable(Operator::Tag tag)
   case Operator::Tag::Or: return true;
   case Operator::Tag::DotDot: return false;
   case Operator::Tag::Eq: return false;
+  case Operator::Tag::MulEq: return false;
+  case Operator::Tag::MulModEq: return false;
+  case Operator::Tag::MulBarEq: return false;
+  case Operator::Tag::MulDivEq: return false;
+  case Operator::Tag::ModEq: return false;
+  case Operator::Tag::AddEq: return false;
+  case Operator::Tag::AddModEq: return false;
+  case Operator::Tag::AddBarEq: return false;
+  case Operator::Tag::SubEq: return false;
+  case Operator::Tag::SubModEq: return false;
+  case Operator::Tag::SubBarEq: return false;
+  case Operator::Tag::BitShrEq: return false;
+  case Operator::Tag::BitRorEq: return false;
+  case Operator::Tag::BitShlEq: return false;
+  case Operator::Tag::BitRolEq: return false;
+  case Operator::Tag::BitShlBarEq: return false;
+  case Operator::Tag::BitAndEq: return false;
+  case Operator::Tag::BitOrEq: return false;
+  case Operator::Tag::BitXorEq: return false;
+  case Operator::Tag::Return: return false;
+  case Operator::Tag::Break: return false;
+  case Operator::Tag::Continue: return false;
+  case Operator::Tag::Defer: return false;
   }
   assert(false); // unreachable
+}
+
+void Operator::validate(std::string_view text)
+{
+  // TODO
 }

@@ -1,6 +1,7 @@
 #include "parsing/Tokenizer.h"
 
 #include <parsing/Intern.h>
+#include <parsing/Operator.h>
 #include <Utils.h>
 
 #include <cassert>
@@ -9,10 +10,6 @@
 #include <filesystem>
 
 namespace fs = std::filesystem;
-
-// TODO refactor
-// preallocated a buffer to placement construct a string with the read text
-// read chuncks in there while tokenizing
 
 #define LETTER \
        'a' ... 'z': \
@@ -588,12 +585,13 @@ Token Tokenizer::tokenEnd()
   }
 
   d_currentToken.d_end = d_currentPos;
-  // TODO don't intern keywords, you can "calculate" its string representation
-  //   because it cannot vary
+  // TODO don't intern keywords or operators
+  // because it cannot vary, you can "calculate" its string representation
   d_currentToken.d_text = Intern::string(d_currentTokenText);
   d_currentTokenText.clear();
 
-  d_nextPos = d_currentPos; // backtrack position
+  // backtrack position
+  d_nextPos = d_currentPos;
 
   if (d_currentToken.d_tag == Token::Symbol)
   {
@@ -607,27 +605,31 @@ Token Tokenizer::tokenEnd()
       .Case("enum", Token::KwEnum)
       .Case("union", Token::KwUnion)
       .Case("fn", Token::KwFn)
-      .Case("infer", Token::KwInfer) // make operator
-      .Case("try", Token::KwTry) // make operator
       .Case("if", Token::KwIf)
       .Case("else", Token::KwElse)
       .Case("switch", Token::KwSwitch)
       .Case("loop", Token::KwLoop)
-      .Case("return", Token::KwReturn) // make operator
-      .Case("break", Token::KwBreak) // make operator
-      .Case("continue", Token::KwContinue) // make operator
-      .Case("defer", Token::KwDefer) // make operator
       .Case("import", Token::KwImport) // make reserved symbol?
-      .Case("not", Token::Operator)
+      .Case("return", Token::Operator)
+      .Case("break", Token::Operator)
+      .Case("continue", Token::Operator)
+      .Case("defer", Token::Operator)
+      .Case("try", Token::Operator)
       .Case("catch", Token::Operator)
       .Case("orelse", Token::Operator)
+      .Case("not", Token::Operator)
       .Case("and", Token::Operator)
       .Case("or", Token::Operator)
+      // .Case("infer", Token::Operator) // TODO
       .Default(d_currentToken.d_tag);
   }
 
-  // TODO validate rune operators
   // TODO errors for a and= b, a not= b, etc...
+
+  if (d_currentToken.d_tag == Token::Operator)
+  {
+    Operator::validate(d_currentToken.d_text);
+  }
 
   return d_currentToken;
 }

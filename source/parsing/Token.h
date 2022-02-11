@@ -38,18 +38,10 @@ public:
     KwEnum,
     KwUnion,
     KwFn,
-    KwInfer,
-    KwTry,
-    // KwCatch,  // Operator
-    // KwOrelse, // Operator
     KwIf,
     KwElse,
     KwSwitch,
     KwLoop,
-    KwReturn,
-    KwBreak,
-    KwContinue,
-    KwDefer,
     KwImport,
     Comment,
     Eof
@@ -144,16 +136,10 @@ struct fmt::formatter<Token::Tag>
       case Token::Tag::KwEnum: name = "KwEnum"; break;
       case Token::Tag::KwUnion: name = "KwUnion"; break;
       case Token::Tag::KwFn: name = "KwFn"; break;
-      case Token::Tag::KwInfer: name = "KwInfer"; break;
-      case Token::Tag::KwTry: name = "KwTry"; break;
       case Token::Tag::KwIf: name = "KwIf"; break;
       case Token::Tag::KwElse: name = "KwElse"; break;
       case Token::Tag::KwSwitch: name = "KwSwitch"; break;
       case Token::Tag::KwLoop: name = "KwLoop"; break;
-      case Token::Tag::KwReturn: name = "KwReturn"; break;
-      case Token::Tag::KwBreak: name = "KwBreak"; break;
-      case Token::Tag::KwContinue: name = "KwContinue"; break;
-      case Token::Tag::KwDefer: name = "KwDefer"; break;
       case Token::Tag::KwImport: name = "KwImport"; break;
       case Token::Tag::Comment: name = "Comment"; break;
       case Token::Tag::Eof: name = "Eof"; break;
@@ -184,16 +170,10 @@ struct fmt::formatter<Token::Tag>
       case Token::Tag::KwEnum: name = "keyword 'enum'"; break;
       case Token::Tag::KwUnion: name = "keyword 'union'"; break;
       case Token::Tag::KwFn: name = "keyword 'fn'"; break;
-      case Token::Tag::KwInfer: name = "keyword 'infer'"; break;
-      case Token::Tag::KwTry: name = "keyword 'try'"; break;
       case Token::Tag::KwIf: name = "keyword 'if'"; break;
       case Token::Tag::KwElse: name = "keyword 'else'"; break;
       case Token::Tag::KwSwitch: name = "keyword 'switch'"; break;
       case Token::Tag::KwLoop: name = "keyword 'loop'"; break;
-      case Token::Tag::KwReturn: name = "keyword 'return'"; break;
-      case Token::Tag::KwBreak: name = "keyword 'break'"; break;
-      case Token::Tag::KwContinue: name = "keyword 'continue'"; break;
-      case Token::Tag::KwDefer: name = "keyword 'defer'"; break;
       case Token::Tag::KwImport: name = "keyword 'import'"; break;
       case Token::Tag::Comment: name = "comment"; break;
       case Token::Tag::Eof: name = "end of file"; break;

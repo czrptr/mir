@@ -103,9 +103,19 @@ TEST_CASE("symbols (builtins) wrong format")
 
 TEST_CASE("operator (runes)")
 {
-  std::string const text = "=<>+-*%!|^&~?.";
+  std::string const text = "=<>+-*%!|^&~?. try not orelse catch and or return break continue defer";
   Tokenizer tk(text, "<file>");
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 0, 0, text.length(), text));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 0, 0, 14, "=<>+-*%!|^&~?."));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 15, 0, 18, "try"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 19, 0, 22, "not"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 23, 0, 29, "orelse"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 30, 0, 35, "catch"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 36, 0, 39, "and"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 40, 0, 42, "or"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 43, 0, 49, "return"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 50, 0, 55, "break"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 56, 0, 64, "continue"));
+  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 65, 0, 70, "defer"));
 }
 
 TEST_CASE("operator (keywords)")
@@ -265,8 +275,8 @@ TEST_CASE("runes")
 TEST_CASE("keywords")
 {
   std::string const text =
-    "pub let mut comptime struct enum union fn infer try "
-    "if else switch loop return break continue defer import";
+    "pub let mut comptime struct enum union fn "
+    "if else switch loop import";
 
   Tokenizer tk(text, "<file>");
   REQUIRE_EQ(tk.next(), t(Token::KwPub, 0, 0, 0, 3, "pub"));
@@ -277,17 +287,11 @@ TEST_CASE("keywords")
   REQUIRE_EQ(tk.next(), t(Token::KwEnum, 0, 28, 0, 32, "enum"));
   REQUIRE_EQ(tk.next(), t(Token::KwUnion, 0, 33, 0, 38, "union"));
   REQUIRE_EQ(tk.next(), t(Token::KwFn, 0, 39, 0, 41, "fn"));
-  REQUIRE_EQ(tk.next(), t(Token::KwInfer, 0, 42, 0, 47, "infer"));
-  REQUIRE_EQ(tk.next(), t(Token::KwTry, 0, 48, 0, 51, "try"));
-  REQUIRE_EQ(tk.next(), t(Token::KwIf, 0, 52, 0, 54, "if"));
-  REQUIRE_EQ(tk.next(), t(Token::KwElse, 0, 55, 0, 59, "else"));
-  REQUIRE_EQ(tk.next(), t(Token::KwSwitch, 0, 60, 0, 66, "switch"));
-  REQUIRE_EQ(tk.next(), t(Token::KwLoop, 0, 67, 0, 71, "loop"));
-  REQUIRE_EQ(tk.next(), t(Token::KwReturn, 0, 72, 0, 78, "return"));
-  REQUIRE_EQ(tk.next(), t(Token::KwBreak, 0, 79, 0, 84, "break"));
-  REQUIRE_EQ(tk.next(), t(Token::KwContinue, 0, 85, 0, 93, "continue"));
-  REQUIRE_EQ(tk.next(), t(Token::KwDefer, 0, 94, 0, 99, "defer"));
-  REQUIRE_EQ(tk.next(), t(Token::KwImport, 0, 100, 0, 106, "import"));
+  REQUIRE_EQ(tk.next(), t(Token::KwIf, 0, 42, 0, 44, "if"));
+  REQUIRE_EQ(tk.next(), t(Token::KwElse, 0, 45, 0, 49, "else"));
+  REQUIRE_EQ(tk.next(), t(Token::KwSwitch, 0, 50, 0, 56, "switch"));
+  REQUIRE_EQ(tk.next(), t(Token::KwLoop, 0, 57, 0, 61, "loop"));
+  REQUIRE_EQ(tk.next(), t(Token::KwImport, 0, 62, 0, 68, "import"));
 }
 
 TEST_CASE("last single char token ends on Eof")
