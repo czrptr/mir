@@ -306,9 +306,8 @@ ast::LetStatementPart::SPtr Parser::letStatementPart()
   Position const start = tokSymbol.start();
 
   Node::SPtr pType = nullptr;
-  if (next(Token::Colon))
+  if (skip(Token::Colon))
   {
-    match(Token::Colon);
     // TODO implement workaround when a = b expression will be implemented and this code will break
     pType = expression();
   }
