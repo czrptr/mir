@@ -12,6 +12,13 @@
 struct Parser final
 {
 private:
+  enum class ErrorStrategy
+  {
+    Unreachable,
+    DefaultErrorMessage,
+  };
+
+private:
   Tokenizer d_tokenizer;
   std::vector<Token> d_tokens;
   std::vector<size_t> d_rollbacks;
@@ -40,10 +47,15 @@ public:
 
 private:
   bool next(Token::Tag tag);
-  Token match(Token::Tag tag, std::string const& errorMessage = "UNREACHABLE");
+  Token match(Token::Tag tag, std::string const& errorMessage);
+  Token match(Token::Tag tag, ErrorStrategy strategy = ErrorStrategy::Unreachable);
   bool skip(Token::Tag tag);
+  Token lastMatchedToken();
 
   void setRollbackPoint();
   void rollback();
   void commit();
+
+  Error error(Token token, std::string const& message);
+  Error error(ast::Node::SPtr pNode, std::string const& message);
 };

@@ -1,7 +1,5 @@
 #include "parsing/Parser.h"
 
-#include <Utils.h>
-
 // TODO better error messages
 
 using namespace ast;
@@ -11,45 +9,42 @@ ast::TokenExpression::SPtr Parser::tokenExpression()
   if (next(Token::Symbol))
   {
     Token const tokSymbol = match(Token::Symbol);
-
-      if (tokSymbol.text() == "true")
-      {
-        return std::make_shared<BoolExpression>(tokSymbol, true);
-      }
-      else if (tokSymbol.text() == "false")
-      {
-        return std::make_shared<BoolExpression>(tokSymbol, false);
-      }
-      else if (tokSymbol.text() == "null")
-      {
-        return std::make_shared<NullExpression>(tokSymbol);
-      }
-      else if (tokSymbol.text() == "undefined")
-      {
-        return std::make_shared<UndefinedExpression>(tokSymbol);
-      }
-      else if (tokSymbol.text() == "unreachable")
-      {
-        return std::make_shared<UnreachableExpression>(tokSymbol);
-      }
-      else if (tokSymbol.text()[0] == '@')
-      {
-        return std::make_shared<BuiltinExpression>(tokSymbol);
-      }
-      else
-      {
-        return std::make_shared<SymbolExpression>(tokSymbol);
-      }
+    if (tokSymbol.text() == "true")
+    {
+      return std::make_shared<BoolExpression>(tokSymbol, true);
+    }
+    else if (tokSymbol.text() == "false")
+    {
+      return std::make_shared<BoolExpression>(tokSymbol, false);
+    }
+    else if (tokSymbol.text() == "null")
+    {
+      return std::make_shared<NullExpression>(tokSymbol);
+    }
+    else if (tokSymbol.text() == "undefined")
+    {
+      return std::make_shared<UndefinedExpression>(tokSymbol);
+    }
+    else if (tokSymbol.text() == "unreachable")
+    {
+      return std::make_shared<UnreachableExpression>(tokSymbol);
+    }
+    else if (tokSymbol.text()[0] == '@')
+    {
+      return std::make_shared<BuiltinExpression>(tokSymbol);
+    }
+    else
+    {
+      return std::make_shared<SymbolExpression>(tokSymbol);
+    }
   }
   if (next(Token::StringLiteral))
   {
-    Token const tokString = match(Token::StringLiteral);
-    return std::make_shared<StringExpression>(tokString);
+    return std::make_shared<StringExpression>(match(Token::StringLiteral));
   }
   if (next(Token::NumberLiteral))
   {
-    Token const tokNumber = match(Token::NumberLiteral);
-    return std::make_shared<NumberExpression>(tokNumber);
+    return std::make_shared<NumberExpression>(match(Token::StringLiteral));
   }
   return nullptr;
 }
@@ -57,7 +52,6 @@ ast::TokenExpression::SPtr Parser::tokenExpression()
 ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
 {
   Position start = { 0, 0 };
-  Position end = Position::invalid();
   TypeExpression::Tag tag = TypeExpression::Struct;
   Node::SPtr pUnderlyingType = nullptr;
 
@@ -66,11 +60,9 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     if (next(Token::KwStruct))
     {
       start = match(Token::KwStruct).start();
-      tag = TypeExpression::Struct;
     }
     else if (next(Token::KwEnum))
     {
-      // TODO enum () { ... }
       start = match(Token::KwEnum).start();
       tag = TypeExpression::Enum;
     }
@@ -88,18 +80,13 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     {
       Token const tokLParen = match(Token::LParen);
       pUnderlyingType = expression();
-      if (pUnderlyingType == nullptr || !pUnderlyingType->canBeUsedAsExpression())
+      if (pUnderlyingType == nullptr || !pUnderlyingType->isExpression())
       {
-        // TODO add note: "enum require an underlying type"
-        throw Error(d_tokenizer.sourcePath(), tokLParen.start(), tokLParen.end(), Error::Type::Error,
-          fmt::format("type expression expected", tag));
+        throw error(tokLParen, fmt::format("type expression expected", tag));
       }
-      match(Token::RParen, "')' expected");
+      match(Token::RParen, ErrorStrategy::DefaultErrorMessage);
     }
-    // TODO assigne usize if user does not provide an underlying type
-
-    // TODO match with default message '{fmt::to_string}' expected
-    match(Token::LBrace, "'{' expected");
+    match(Token::LBrace, ErrorStrategy::DefaultErrorMessage);
   }
 
   std::vector<Field::SPtr> fields;
@@ -109,14 +96,13 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     declsSection = false,
     fieldsSection = false;
 
-  // TODO faster implementation with fewer branches
   while (auto pExpr = expressionOrField())
   {
     auto pDecl = std::dynamic_pointer_cast<LetStatement>(pExpr);
     auto pField = std::dynamic_pointer_cast<Field>(pExpr);
     if (pDecl == nullptr && pField == nullptr)
     {
-      throw Error(d_tokenizer.sourcePath(), pExpr->start(), pExpr->end(), Error::Type::Error,
+      throw error(pExpr,
         fmt::format("{}s can only contain declarations (let statements), fields or comptime blocks", tag));
     }
     if (pDecl != nullptr)
@@ -130,21 +116,32 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
       fieldsSection = true;
       decls = &declsPost;
 
+      // is this a field after a decl after a field?
+      // i.e. are the fields separated by decls
       if (declsSection)
       {
-        // TODO change error based on tag
-        //   all variants for eunm and union ?
-        throw Error(d_tokenizer.sourcePath(), pExpr->start(), pExpr->end(), Error::Type::Error,
-          fmt::format("all fields must be grouped together", tag));
+        auto fieldsString = "";
+        if (tag == TypeExpression::Struct)
+        {
+          fieldsString = "struct field";
+        }
+        else if (tag == TypeExpression::Enum)
+        {
+          fieldsString = "enum variant";
+        }
+        else // tag == TypeExpression::Union
+        {
+          fieldsString = "union variant";
+        }
+        throw error(pExpr, fmt::format("all {}s must be grouped together", fieldsString));
       }
 
       if (tag == TypeExpression::Enum)
       {
         if (pField->type() != nullptr)
         {
-          // TODO + note: all enum variants share the same underlying type
-          throw Error(d_tokenizer.sourcePath(), pExpr->start(), pExpr->end(), Error::Type::Error,
-            "enum variants cannot have type annotations");
+          throw error(pExpr, "enum variants cannot have type annotations")
+            .note("all enum variants share the same underlying type");
         }
       }
       else // tag == TypeExpression::Struct || tag == TypeExpression::Union
@@ -155,13 +152,11 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
 
         if (pField->type() == nullptr)
         {
-          throw Error(d_tokenizer.sourcePath(), pExpr->start(), pExpr->end(), Error::Type::Error,
-            fmt::format("{} must have type annotations", fieldsStr));
+          throw error(pExpr, fmt::format("{} must have type annotations", fieldsStr));
         }
         if (pField->value() != nullptr)
         {
-          throw Error(d_tokenizer.sourcePath(), pExpr->start(), pExpr->end(), Error::Type::Error,
-            fmt::format("{} cannot have default values", fieldsStr));
+          throw error(pExpr, fmt::format("{} cannot have default values", fieldsStr));
         }
       }
 
@@ -170,11 +165,9 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     }
   }
 
-  if (!isRoot)
-  {
-    end = match(Token::RBrace, "'}' expected").end();
-  }
-  // TODO end
+  Position end = (!isRoot)
+    ? match(Token::RBrace, ErrorStrategy::DefaultErrorMessage).end()
+    : lastMatchedToken().end();
 
   return TypeExpression::make_shared(
     tag, start, end, std::move(fields), std::move(declsPre), std::move(declsPost), pUnderlyingType);
@@ -198,11 +191,9 @@ Field::SPtr Parser::field()
     Token const tokColon = match(Token::Colon);
     // TODO implement workaround when a = b expression will be implemented and this code will break
     pType = expression();
-    if (pType == nullptr || !pType->canBeUsedAsExpression())
+    if (pType == nullptr || !pType->isExpression())
     {
-      throw Error(
-        d_tokenizer.sourcePath(), tokColon.start(), tokColon.end(),
-        Error::Type::Error, "type expression expected");
+      throw error(tokColon, "type expression expected");
     }
   }
 
@@ -217,11 +208,9 @@ Field::SPtr Parser::field()
     }
 
     pValue = expression();
-    if (pValue == nullptr || !pValue->canBeUsedAsExpression())
+    if (pValue == nullptr || !pValue->isExpression())
     {
-      throw Error(
-        d_tokenizer.sourcePath(), tokColon.start(), tokColon.end(),
-        Error::Type::Error, "expression expected");
+      throw error(tokColon, "expression expected");
     }
   }
 
@@ -242,7 +231,7 @@ ast::LetStatement::SPtr Parser::letStatement()
     Token tokPub = match(Token::KwPub);
     isPub = true;
     start = tokPub.start();
-    tokLet = match(Token::KwLet, "'let' expected");
+    tokLet = match(Token::KwLet, ErrorStrategy::DefaultErrorMessage);
   }
   else if (next(Token::KwLet))
   {
@@ -270,11 +259,10 @@ ast::LetStatement::SPtr Parser::letStatement()
 
   if (parts.empty())
   {
-    throw Error(d_tokenizer.sourcePath(), tokLet.start(), tokLet.end(), Error::Type::Error,
-      "let statement cannot be empty");
+    throw error(tokLet, "let statement cannot be empty");
   }
 
-  match(Token::Semicolon, "';' expected");
+  match(Token::Semicolon, ErrorStrategy::DefaultErrorMessage);
 
   return LetStatement::make_shared(start, isPub, isMut, std::move(parts));
 }
@@ -297,18 +285,17 @@ ast::LetStatementPart::SPtr Parser::letStatementPart()
     pType = expression();
   }
 
-  // TODO optional type
+  // TODO default error messages for operators
   Token const tokEq = match(Token::Operator, "assignement operator '=' expected");
   if (tokEq.text() != "=") // TODO better API
   {
-    throw Error(d_tokenizer.sourcePath(), tokEq.start(), tokEq.end(), Error::Type::Error, "assignement operator '=' expected");
+    throw error(tokEq, "assignement operator '=' expected");
   }
 
   auto const pValue = expression();
   if (!pValue)
   {
-    // TODO last token instead ok tokEq
-    throw Error(d_tokenizer.sourcePath(), tokEq.start(), tokEq.end(), Error::Type::Error, "expression expected");
+    throw error(tokEq, "expression expected");
   }
 
   return LetStatement::Part::make_shared(start, tokSymbol.text(), pType, pValue);
@@ -383,10 +370,20 @@ Token Parser::match(Token::Tag tag, std::string const& errorMessage)
   Token const currentToken = d_tokens[d_currentTokenIdx];
   if (currentToken.tag() != tag)
   {
-    throw Error(d_tokenizer.sourcePath(), currentToken.start(), currentToken.end(), Error::Type::Error, errorMessage);
+    throw error(currentToken, errorMessage);
   }
   d_currentTokenIdx++;
   return currentToken;
+}
+
+Token Parser::match(Token::Tag tag, ErrorStrategy strategy)
+{
+  auto const errorMessage =
+    (strategy == ErrorStrategy::Unreachable)
+      ? "reached unreachable code in Parser::match()"
+      : fmt::format("{} expected", tag);
+
+  return match(tag, errorMessage);
 }
 
 bool Parser::skip(Token::Tag tag)
@@ -397,6 +394,11 @@ bool Parser::skip(Token::Tag tag)
     return true;
   }
   return false;
+}
+
+Token Parser::lastMatchedToken()
+{
+  return d_tokens[std::min(d_currentTokenIdx, d_tokens.size() - 1)];
 }
 
 void Parser::setRollbackPoint()
@@ -412,9 +414,19 @@ void Parser::rollback()
 
 void Parser::commit()
 {
-  // TODO actual commit that clears the vector
+  // TODO commit clears the used tokens from the vector
   if (!d_rollbacks.empty())
   {
     d_rollbacks.pop_back();
   }
+}
+
+Error Parser::error(Token token, std::string const& message)
+{
+  return Error(d_tokenizer.sourcePath(), token.start(), token.end(), message);
+}
+
+Error Parser::error(ast::Node::SPtr pNode, std::string const& message)
+{
+  return Error(d_tokenizer.sourcePath(), pNode->start(), pNode->end(), message);
 }

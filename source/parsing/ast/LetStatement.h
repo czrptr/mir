@@ -34,7 +34,7 @@ public:
 
   virtual Position start() const override { return d_start; }
   virtual Position end() const override { return d_pValue->end(); }
-  virtual bool canBeUsedAsExpression() const override { return false; }
+  virtual bool isExpression() const override { return false; }
 
   std::string_view name() const { return d_name; }
   Node::SPtr type() const { return d_pType; }
@@ -80,7 +80,7 @@ public:
 
   virtual Position start() const override { return d_start; }
   virtual Position end() const override { return d_parts.back()->end(); }
-  virtual bool canBeUsedAsExpression() const override { return false; }
+  virtual bool isExpression() const override { return false; }
 
   bool isPub() const { return d_isPub; }
   bool isMut() const { return d_isMut; }

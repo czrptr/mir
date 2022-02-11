@@ -126,7 +126,7 @@ public:
 template<>
 struct fmt::formatter<Operator::Tag>
 {
-  bool asString { false };
+  bool debug { false };
   fmt::formatter<fmt::string_view> underlying_formatter;
 
   constexpr auto parse(fmt::format_parse_context& ctx)
@@ -137,9 +137,9 @@ struct fmt::formatter<Operator::Tag>
 
     if (it != end)
     {
-      if (*it == 's')
+      if (*it == 'd')
       {
-        asString = true;
+        debug = true;
         it += 1;
         ctx.advance_to(it);
         return underlying_formatter.parse(ctx);
@@ -154,7 +154,7 @@ struct fmt::formatter<Operator::Tag>
   auto format(Operator::Tag tag, FormatContext& ctx)
   {
     std::string_view name = "OPERATOR_TAG_INVALID";
-    if (asString)
+    if (debug)
     {
       switch (tag)
       {

@@ -89,53 +89,116 @@ public:
 };
 
 template<>
-struct fmt::formatter<Token::Tag> : fmt::formatter<fmt::string_view>
+struct fmt::formatter<Token::Tag>
 {
-  // TODO add format option to print as runes/keywords where possible
-  // will be usefull in Switch<> in Tokenizer maybe
+  bool debug { false };
+  fmt::formatter<fmt::string_view> underlying_formatter;
+
+  constexpr auto parse(fmt::format_parse_context& ctx)
+  {
+    auto
+      it = ctx.begin(),
+      end = ctx.end();
+
+    if (it != end)
+    {
+      if (*it == 'd')
+      {
+        debug = true;
+        it += 1;
+        ctx.advance_to(it);
+        return underlying_formatter.parse(ctx);
+      }
+
+      return it;
+    }
+    return it;
+  }
 
   template<typename FormatContext>
   auto format(Token::Tag tag, FormatContext& ctx)
   {
     std::string_view name = "TOKEN_TAG_INVALID";
+    if (debug)
+    {
+      switch (tag)
+      {
+      case Token::Tag::Symbol: name = "Symbol"; break;
+      case Token::Tag::Operator: name = "Operator"; break;
+      case Token::Tag::NumberLiteral: name = "NumberLiteral"; break;
+      case Token::Tag::StringLiteral: name = "StringLiteral"; break;
+      case Token::Tag::Comma: name = "Comma"; break;
+      case Token::Tag::Colon: name = "Colon"; break;
+      case Token::Tag::Semicolon: name = "Semicolon"; break;
+      case Token::Tag::LParen: name = "LParen"; break;
+      case Token::Tag::RParen: name = "RParen"; break;
+      case Token::Tag::LBracket: name = "LBracket"; break;
+      case Token::Tag::RBracket: name = "RBracket"; break;
+      case Token::Tag::LBrace: name = "LBrace"; break;
+      case Token::Tag::RBrace: name = "RBrace"; break;
+      case Token::Tag::KwPub: name = "KwPub"; break;
+      case Token::Tag::KwLet: name = "KwLet"; break;
+      case Token::Tag::KwMut: name = "KwMut"; break;
+      case Token::Tag::KwComptime: name = "KwComptime"; break;
+      case Token::Tag::KwStruct: name = "KwStruct"; break;
+      case Token::Tag::KwEnum: name = "KwEnum"; break;
+      case Token::Tag::KwUnion: name = "KwUnion"; break;
+      case Token::Tag::KwFn: name = "KwFn"; break;
+      case Token::Tag::KwInfer: name = "KwInfer"; break;
+      case Token::Tag::KwTry: name = "KwTry"; break;
+      case Token::Tag::KwIf: name = "KwIf"; break;
+      case Token::Tag::KwElse: name = "KwElse"; break;
+      case Token::Tag::KwSwitch: name = "KwSwitch"; break;
+      case Token::Tag::KwLoop: name = "KwLoop"; break;
+      case Token::Tag::KwReturn: name = "KwReturn"; break;
+      case Token::Tag::KwBreak: name = "KwBreak"; break;
+      case Token::Tag::KwContinue: name = "KwContinue"; break;
+      case Token::Tag::KwDefer: name = "KwDefer"; break;
+      case Token::Tag::KwImport: name = "KwImport"; break;
+      case Token::Tag::Comment: name = "Comment"; break;
+      case Token::Tag::Eof: name = "Eof"; break;
+      }
+      return underlying_formatter.format(name, ctx);
+    }
+
     switch (tag)
     {
-    case Token::Tag::Symbol: name = "Symbol"; break;
-    case Token::Tag::Operator: name = "Operator"; break;
-    case Token::Tag::NumberLiteral: name = "NumberLiteral"; break;
-    case Token::Tag::StringLiteral: name = "StringLiteral"; break;
-    case Token::Tag::Comma: name = "Comma"; break;
-    case Token::Tag::Colon: name = "Colon"; break;
-    case Token::Tag::Semicolon: name = "Semicolon"; break;
-    case Token::Tag::LParen: name = "LParen"; break;
-    case Token::Tag::RParen: name = "RParen"; break;
-    case Token::Tag::LBracket: name = "LBracket"; break;
-    case Token::Tag::RBracket: name = "RBracket"; break;
-    case Token::Tag::LBrace: name = "LBrace"; break;
-    case Token::Tag::RBrace: name = "RBrace"; break;
-    case Token::Tag::KwPub: name = "KwPub"; break;
-    case Token::Tag::KwLet: name = "KwLet"; break;
-    case Token::Tag::KwMut: name = "KwMut"; break;
-    case Token::Tag::KwComptime: name = "KwComptime"; break;
-    case Token::Tag::KwStruct: name = "KwStruct"; break;
-    case Token::Tag::KwEnum: name = "KwEnum"; break;
-    case Token::Tag::KwUnion: name = "KwUnion"; break;
-    case Token::Tag::KwFn: name = "KwFn"; break;
-    case Token::Tag::KwInfer: name = "KwInfer"; break;
-    case Token::Tag::KwTry: name = "KwTry"; break;
-    case Token::Tag::KwIf: name = "KwIf"; break;
-    case Token::Tag::KwElse: name = "KwElse"; break;
-    case Token::Tag::KwSwitch: name = "KwSwitch"; break;
-    case Token::Tag::KwLoop: name = "KwLoop"; break;
-    case Token::Tag::KwReturn: name = "KwReturn"; break;
-    case Token::Tag::KwBreak: name = "KwBreak"; break;
-    case Token::Tag::KwContinue: name = "KwContinue"; break;
-    case Token::Tag::KwDefer: name = "KwDefer"; break;
-    case Token::Tag::KwImport: name = "KwImport"; break;
-    case Token::Tag::Comment: name = "Comment"; break;
-    case Token::Tag::Eof: name = "Eof"; break;
+      case Token::Tag::Symbol: name = "identifier"; break;
+      case Token::Tag::Operator: name = "operator"; break;
+      case Token::Tag::NumberLiteral: name = "number literal"; break;
+      case Token::Tag::StringLiteral: name = "string literal"; break;
+      case Token::Tag::Comma: name = "','"; break;
+      case Token::Tag::Colon: name = "':'"; break;
+      case Token::Tag::Semicolon: name = "';'"; break;
+      case Token::Tag::LParen: name = "'('"; break;
+      case Token::Tag::RParen: name = "')'"; break;
+      case Token::Tag::LBracket: name = "'['"; break;
+      case Token::Tag::RBracket: name = "']'"; break;
+      case Token::Tag::LBrace: name = "'{'"; break;
+      case Token::Tag::RBrace: name = "'}'"; break;
+      case Token::Tag::KwPub: name = "keyword 'pub'"; break;
+      case Token::Tag::KwLet: name = "keyword 'let'"; break;
+      case Token::Tag::KwMut: name = "keyword 'mut'"; break;
+      case Token::Tag::KwComptime: name = "keyword 'comptime'"; break;
+      case Token::Tag::KwStruct: name = "keyword 'struct'"; break;
+      case Token::Tag::KwEnum: name = "keyword 'enum'"; break;
+      case Token::Tag::KwUnion: name = "keyword 'union'"; break;
+      case Token::Tag::KwFn: name = "keyword 'fn'"; break;
+      case Token::Tag::KwInfer: name = "keyword 'infer'"; break;
+      case Token::Tag::KwTry: name = "keyword 'try'"; break;
+      case Token::Tag::KwIf: name = "keyword 'if'"; break;
+      case Token::Tag::KwElse: name = "keyword 'else'"; break;
+      case Token::Tag::KwSwitch: name = "keyword 'switch'"; break;
+      case Token::Tag::KwLoop: name = "keyword 'loop'"; break;
+      case Token::Tag::KwReturn: name = "keyword 'return'"; break;
+      case Token::Tag::KwBreak: name = "keyword 'break'"; break;
+      case Token::Tag::KwContinue: name = "keyword 'continue'"; break;
+      case Token::Tag::KwDefer: name = "keyword 'defer'"; break;
+      case Token::Tag::KwImport: name = "keyword 'import'"; break;
+      case Token::Tag::Comment: name = "comment"; break;
+      case Token::Tag::Eof: name = "end of file"; break;
     }
-    return fmt::formatter<string_view>::format(name, ctx);
+    return underlying_formatter.format(name, ctx);
   }
 };
 

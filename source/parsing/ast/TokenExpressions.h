@@ -24,7 +24,7 @@ protected:
 public:
   virtual Position start() const override { return d_token.start(); }
   virtual Position end() const override { return d_token.end(); }
-  virtual bool canBeUsedAsExpression() const override { return true; }
+  virtual bool isExpression() const override { return true; }
 };
 
 /* ===================== SymbolExpression ===================== */

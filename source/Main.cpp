@@ -13,7 +13,14 @@
 
 std::string sourceText =
 R"SOURCE(
+
+a: enum (a) {
+  a = a,
+  a = a,
+},
+
 let a: a = a;
+
 )SOURCE";
 
 int main()

@@ -27,17 +27,17 @@ public:
   {
     if (pType != nullptr)
     {
-      assert(pType->canBeUsedAsExpression());
+      assert(pType->isExpression());
     }
     if (pValue != nullptr)
     {
-      assert(pValue->canBeUsedAsExpression());
+      assert(pValue->isExpression());
     }
   }
 
   virtual Position start() const override { return d_name.start(); }
   virtual Position end() const override;
-  virtual bool canBeUsedAsExpression() const override { return false; }
+  virtual bool isExpression() const override { return false; }
 
   std::string_view name() const { return d_name.text(); }
   Node::SPtr type() const { return d_pType; }
@@ -93,7 +93,7 @@ public:
 
   virtual Position start() const override { return d_start; }
   virtual Position end() const override { return d_end; }
-  virtual bool canBeUsedAsExpression() const override { return true; }
+  virtual bool isExpression() const override { return true; }
 
   Tag tag() const { return d_tag; }
   std::vector<Field::SPtr> const& fields() const { return d_fields; }
@@ -119,20 +119,53 @@ public:
 } // namespace ast
 
 template<>
-struct fmt::formatter<ast::TypeExpression::Tag> : fmt::formatter<fmt::string_view>
+struct fmt::formatter<ast::TypeExpression::Tag>
 {
-  // TODO {:s} for lower case
+  bool debug { false };
+  fmt::formatter<fmt::string_view> underlying_formatter;
+
+  constexpr auto parse(fmt::format_parse_context& ctx)
+  {
+    auto
+      it = ctx.begin(),
+      end = ctx.end();
+
+    if (it != end)
+    {
+      if (*it == 'd')
+      {
+        debug = true;
+        it += 1;
+        ctx.advance_to(it);
+        return underlying_formatter.parse(ctx);
+      }
+
+      return it;
+    }
+    return it;
+  }
 
   template<typename FormatContext>
   auto format(ast::TypeExpression::Tag tag, FormatContext& ctx)
   {
     std::string_view name = "TYPE_EXPRESSION_TAG_INVALID";
+    if (debug)
+    {
+      switch (tag)
+      {
+      case ast::TypeExpression::Tag::Struct: name = "Struct"; break;
+      case ast::TypeExpression::Tag::Enum: name = "Enum"; break;
+      case ast::TypeExpression::Tag::Union: name = "Union"; break;
+      }
+      return underlying_formatter.format(name, ctx);
+    }
+
     switch (tag)
     {
     case ast::TypeExpression::Tag::Struct: name = "struct"; break;
     case ast::TypeExpression::Tag::Enum: name = "enum"; break;
     case ast::TypeExpression::Tag::Union: name = "union"; break;
     }
-    return fmt::formatter<fmt::string_view>::format(name, ctx);
+    return underlying_formatter.format(name, ctx);
   }
 };

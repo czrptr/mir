@@ -69,7 +69,7 @@ Tokenizer::Tokenizer(
 {
   if (text.empty())
   {
-    throw Error::justMessage(d_sourcePath, "source text is empty");
+    throw Error(d_sourcePath, "source text is empty");
   }
   d_pInputStream = InputStream(new std::istringstream(text, std::ios::in), customDeleter);
   d_pInputStream->exceptions(std::ios::failbit | std::ios::badbit);
@@ -83,12 +83,12 @@ Tokenizer::Tokenizer(std::string const& sourcePath)
   fs::path filePath(sourcePath);
   if (!fs::exists(filePath))
   {
-    throw Error::justMessage(d_sourcePath, "file doesn't exist");
+    throw Error(d_sourcePath, "file doesn't exist");
   }
 
   if (fs::file_size(filePath) == 0)
   {
-    throw Error::justMessage(d_sourcePath, "source text is empty");
+    throw Error(d_sourcePath, "source text is empty");
   }
 
   d_pInputStream = InputStream(new std::ifstream(sourcePath, std::ios::in), customDeleter);
@@ -590,5 +590,5 @@ Token Tokenizer::tokenEnd()
 
 Error Tokenizer::error(std::string const& message) const
 {
-  return Error(d_sourcePath, d_currentPos, d_currentPos.nextColumn(), Error::Type::Error, message);
+  return Error(d_sourcePath, d_currentPos, d_currentPos.nextColumn(), message);
 }
