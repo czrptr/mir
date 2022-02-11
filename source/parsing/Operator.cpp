@@ -150,6 +150,7 @@ bool Operator::chainable(Operator::Tag tag)
   case Operator::Tag::Opt: return true;
   case Operator::Tag::PtrDeref: return true;
   case Operator::Tag::Not_ErrorUnion: return true;
+  case Operator::Tag::Try: return true;
   case Operator::Tag::Not: return false;
   case Operator::Tag::UnaryMinus: return false;
   case Operator::Tag::UnaryMinusMod: return false;

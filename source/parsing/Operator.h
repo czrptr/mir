@@ -223,6 +223,8 @@ struct fmt::formatter<Operator::Tag>
       case Operator::Tag::AddMod: name = "AddMod"; break;
       case Operator::Tag::AddBar: name = "AddBar"; break;
       case Operator::Tag::Sub: name = "Sub"; break;
+      case Operator::Tag::SubMod: name = "SubMod"; break;
+      case Operator::Tag::SubBar: name = "SubBar"; break;
       case Operator::Tag::BitShr: name = "BitShr"; break;
       case Operator::Tag::BitRor: name = "BitRor"; break;
       case Operator::Tag::BitShl: name = "BitShl"; break;
