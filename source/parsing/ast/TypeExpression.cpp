@@ -28,7 +28,7 @@ std::string Field::toString(size_t indent, std::vector<size_t> lines, bool isLas
     return fmt::format(
       "{}{} '{}'",
       prefix(indent, lines, isLast),
-      header("Field", start(), end(), true),
+      header("Field", start(), end(), false),
       name());
   }
   return fmt::format(
