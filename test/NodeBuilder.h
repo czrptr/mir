@@ -3,6 +3,7 @@
 #include <parsing/Intern.h>
 #include <parsing/ast/Nodes.h>
 #include <initializer_list>
+#include <tuple>
 
 using namespace ast;
 
@@ -118,4 +119,79 @@ BlockExpression::SPtr block(list<Node::SPtr> statements)
 BlockExpression::SPtr block(std::string const& label, list<Node::SPtr> statements)
 {
   return BlockExpression::make_shared(Position::invalid(), Position::invalid(), Intern::string(label), statements);
+}
+
+template<typename T>
+std::tuple<std::shared_ptr<T>, std::shared_ptr<T>, bool> nodesAreImpl(
+  Node::SPtr node1, Node::SPtr node2)
+{
+  std::shared_ptr<T>
+    node1asT = std::dynamic_pointer_cast<T>(node1),
+    node2asT = std::dynamic_pointer_cast<T>(node2);
+
+  return {node1asT, node2asT, (node1asT != nullptr && node2asT != nullptr)};
+}
+
+#define nodesAre(type) auto const [n1, n2, cond] = nodesAreImpl<type>(node1, node2); cond
+
+bool equal(Node::SPtr node1, Node::SPtr node2)
+{
+  if (node1 == nullptr && node2 == nullptr)
+    return true;
+
+  if (nodesAre(SymbolExpression))
+    return n1->name() == n2->name();
+
+  if (nodesAre(BuiltinExpression))
+    return n1->name() == n2->name();
+
+  if (nodesAre(StringExpression))
+    return n1->quotedValue() == n2->quotedValue();
+
+  if (nodesAre(NumberExpression))
+    return n1->valueToString() == n2->valueToString();
+
+  if (nodesAre(BoolExpression))
+    return n1->value() == n2->value();
+
+  if (nodesAre(NullExpression))
+    return true;
+
+  if (nodesAre(UndefinedExpression))
+    return true;
+
+  if (nodesAre(UnreachableExpression))
+    return true;
+
+  if (nodesAre(LetStatement::Part))
+  {
+    if (n1->name() != n2->name())
+      return false;
+
+    if (!equal(n1->type(), n2->type()))
+      return false;
+
+    return equal(n1->value(), n2->value());
+  }
+
+  if (nodesAre(LetStatement))
+  {
+    if (n1->isPub() != n2->isPub())
+      return false;
+
+    if (n1->isMut() != n2->isMut())
+      return false;
+
+    if (n1->parts().size() != n2->parts().size())
+      return false;
+
+    for (size_t i = 0; i < n1->parts().size(); i += 1)
+    {
+      if (!equal(n1->parts()[i], n2->parts()[i]))
+        return false;
+    }
+    return true;
+  }
+
+  return false;
 }
