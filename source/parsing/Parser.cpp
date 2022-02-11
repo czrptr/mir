@@ -34,6 +34,10 @@ ast::TokenExpression::SPtr Parser::tokenExpression()
       {
         return std::make_shared<UnreachableExpression>(tokSymbol);
       }
+      else if (tokSymbol.text()[0] == '@')
+      {
+        return std::make_shared<BuiltinExpression>(tokSymbol);
+      }
       else
       {
         return std::make_shared<SymbolExpression>(tokSymbol);

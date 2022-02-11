@@ -13,6 +13,15 @@ std::string SymbolExpression::toString(size_t indent, std::vector<size_t> lines,
     name());
 }
 
+std::string BuiltinExpression::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
+{
+  return fmt::format(
+    "{}{} '{}'",
+    prefix(indent, lines, isLast),
+    header("Builtin", start(), end(), false),
+    name());
+}
+
 std::string StringExpression::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
 {
   return fmt::format(

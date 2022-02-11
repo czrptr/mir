@@ -44,6 +44,25 @@ public:
   virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 };
 
+/* ===================== BuiltinExpression ===================== */
+
+struct BuiltinExpression final : public TokenExpression
+{
+  PTR(BuiltinExpression)
+
+public:
+  BuiltinExpression(Token token, Node::SPtr pParent = nullptr)
+    : TokenExpression(token, pParent)
+  {
+    assert(d_token.text()[0] == '@');
+  }
+
+  std::string_view name() const { return d_token.text().substr(1); }
+
+  using Node::toString;
+  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
+};
+
 /* ===================== StringExpression ===================== */
 
 struct StringExpression final : public TokenExpression
@@ -58,7 +77,7 @@ public:
   std::string_view value() const
   {
     auto const text = d_token.text();
-    return std::string_view(text.data() + 1, text.length() - 2);
+    return text.substr(1, text.length() - 2);
   }
   std::string_view quotedValue() const { return d_token.text(); }
 

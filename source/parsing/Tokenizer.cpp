@@ -261,6 +261,12 @@ Token Tokenizer::next()
       }
       break;
 
+      case '@':
+      {
+        throw error(fmt::format("'{}' can only be used as a prefix to denote compiler builtin functions", d_currentChar));
+      }
+      break;
+
       default:
       {
         return tokenEnd();
