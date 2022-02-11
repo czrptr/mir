@@ -40,8 +40,8 @@ public:
     KwFn,
     KwInfer,
     KwTry,
-    KwCatch,
-    KwOrelse,
+    // KwCatch,  // Operator
+    // KwOrelse, // Operator
     KwIf,
     KwElse,
     KwSwitch,
@@ -123,8 +123,6 @@ struct fmt::formatter<Token::Tag> : fmt::formatter<fmt::string_view>
     case Token::Tag::KwFn: name = "KwFn"; break;
     case Token::Tag::KwInfer: name = "KwInfer"; break;
     case Token::Tag::KwTry: name = "KwTry"; break;
-    case Token::Tag::KwCatch: name = "KwCatch"; break;
-    case Token::Tag::KwOrelse: name = "KwOrelse"; break;
     case Token::Tag::KwIf: name = "KwIf"; break;
     case Token::Tag::KwElse: name = "KwElse"; break;
     case Token::Tag::KwSwitch: name = "KwSwitch"; break;
