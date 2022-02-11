@@ -43,7 +43,6 @@ public:
   Node::SPtr type() const { return d_pType; }
   Node::SPtr value() const { return d_pValue; }
 
-
   using Node::toString;
   virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 

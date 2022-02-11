@@ -38,6 +38,8 @@ public:
   ast::TypeExpression::SPtr typeExpression(bool isRoot = false);
   ast::Field::SPtr field();
 
+  ast::FunctionExpression::SPtr functionExpression();
+
   ast::LetStatement::SPtr letStatement();
   ast::LetStatementPart::SPtr letStatementPart();
 
@@ -56,6 +58,8 @@ private:
   void rollback();
   void commit();
 
+  // TODO make these const
   Error error(Token token, std::string const& message);
   Error error(ast::Node::SPtr pNode, std::string const& message);
+  void throwErrorIfNullOrNotExpression(ast::Node::SPtr pNode, Token fallbackPosition, std::string const& message);
 };

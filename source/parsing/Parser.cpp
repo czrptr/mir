@@ -80,10 +80,8 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     {
       Token const tokLParen = match(Token::LParen);
       pUnderlyingType = expression();
-      if (pUnderlyingType == nullptr || !pUnderlyingType->isExpression())
-      {
-        throw error(tokLParen, fmt::format("type expression expected", tag));
-      }
+      throwErrorIfNullOrNotExpression(pUnderlyingType, tokLParen, "type expression expected");
+
       match(Token::RParen, ErrorStrategy::DefaultErrorMessage);
     }
     match(Token::LBrace, ErrorStrategy::DefaultErrorMessage);
@@ -191,10 +189,7 @@ Field::SPtr Parser::field()
     Token const tokColon = match(Token::Colon);
     // TODO implement workaround when a = b expression will be implemented and this code will break
     pType = expression();
-    if (pType == nullptr || !pType->isExpression())
-    {
-      throw error(tokColon, "type expression expected");
-    }
+    throwErrorIfNullOrNotExpression(pType, tokColon, "type expression expected");
   }
 
   if (next(Token::Operator))
@@ -208,14 +203,44 @@ Field::SPtr Parser::field()
     }
 
     pValue = expression();
-    if (pValue == nullptr || !pValue->isExpression())
-    {
-      throw error(tokColon, "expression expected");
-    }
+  throwErrorIfNullOrNotExpression(pValue, tokColon, "expression expected");
   }
 
   commit();
   return Field::make_shared(tokName, pType, pValue);
+}
+
+ast::FunctionExpression::SPtr Parser::functionExpression()
+{
+  Token tokFn;
+  if (!next(Token::KwFn))
+  {
+    return nullptr;
+  }
+  tokFn = match(Token::KwFn);
+
+  match(Token::LParen, ErrorStrategy::DefaultErrorMessage);
+
+  std::vector<FunctionExpression::Parameter> parameters;
+  while(next(Token::Symbol))
+  {
+    Token tokName = match(Token::Symbol);
+
+    Token tokColon = match(Token::Colon, ErrorStrategy::DefaultErrorMessage);
+
+    auto pType = expression();
+    throwErrorIfNullOrNotExpression(pType, tokColon, "type expression expected");
+
+    parameters.push_back({tokName, pType});
+    skip(Token::Comma);
+  }
+
+  match(Token::RParen, ErrorStrategy::DefaultErrorMessage);
+  auto pReturnType = expression();
+
+  // TODO body
+
+  return ast::FunctionExpression::make_shared(tokFn, std::move(parameters), pReturnType);
 }
 
 ast::LetStatement::SPtr Parser::letStatement()
@@ -293,10 +318,7 @@ ast::LetStatementPart::SPtr Parser::letStatementPart()
   }
 
   auto const pValue = expression();
-  if (!pValue)
-  {
-    throw error(tokEq, "expression expected");
-  }
+  throwErrorIfNullOrNotExpression(pValue, tokEq, "expression expected");
 
   return LetStatement::Part::make_shared(start, tokSymbol.text(), pType, pValue);
 }
@@ -305,6 +327,10 @@ ast::Node::SPtr Parser::expression()
 {
   ast::Node::SPtr pRes;
   if (pRes = typeExpression(); pRes != nullptr)
+  {
+    return pRes;
+  }
+  else if (pRes = functionExpression(); pRes != nullptr)
   {
     return pRes;
   }
@@ -429,4 +455,16 @@ Error Parser::error(Token token, std::string const& message)
 Error Parser::error(ast::Node::SPtr pNode, std::string const& message)
 {
   return Error(d_tokenizer.sourcePath(), pNode->start(), pNode->end(), message);
+}
+
+void Parser::throwErrorIfNullOrNotExpression(ast::Node::SPtr pNode, Token fallbackPosition, std::string const& message)
+{
+  if (pNode == nullptr)
+  {
+    throw error(fallbackPosition, message);
+  }
+  if (!pNode->isExpression())
+  {
+    throw error(pNode, message);
+  }
 }

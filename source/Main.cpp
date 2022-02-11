@@ -14,12 +14,7 @@
 std::string sourceText =
 R"SOURCE(
 
-a: enum (a) {
-  a = a,
-  a = a,
-},
-
-let a: a = a;
+let main = fn (args: ArgsType) void;
 
 )SOURCE";
 
