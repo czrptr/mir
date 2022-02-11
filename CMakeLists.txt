@@ -33,9 +33,12 @@ set(MIR_SOURCES
   ${CMAKE_SOURCE_DIR}/source/parsing/ast/BlockExpression.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/Parser.cpp)
 
+add_library(impl OBJECT
+  ${MIR_SOURCES})
+
 add_executable(mir
   ${CMAKE_SOURCE_DIR}/source/Main.cpp
-  ${MIR_SOURCES})
+  $<TARGET_OBJECTS:impl>)
 
 include_directories(${CMAKE_SOURCE_DIR}/source)
 
@@ -45,13 +48,10 @@ target_link_libraries(mir fmt)
 
 # TEST
 
-# TODO build mir into static lib and link it into mir and test
-# to avoid double building it for MIR and TEST
-
 set(TEST_SOURCES
   ${CMAKE_SOURCE_DIR}/test/Main.cpp
   ${CMAKE_SOURCE_DIR}/test/Tokenizer.cpp
-  ${MIR_SOURCES})
+  $<TARGET_OBJECTS:impl>)
 
 add_executable(test ${TEST_SOURCES})
 
