@@ -43,6 +43,7 @@ public:
 
   bool isLabeled() const { return d_label == std::string_view(); }
   std::string_view label() const { return d_label; }
+  void setLabel(std::string_view label) { d_label = label; }
 
   std::vector<Node::SPtr> const& statements() const { return d_statements; }
 

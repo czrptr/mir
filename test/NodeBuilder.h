@@ -98,10 +98,28 @@ LetStatementPart::SPtr part(
   return LetStatementPart::make_shared(Position::invalid(), Intern::string(name), type, value);
 }
 
+LetStatementPart::SPtr part(
+  std::string const& name, Node::SPtr value)
+{
+  return LetStatementPart::make_shared(Position::invalid(), Intern::string(name), nullptr, value);
+}
+
 LetStatement::SPtr let(
   bool isPub, bool isMut, list<LetStatementPart::SPtr> parts)
 {
   return LetStatement::make_shared(Position::invalid(), isPub, isMut, parts);
+}
+
+LetStatement::SPtr let(
+  bool isPub, bool isMut, std::string const& name, Node::SPtr value)
+{
+  return LetStatement::make_shared(Position::invalid(), isPub, isMut, {part(name, value)});
+}
+
+LetStatement::SPtr let(
+  bool isPub, bool isMut, std::string const& name, Node::SPtr type, Node::SPtr value)
+{
+  return LetStatement::make_shared(Position::invalid(), isPub, isMut, {part(name, type, value)});
 }
 
 FunctionExpression::SPtr fn(
@@ -188,6 +206,22 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
     for (size_t i = 0; i < n1->parts().size(); i += 1)
     {
       if (!equal(n1->parts()[i], n2->parts()[i]))
+        return false;
+    }
+    return true;
+  }
+
+  if (nodesAre(BlockExpression))
+  {
+    if (n1->label() != n2->label())
+      return false;
+
+    if (n1->statements().size() != n2->statements().size())
+      return false;
+
+    for (size_t i = 0; i < n1->statements().size(); i += 1)
+    {
+      if (!equal(n1->statements()[i], n2->statements()[i]))
         return false;
     }
     return true;

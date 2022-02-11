@@ -327,9 +327,6 @@ ast::LetStatementPart::SPtr Parser::letStatementPart()
 
 ast::BlockExpression::SPtr Parser::blockExpression()
 {
-  // TODO label
-  std::string_view label;
-
   Token tokLBrace;
   if (!next(Token::LBrace))
   {
@@ -347,45 +344,79 @@ ast::BlockExpression::SPtr Parser::blockExpression()
   Token const tokRBrace = match(Token::RBrace, ErrorStrategy::DefaultErrorMessage);
 
   return ast::BlockExpression::make_shared(
-    tokLBrace.start(), tokRBrace.start(), "", std::move(statements));
+    tokLBrace.start(), tokRBrace.start(), std::string_view(), std::move(statements));
 }
 
 ast::Node::SPtr Parser::expression()
 {
-  // TODO parse labels here
-  // and then check that the expression is block, if or loop
-
   // TODO parse comptime here
   // add marked comptime field to Node?
 
-  ast::Node::SPtr pRes;
-  if (pRes = typeExpression(); pRes != nullptr)
+  bool isLabeled = false;
+  Token toklabel;
+
+  setRollbackPoint();
+  if (next(Token::Symbol))
   {
-    return pRes;
+    toklabel = match(Token::Symbol);
+    if (next(Token::Colon))
+    {
+      Token tokColon = match(Token::Colon);
+      if (toklabel.end() != tokColon.start())
+      {
+        // marking labels must be symbols suffixed with ':'
+        throw error(tokColon, fmt::format("did you mean '{}:'", toklabel.text()));
+      }
+      isLabeled = true;
+      commit();
+    }
+    else
+    {
+      rollback();
+    }
   }
-  else if (pRes = functionExpression(); pRes != nullptr)
+
+  ast::Node::SPtr pRes = nullptr;
+  if (auto pTemp = typeExpression(); pTemp != nullptr)
   {
-    return pRes;
+    pRes = pTemp;
   }
-  else if (pRes = letStatement(); pRes != nullptr)
+  else if (auto pTemp = functionExpression(); pTemp != nullptr)
   {
-    return pRes;
+    pRes = pTemp;
   }
-  else if (pRes = blockExpression(); pRes != nullptr)
+  else if (auto pTemp = letStatement(); pTemp != nullptr)
   {
-    return pRes;
+    pRes = pTemp;
+  }
+  else if (auto pTemp = blockExpression(); pTemp != nullptr)
+  {
+    pRes = pTemp;
   }
   else
   {
-    return tokenExpression();
+    pRes = tokenExpression();
   }
+
+  // TODO add if, loop check
+  auto pBlock = std::dynamic_pointer_cast<ast::BlockExpression>(pRes);
+
+  if (pBlock == nullptr && isLabeled)
+  {
+    throw error(toklabel, "only block, ifs and loops can be labeled");
+  }
+  if (pBlock != nullptr)
+  {
+    pBlock->setLabel(toklabel.text());
+  }
+  return pRes;
 }
 
 ast::Node::SPtr Parser::expressionOrField()
 {
   /*
     this fixes: a: b = c,
-      being parsed as with two recursive calls to field()
+      being parsed with two recursive calls to field()
     expression()
     ->field() a:
       ->expression()
