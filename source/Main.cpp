@@ -13,12 +13,9 @@
 
 std::string sourceText =
 R"SOURCE(
-let Self = @This;
-
-a: Self,
-a: i32,
-
-let pInstance = undefined;
+a: union {
+  a: a = a
+},
 )SOURCE";
 
 int main()

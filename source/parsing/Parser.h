@@ -7,9 +7,10 @@
 
 #include <map>
 
+// TODO implement state stack
+
 struct Parser final
 {
-
 private:
   Tokenizer d_tokenizer;
   std::vector<Token> d_tokens;
@@ -34,6 +35,8 @@ public:
   ast::LetStatementPart::SPtr letStatementPart();
 
   ast::Node::SPtr expression();
+
+  ast::Node::SPtr expressionOrField(); // use only int typeExpression()
 
 private:
   bool next(Token::Tag tag);

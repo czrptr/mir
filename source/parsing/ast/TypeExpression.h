@@ -16,27 +16,39 @@ struct Field final : public Node
 private:
   Token d_name;
   Node::SPtr d_pType;
+  Node::SPtr d_pValue;
 
 public:
-  Field(Token name, Node::SPtr pType, Node::SPtr pParent = nullptr)
+  Field(Token name, Node::SPtr pType, Node::SPtr pValue, Node::SPtr pParent = nullptr)
     : Node(pParent)
     , d_name(name)
     , d_pType(pType)
+    , d_pValue(pValue)
   {
-    assert(d_pType->canBeUsedAsExpression());
+    assert(pType != nullptr || pValue != nullptr);
+    if (pType != nullptr)
+    {
+      assert(pType->canBeUsedAsExpression());
+    }
+    if (pValue != nullptr)
+    {
+      assert(pValue->canBeUsedAsExpression());
+    }
   }
 
   virtual Position start() const override { return d_name.start(); }
-  virtual Position end() const override { return d_pType->end(); }
+  virtual Position end() const override;
   virtual bool canBeUsedAsExpression() const override { return false; }
 
   std::string_view name() const { return d_name.text(); }
   Node::SPtr type() const { return d_pType; }
+  Node::SPtr value() const { return d_pValue; }
+
 
   using Node::toString;
   virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 
-  static Field::SPtr make_shared(Token name, Node::SPtr pType, Node::SPtr pParent = nullptr);
+  static Field::SPtr make_shared(Token name, Node::SPtr pType, Node::SPtr pValue, Node::SPtr pParent = nullptr);
 };
 
 struct TypeExpression final : public Node
@@ -58,6 +70,7 @@ private:
   std::vector<Field::SPtr> d_fields;
   std::vector<LetStatement::SPtr> d_declsPre;
   std::vector<LetStatement::SPtr> d_declsPost;
+  Node::SPtr d_pUnderlyingType; // in case of enum
 
 public:
   TypeExpression(
@@ -67,6 +80,7 @@ public:
     std::vector<Field::SPtr>&& fields,
     std::vector<LetStatement::SPtr>&& declsPre,
     std::vector<LetStatement::SPtr>&& declsPost,
+    Node::SPtr pUnderlyingType = nullptr,
     Node::SPtr pParent = nullptr)
     : Node(pParent)
     , d_tag(tag)
@@ -75,6 +89,7 @@ public:
     , d_fields(std::move(fields))
     , d_declsPre(std::move(declsPre))
     , d_declsPost(std::move(declsPost))
+    , d_pUnderlyingType(pUnderlyingType)
   {}
 
   virtual Position start() const override { return d_start; }
@@ -86,6 +101,7 @@ public:
   std::vector<LetStatement::SPtr> const& declsPre() const { return d_declsPre; }
   std::vector<LetStatement::SPtr> const& declsPost() const { return d_declsPost; }
   std::vector<LetStatement::SPtr> decls() const;
+  Node::SPtr underlyingType() const { return d_pUnderlyingType; }
 
   using Node::toString;
   virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
@@ -97,6 +113,7 @@ public:
     std::vector<Field::SPtr>&& fields,
     std::vector<LetStatement::SPtr>&& declsPre,
     std::vector<LetStatement::SPtr>&& declsPost,
+    Node::SPtr pUnderlyingType = nullptr,
     Node::SPtr pParent = nullptr);
 };
 

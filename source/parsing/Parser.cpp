@@ -59,6 +59,8 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
   Position start = { 0, 0 };
   Position end = Position::invalid();
   TypeExpression::Tag tag = TypeExpression::Struct;
+  Node::SPtr pUnderlyingType = nullptr;
+
   if (!isRoot)
   {
     if (next(Token::KwStruct))
@@ -82,9 +84,25 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
       return nullptr;
     }
 
-    // TODO match with default message '<>' expected
+    if (tag == TypeExpression::Enum && next(Token::LParen))
+    {
+      Token const tokLParen = match(Token::LParen);
+      pUnderlyingType = expression();
+      if (pUnderlyingType == nullptr || !pUnderlyingType->canBeUsedAsExpression())
+      {
+        // TODO add note: "enum require an underlying type"
+        throw Error(d_tokenizer.sourcePath(), tokLParen.start(), tokLParen.end(), Error::Type::Error,
+          fmt::format("type expression expected", tag));
+      }
+      match(Token::RParen, "')' expected");
+    }
+    // TODO assigne usize if user does not provide an underlying type
+
+    // TODO match with default message '{fmt::to_string}' expected
     match(Token::LBrace, "'{' expected");
   }
+
+  // TODO enum fields
 
   std::vector<Field::SPtr> fields;
   std::vector<LetStatement::SPtr>
@@ -94,7 +112,7 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     fieldsSection = false;
 
   // TODO faster implementation with fewer branches
-  while (auto pExpr = expression())
+  while (auto pExpr = expressionOrField())
   {
     auto pDecl = std::dynamic_pointer_cast<LetStatement>(pExpr);
     auto pField = std::dynamic_pointer_cast<Field>(pExpr);
@@ -117,10 +135,41 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
       if (declsSection)
       {
         // TODO change error based on tag
-        //   all values for enum ?
-        //   all variants for union ?
+        //   all variants for eunm and union ?
         throw Error(d_tokenizer.sourcePath(), pExpr->start(), pExpr->end(), Error::Type::Error,
           fmt::format("all fields must be grouped together", tag));
+      }
+
+      if (tag == TypeExpression::Enum)
+      {
+        if (pField->type() != nullptr)
+        {
+          // TODO + note: all enum variants share the same underlying type
+          throw Error(d_tokenizer.sourcePath(), pExpr->start(), pExpr->end(), Error::Type::Error,
+            "enum variants cannot have type annotations");
+        }
+        if (pField->value() == nullptr) // TODO check is this possible?
+        {
+          throw Error(d_tokenizer.sourcePath(), pExpr->start(), pExpr->end(), Error::Type::Error,
+            "enum variants must have values");
+        }
+      }
+      else // tag == TypeExpression::Struct || tag == TypeExpression::Union
+      {
+        auto const fieldsStr = (tag == TypeExpression::Struct)
+          ? "struct fields"
+          : "union variants";
+
+        if (pField->type() == nullptr)
+        {
+          throw Error(d_tokenizer.sourcePath(), pExpr->start(), pExpr->end(), Error::Type::Error,
+            fmt::format("{} must have type annotations", fieldsStr));
+        }
+        if (pField->value() != nullptr)
+        {
+          throw Error(d_tokenizer.sourcePath(), pExpr->start(), pExpr->end(), Error::Type::Error,
+            fmt::format("{} cannot have default values", fieldsStr));
+        }
       }
 
       fields.push_back(pField);
@@ -134,7 +183,8 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
   }
   // TODO end
 
-  return TypeExpression::make_shared(tag, start, end, std::move(fields), std::move(declsPre), std::move(declsPost));
+  return TypeExpression::make_shared(
+    tag, start, end, std::move(fields), std::move(declsPre), std::move(declsPost), pUnderlyingType);
 }
 
 Field::SPtr Parser::field()
@@ -146,24 +196,50 @@ Field::SPtr Parser::field()
 
   setRollbackPoint();
   Token const tokName = match(Token::Symbol);
+  Node::SPtr
+    pType = nullptr,
+    pValue = nullptr;
 
-  if (!next(Token::Colon))
+  if (next(Token::Colon))
+  {
+    Token const tokColon = match(Token::Colon);
+    // TODO implement workaround when a = b expression will be implemented and this code will break
+    pType = expression();
+    if (pType == nullptr || !pType->canBeUsedAsExpression())
+    {
+      throw Error(
+        d_tokenizer.sourcePath(), tokColon.start(), tokColon.end(),
+        Error::Type::Error, "type expression expected");
+    }
+  }
+
+  if (next(Token::Operator))
+  {
+    Token const tokColon = match(Token::Operator);
+    if (tokColon.text() != "=")
+    {
+      // TODO test this case !!!
+      rollback();
+      return nullptr;
+    }
+
+    pValue = expression();
+    if (pValue == nullptr || !pValue->canBeUsedAsExpression())
+    {
+      throw Error(
+        d_tokenizer.sourcePath(), tokColon.start(), tokColon.end(),
+        Error::Type::Error, "expression expected");
+    }
+  }
+
+  if (pType == nullptr && pValue == nullptr)
   {
     rollback();
     return nullptr;
   }
-  Token const tokColon = match(Token::Colon);
-
-  auto const pType = expression();
-  if (pType == nullptr)
-  {
-    throw Error(
-      d_tokenizer.sourcePath(), tokColon.start(), tokColon.end(),
-      Error::Type::Error, "type expression expected");
-  }
 
   commit();
-  return Field::make_shared(tokName, pType);
+  return Field::make_shared(tokName, pType, pValue);
 }
 
 ast::LetStatement::SPtr Parser::letStatement()
@@ -254,14 +330,27 @@ ast::Node::SPtr Parser::expression()
   {
     return pRes;
   }
-  else if (pRes = field(); pRes != nullptr)
-  {
-    return pRes;
-  }
   else
   {
     return tokenExpression();
   }
+}
+
+ast::Node::SPtr Parser::expressionOrField()
+{
+  /*
+    this fixes: a: b = c,
+      being parsed as with two recursive calls to field()
+    expression()
+    ->field() a:
+      ->expression()
+        ->field() a = c
+  */
+  if (auto pRes = field(); pRes != nullptr)
+  {
+    return pRes;
+  }
+  return expression();
 }
 
 /* ===================== Helpers ===================== */
