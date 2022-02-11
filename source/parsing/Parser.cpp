@@ -96,6 +96,7 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     declsSection = false,
     fieldsSection = false;
 
+  size_t commaCount = 0;
   while (auto pExpr = expressionOrField())
   {
     auto pDecl = std::dynamic_pointer_cast<LetStatement>(pExpr);
@@ -162,8 +163,14 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
         }
       }
 
+      // force commas between fields
+      if (commaCount != fields.size())
+      {
+        auto const errPos = fields.back()->end();
+        throw Error(d_tokenizer.sourcePath(), errPos, errPos, "',' expected");
+      }
       fields.push_back(pField);
-      skip(Token::Comma);
+      commaCount += static_cast<size_t>(skip(Token::Comma));
     }
   }
 

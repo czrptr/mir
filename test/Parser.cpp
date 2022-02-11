@@ -331,6 +331,45 @@ TEST_CASE("function (complex)")
 
 /* ================== Structs ================== */
 
+TEST_CASE("struct fields must be separated by a comma")
+{
+  auto prs = parser("struct { a: a b: b }");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:13: error: ',' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("struct fields can have a trailing comma")
+{
+  auto prs = parser("struct { a: a, }");
+  auto s = prs.expression();
+
+  REQUIRE_AST_EQ(s, _struct(
+    {},
+    {field("a", symbol("a"), nullptr)},
+    {}));
+}
+
+TEST_CASE("struct fields trailing comma is optional")
+{
+  auto prs = parser("struct { a: a,}");
+  auto s = prs.expression();
+
+  REQUIRE_AST_EQ(s, _struct(
+    {},
+    {field("a", symbol("a"), nullptr)},
+    {}));
+}
+
 TEST_CASE("struct fields must be grouped together")
 {
   auto prs = parser(
@@ -417,6 +456,84 @@ TEST_CASE("structs (complex)")
 }
 
 /* ================== Enums ================== */
+
+TEST_CASE("enum variants must be separated by a comma (case 1)")
+{
+  auto prs = parser("enum { a b = b }");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:8: error: ',' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("enum variants must be separated by a comma (case 2)")
+{
+  auto prs = parser("enum { a = a b = b }");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:12: error: ',' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("enum variants can have a trailing comma (case 1)")
+{
+  auto prs = parser("enum { a, }");
+  auto e = prs.expression();
+
+  REQUIRE_AST_EQ(e, _enum(
+    {},
+    {field("a", nullptr, nullptr)},
+    {}));
+}
+
+TEST_CASE("enum variants can have a trailing comma (case 2)")
+{
+  auto prs = parser("enum { a = a, }");
+  auto e = prs.expression();
+
+  REQUIRE_AST_EQ(e, _enum(
+    {},
+    {field("a", nullptr, symbol("a"))},
+    {}));
+}
+
+TEST_CASE("enum variants trailing comma is optional (case 1)")
+{
+  auto prs = parser("enum { a, }");
+  auto e = prs.expression();
+
+  REQUIRE_AST_EQ(e, _enum(
+    {},
+    {field("a", nullptr, nullptr)},
+    {}));
+}
+
+TEST_CASE("enum variants trailing comma is optional (case 2)")
+{
+  auto prs = parser("enum { a = a }");
+  auto e = prs.expression();
+
+  REQUIRE_AST_EQ(e, _enum(
+    {},
+    {field("a", nullptr, symbol("a"))},
+    {}));
+}
 
 TEST_CASE("enums with explicit underlying types must have underlying types")
 {
@@ -518,6 +635,45 @@ TEST_CASE("enum (complex)")
 }
 
 /* ================== Unions ================== */
+
+TEST_CASE("union variants must be separated by a comma")
+{
+  auto prs = parser("union { a: a b: b }");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:12: error: ',' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("union variants can have a trailing comma")
+{
+  auto prs = parser("union { a: a, }");
+  auto u = prs.expression();
+
+  REQUIRE_AST_EQ(u, _union(
+    {},
+    {field("a", symbol("a"), nullptr)},
+    {}));
+}
+
+TEST_CASE("union variants trailing comma is optional")
+{
+  auto prs = parser("union { a: a,}");
+  auto u = prs.expression();
+
+  REQUIRE_AST_EQ(u, _union(
+    {},
+    {field("a", symbol("a"), nullptr)},
+    {}));
+}
 
 TEST_CASE("union variants must be grouped together")
 {
