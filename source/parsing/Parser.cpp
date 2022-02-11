@@ -109,7 +109,7 @@ LetStatement::Part::SPtr Parser::letStatementPart()
     throw Error("", tokEq.start(), tokEq.end(), Error::Type::Error, "assignement operator '=' expected");
   }
 
-  auto const pValue = atomicExpression();
+  auto const pValue = expression();
   if (!pValue)
   {
     // TODO last token instead ok tokEq
@@ -119,19 +119,46 @@ LetStatement::Part::SPtr Parser::letStatementPart()
   return LetStatement::Part::make_shared(*start, tokSymbol.text(), pValue);
 }
 
+/* ===================== Expressions ===================== */
+
 Expression::SPtr Parser::atomicExpression()
 {
   if (next(Token::Symbol))
   {
     Token const tokSymbol = match(Token::Symbol);
 
-    return Switch<std::string_view, Expression::SPtr>(tokSymbol.text())
-      .Case("true",
-        std::make_shared<BoolExpression>(tokSymbol.start(), tokSymbol.end(), true))
-      .Case("false",
-        std::make_shared<BoolExpression>(tokSymbol.start(), tokSymbol.end(), false))
-      .Default(
-        std::make_shared<SymbolExpression>(tokSymbol.start(), tokSymbol.end(), tokSymbol.text()));
+    if (tokSymbol.text() == "true")
+    {
+      return std::make_shared<BoolExpression>(tokSymbol.start(), tokSymbol.end(), true);
+    }
+    else if (tokSymbol.text() == "false")
+    {
+      return std::make_shared<BoolExpression>(tokSymbol.start(), tokSymbol.end(), false);
+    }
+    else if (tokSymbol.text() == "null")
+    {
+      return std::make_shared<NullExpression>(tokSymbol.start(), tokSymbol.end());
+    }
+        else if (tokSymbol.text() == "undefined")
+    {
+      return std::make_shared<UndefinedExpression>(tokSymbol.start(), tokSymbol.end());
+    }
+        else if (tokSymbol.text() == "unreachable")
+    {
+      return std::make_shared<UnreachableExpression>(tokSymbol.start(), tokSymbol.end());
+    }
+
+    return std::make_shared<SymbolExpression>(tokSymbol.start(), tokSymbol.end(), tokSymbol.text());
+
+    // TODO use macro to turn case into value lambda pairs to make the result lazily
+    // evaluated so that the untaken "branches" don't cause memory allocations
+    // return Switch<std::string_view, Expression::SPtr>(tokSymbol.text())
+    //   .Case("true",
+    //     std::make_shared<BoolExpression>(tokSymbol.start(), tokSymbol.end(), true))
+    //   .Case("false",
+    //     std::make_shared<BoolExpression>(tokSymbol.start(), tokSymbol.end(), false))
+    //   .Default(
+    //     std::make_shared<SymbolExpression>(tokSymbol.start(), tokSymbol.end(), tokSymbol.text()));
   }
 
   if (next(Token::StringLiteral))
@@ -142,6 +169,108 @@ Expression::SPtr Parser::atomicExpression()
 
   return nullptr;
 }
+
+ast::Expression::SPtr Parser::binaryExpression(
+  ExpressionParser nextParser,
+  std::vector<Operator::Tag> operators)
+{
+  auto pLhs = (this->*nextParser)();
+  if (pLhs == nullptr)
+  {
+    return nullptr;
+  }
+
+  Expression::SPtr pRes = pLhs;
+  while (next(Token::Operator))
+  {
+    setRollbackPoint();
+    auto op = Operator(match(Token::Operator));
+
+    auto const tagIt = std::find_if(operators.begin(), operators.end(),
+      [&op](Operator::Tag const& tag)
+      {
+        return op.text() == fmt::to_string(tag);
+      });
+
+    if (tagIt == operators.end())
+    {
+      rollback();
+      return pRes;
+    }
+    else
+    {
+      op.setTag(*tagIt);
+    }
+
+    auto pRhs = (this->*nextParser)();
+    if (pRhs == nullptr)
+    {
+      // TODO better positions
+      throw Error(d_tokenizer.sourcePath(), op.start(), op.end(), Error::Type::Error, "expression expected");
+    }
+
+    commit();
+    pRes = BinaryExpression::make_shared(pRes, pRhs, op);
+  }
+
+  return pRes;
+}
+
+Expression::SPtr Parser::expr00()
+{
+  auto pLhs = expr01();
+  if (pLhs == nullptr)
+  {
+    return nullptr;
+  }
+
+  Expression::SPtr pRes = pLhs;
+  size_t count = 0;
+  while (next(Token::Operator))
+  {
+    setRollbackPoint();
+    auto op = Operator(match(Token::Operator));
+    if (op.text() != fmt::to_string(Operator::DotDot))
+    {
+      rollback();
+      return pRes;
+    }
+    else
+    {
+      op.setTag(Operator::DotDot);
+    }
+
+    count += 1;
+    if (count > 1)
+    {
+      throw Error(d_tokenizer.sourcePath(), op.start(), op.end(), Error::Type::Error, "operator '..' cannot be chained");
+    }
+
+    auto pRhs = expr01();
+    if (pRhs == nullptr)
+    {
+      // TODO better positions
+      throw Error(d_tokenizer.sourcePath(), op.start(), op.end(), Error::Type::Error, "expression expected");
+    }
+
+    commit();
+    pRes = BinaryExpression::make_shared(pRes, pRhs, op);
+  }
+
+  return pRes;
+}
+
+Expression::SPtr Parser::expr01()
+{
+  return binaryExpression(&Parser::expr02, {Operator::OrOr});
+}
+
+Expression::SPtr Parser::expr02()
+{
+  return binaryExpression(&Parser::atomicExpression, {Operator::AndAnd});
+}
+
+/* ===================== Helpers ===================== */
 
 bool Parser::next(Token::Tag tag)
 {
@@ -192,8 +321,22 @@ bool Parser::skip(Token::Tag tag)
   return false;
 }
 
+void Parser::setRollbackPoint()
+{
+  d_rollbacks.push_back(d_currentTokenIdx);
+}
+
+void Parser::rollback()
+{
+  d_currentTokenIdx = d_rollbacks.empty() ? 0 : d_rollbacks.back();
+  d_rollbacks.pop_back();
+}
+
 void Parser::commit()
 {
-  d_tokens.clear();
-  d_currentTokenIdx = 0;
+  // TODO actual commit that clears the vector
+  if (!d_rollbacks.empty())
+  {
+    d_rollbacks.pop_back();
+  }
 }

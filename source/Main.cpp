@@ -13,11 +13,21 @@
 
 std::string sourceText =
 R"SOURCE(
-pub let mut
-  a = b,
-  c = "AAAH",
-;
+b .. c && d || e && f
 )SOURCE";
+//R"SOURCE(
+// pub let mut
+//  a = b .. c && d || e && f,
+//   c = "AAAH";
+
+// // let a = true;
+
+// // pub let
+// //   j = false,
+// //   k = null,
+// //   l = undefined,
+// //   m = unreachable;
+//)SOURCE";
 
 int main()
 {
@@ -34,20 +44,23 @@ int main()
     fmt::print("{:ds}\n\n", tok);
 
     Parser parser(Tokenizer(sourceText, "<file>"));
-  	auto pAstRoot = parser.parse();
-		fmt::print("{}", pAstRoot->toString());
+  	// auto pAstRoot = parser.parse();
+		// fmt::print("{}\n", pAstRoot->toString());
 
-    auto pAAAH =
-      std::dynamic_pointer_cast<ast::StringExpression>(
-        std::dynamic_pointer_cast<ast::LetStatement>(
-          pAstRoot->statements()[0])
-            ->parts()[1]->value());
+    // auto pAAAH =
+    //   std::dynamic_pointer_cast<ast::StringExpression>(
+    //     std::dynamic_pointer_cast<ast::LetStatement>(
+    //       pAstRoot->statements()[0])
+    //         ->parts()[1]->value());
 
-    auto pRootFromLeaf =
-      std::dynamic_pointer_cast<ast::Root>(
-        pAAAH->parent<ast::LetStatementPart>().lock()->parent<ast::LetStatement>().lock()->parent<ast::Root>().lock());
+    // auto pRootFromLeaf =
+    //   std::dynamic_pointer_cast<ast::Root>(
+    //     pAAAH->parent<ast::LetStatementPart>().lock()->parent<ast::LetStatement>().lock()->parent<ast::Root>().lock());
 
-    fmt::print("\n\n{}", pAstRoot.get() == pRootFromLeaf.get());
+    // fmt::print("\n\n{}", pAstRoot.get() == pRootFromLeaf.get());
+
+    auto binaryExpr = parser.expression();
+    fmt::print("{}\n", binaryExpr->toString());
   }
   catch (Error const& err)
 	{

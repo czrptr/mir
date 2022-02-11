@@ -99,6 +99,8 @@ std::string childrenToString(std::vector<T> const& nodes, size_t indent, std::ve
   return res;
 }
 
+// TODO emphasize node value, ex 'a', true, "AAAAH"
+
 } // namespace anonymous
 
 namespace ast
@@ -164,6 +166,40 @@ std::string BoolExpression::toString(size_t indent, std::vector<size_t> lines, b
     prefix(indent, lines, isLast),
     header(nodeName(), start(), end(), false),
     value());
+}
+
+std::string NullExpression::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
+{
+  return fmt::format(
+    "{}{}",
+    prefix(indent, lines, isLast),
+    header(nodeName(), start(), end(), false));
+}
+
+std::string UndefinedExpression::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
+{
+  return fmt::format(
+    "{}{}",
+    prefix(indent, lines, isLast),
+    header(nodeName(), start(), end(), false));
+}
+
+std::string UnreachableExpression::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
+{
+  return fmt::format(
+    "{}{}",
+    prefix(indent, lines, isLast),
+    header(nodeName(), start(), end(), false));
+}
+
+std::string BinaryExpression::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
+{
+  return fmt::format(
+    "{}{} '{}'\n{}",
+    prefix(indent, lines, isLast),
+    header(nodeName(), start(), end(), true),
+    d_op,
+    childrenToString(std::vector<Expression::SPtr>{d_lhs, d_rhs}, indent, lines));
 }
 
 } // namespace ast

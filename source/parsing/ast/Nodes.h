@@ -1,11 +1,11 @@
 #pragma once
 
+#include <parsing/Position.h>
+#include <parsing/Operator.h>
+
 #include <cassert>
 #include <vector>
 #include <memory>
-
-#include <parsing/Position.h>
-// #include <parsing/Operator.h>
 
 #define SPTR(type) using SPtr = std::shared_ptr<type>;
 #define WPTR(type) using WPtr = std::weak_ptr<type>;
@@ -267,6 +267,8 @@ public:
   virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 };
 
+/* ===================== BoolExpression ===================== */
+
 struct BoolExpression : public Expression
 {
   PTR(BoolExpression)
@@ -284,13 +286,137 @@ public:
     , d_value(value)
   {}
 
-  virtual char const* nodeName() const override { return "StringExpression"; }
+  virtual char const* nodeName() const override { return "BoolExpression"; }
   virtual Position start() const override { return d_start; }
   virtual Position end() const override { return d_end; }
   bool value() const { return d_value; }
 
   using Node::toString;
   virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
+};
+
+/* ===================== NullExpression ===================== */
+
+struct NullExpression : public Expression
+{
+  PTR(NullExpression)
+
+private:
+  Position d_start;
+  Position d_end;
+
+public:
+  NullExpression(Position start, Position end, Node::SPtr pParent = nullptr)
+    : Expression(pParent)
+    , d_start(start)
+    , d_end(end)
+  {}
+
+  virtual char const* nodeName() const override { return "NullExpression"; }
+  virtual Position start() const override { return d_start; }
+  virtual Position end() const override { return d_end; }
+
+  using Node::toString;
+  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
+};
+
+/* ===================== UndefinedExpression ===================== */
+
+struct UndefinedExpression : public Expression
+{
+  PTR(UndefinedExpression)
+
+private:
+  Position d_start;
+  Position d_end;
+
+public:
+  UndefinedExpression(Position start, Position end, Node::SPtr pParent = nullptr)
+    : Expression(pParent)
+    , d_start(start)
+    , d_end(end)
+  {}
+
+  virtual char const* nodeName() const override { return "UndefinedExpression"; }
+  virtual Position start() const override { return d_start; }
+  virtual Position end() const override { return d_end; }
+
+  using Node::toString;
+  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
+};
+
+/* ===================== UnreachableExpression ===================== */
+
+struct UnreachableExpression : public Expression
+{
+  PTR(UnreachableExpression)
+
+private:
+  Position d_start;
+  Position d_end;
+
+public:
+  UnreachableExpression(Position start, Position end, Node::SPtr pParent = nullptr)
+    : Expression(pParent)
+    , d_start(start)
+    , d_end(end)
+  {}
+
+  virtual char const* nodeName() const override { return "UnreachableExpression"; }
+  virtual Position start() const override { return d_start; }
+  virtual Position end() const override { return d_end; }
+
+  using Node::toString;
+  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
+};
+
+/* ===================== BinaryExpression ===================== */
+
+struct BinaryExpression : public Expression
+{
+	PTR(BinaryExpression)
+
+private:
+	Position d_start;
+	Position d_end;
+	Expression::SPtr d_lhs;
+	Expression::SPtr d_rhs;
+	Operator d_op;
+
+public:
+	BinaryExpression(
+    Expression::SPtr lhs,
+    Expression::SPtr rhs,
+    Operator op,
+    Node::SPtr pParent = nullptr)
+		: Expression(pParent)
+		, d_lhs(lhs)
+		, d_rhs(rhs)
+		, d_op(op)
+	{}
+
+	virtual char const* nodeName() const override { return "BinaryExpression"; }
+	virtual Position start() const override { return d_lhs->start(); }
+	virtual Position end() const override { return d_rhs->end(); }
+
+	Expression::SPtr lhs() const { return d_lhs; }
+	Expression::SPtr rhs() const { return d_rhs; }
+	Operator op() const { return d_op; }
+
+  using Node::toString;
+  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
+
+  static BinaryExpression::SPtr make_shared(
+    Expression::SPtr lhs,
+    Expression::SPtr rhs,
+    Operator op,
+    Node::SPtr pParent = nullptr)
+  {
+    auto pRes = std::make_shared<BinaryExpression>(lhs, rhs, op, pParent);
+    pRes->d_lhs->setParent(pRes);
+    pRes->d_rhs->setParent(pRes);
+    return pRes;
+  }
 };
 
 } // namespace ast
