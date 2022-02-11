@@ -21,11 +21,8 @@
       }
     },
     {
-      "label": "Test",
-      "group":{
-        "kind": "test",
-        "isDefault": true
-      },
+      "label": "Test (all)",
+      "group": "test",
       "type": "shell",
       "command": "exec ${workspaceFolder}/build/test",
       "dependsOn": [ "Build (test)" ],
@@ -38,6 +35,29 @@
         "showReuseMessage": false,
         "clear": true,
         "group": "Execution"
+      }
+    },
+    {
+      "label": "Test",
+      "group":{
+        "kind": "test",
+        "isDefault": true
+      },
+      "type": "shell",
+      "command": "exec ${workspaceFolder}/build/test -ts=\"${input:testSuite}\" -tc=\"${input:filters}\"",
+      "dependsOn": [ "Build (test)" ],
+      "dependsOrder": "sequence",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true,
+        "group": "Execution"
+      },
+      "runOptions": {
+        "reevaluateOnRerun": false
       }
     },
     {
@@ -141,6 +161,23 @@
         "clear": false,
         "group": "Execution"
       }
+    }
+  ],
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "filters",
+      "default": "*",
+      "description": "Filters used to select which tests to run"
+    },
+    {
+      "type": "pickString",
+      "id": "testSuite",
+      "options": [
+        "Tokenizer",
+        "Parser"
+      ],
+      "description": "Test suite to run"
     }
   ],
   "version": "2.0.0"
