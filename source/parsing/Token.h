@@ -38,6 +38,7 @@ public:
     KwEnum,
     KwUnion,
     KwFn,
+    KwInfer,
     KwTry,
     KwCatch,
     KwOrelse,
@@ -90,6 +91,9 @@ public:
 template<>
 struct fmt::formatter<Token::Tag> : fmt::formatter<fmt::string_view>
 {
+  // TODO add format option to print as runes/keywords where possible
+  // will be usefull in Switch<> in Tokenizer maybe
+
   template<typename FormatContext>
   auto format(Token::Tag tag, FormatContext& ctx)
   {
@@ -117,6 +121,7 @@ struct fmt::formatter<Token::Tag> : fmt::formatter<fmt::string_view>
     case Token::Tag::KwEnum: name = "KwEnum"; break;
     case Token::Tag::KwUnion: name = "KwUnion"; break;
     case Token::Tag::KwFn: name = "KwFn"; break;
+    case Token::Tag::KwInfer: name = "KwInfer"; break;
     case Token::Tag::KwTry: name = "KwTry"; break;
     case Token::Tag::KwCatch: name = "KwCatch"; break;
     case Token::Tag::KwOrelse: name = "KwOrelse"; break;

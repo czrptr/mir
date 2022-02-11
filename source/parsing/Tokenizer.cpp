@@ -470,6 +470,11 @@ Token Tokenizer::next()
   return Token(Token::Eof, eofPos, eofPos, "Eof");
 }
 
+std::string const& Tokenizer::sourcePath() const
+{
+  return d_sourcePath;
+}
+
 bool Tokenizer::inputStreamFinished() const
 {
   return d_pInputStream->eof() && !d_leftOver;
@@ -554,6 +559,7 @@ Token Tokenizer::tokenEnd()
       .Case("enum", Token::KwEnum)
       .Case("union", Token::KwUnion)
       .Case("fn", Token::KwFn)
+      .Case("infer", Token::KwInfer)
       .Case("try", Token::KwTry)
       .Case("catch", Token::KwCatch)
       .Case("orelse", Token::KwOrelse)
@@ -572,7 +578,7 @@ Token Tokenizer::tokenEnd()
   return d_currentToken;
 }
 
-Error Tokenizer::error(std::string const& message)
+Error Tokenizer::error(std::string const& message) const
 {
   return Error(d_sourcePath, d_currentPos, d_currentPos.nextColumn(), Error::Type::Error, message);
 }

@@ -60,6 +60,7 @@ public:
 
   // Methods
 	Token next();
+  std::string const& sourcePath() const;
 
 private:
   bool inputStreamFinished() const;
@@ -72,5 +73,5 @@ private:
 	[[nodiscard]] Token tokenEnd();
 	[[nodiscard]] Token token(Token::Tag tag);
 
-  Error error(std::string const& message);
+  Error error(std::string const& message) const;
 };
