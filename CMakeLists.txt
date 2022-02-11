@@ -28,6 +28,7 @@ set(MIR_SOURCES
   ${CMAKE_SOURCE_DIR}/source/parsing/ast/Utils.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/ast/TokenExpressions.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/ast/TypeExpression.cpp
+  ${CMAKE_SOURCE_DIR}/source/parsing/ast/LetStatement.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/Parser.cpp)
 
 add_executable(mir

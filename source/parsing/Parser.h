@@ -26,8 +26,12 @@ public:
 
 public:
   ast::TokenExpression::SPtr tokenExpression();
+
   ast::TypeExpression::SPtr typeExpression(bool isRoot = false);
   ast::Field::SPtr field();
+
+  ast::LetStatement::SPtr letStatement();
+  ast::LetStatementPart::SPtr letStatementPart();
 
   ast::Node::SPtr expression();
 

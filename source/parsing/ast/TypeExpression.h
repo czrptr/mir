@@ -2,6 +2,7 @@
 
 #include <parsing/ast/Node.h>
 #include <parsing/Token.h>
+#include <parsing/ast/LetStatement.h>
 
 #include <fmt/format.h>
 
@@ -55,6 +56,8 @@ private:
   Position d_start;
   Position d_end;
   std::vector<Field::SPtr> d_fields;
+  std::vector<LetStatement::SPtr> d_declsPre;
+  std::vector<LetStatement::SPtr> d_declsPost;
 
 public:
   TypeExpression(
@@ -62,12 +65,16 @@ public:
     Position start,
     Position end,
     std::vector<Field::SPtr>&& fields,
+    std::vector<LetStatement::SPtr>&& declsPre,
+    std::vector<LetStatement::SPtr>&& declsPost,
     Node::SPtr pParent = nullptr)
     : Node(pParent)
     , d_tag(tag)
     , d_start(start)
     , d_end(end)
     , d_fields(std::move(fields))
+    , d_declsPre(std::move(declsPre))
+    , d_declsPost(std::move(declsPost))
   {}
 
   virtual Position start() const override { return d_start; }
@@ -76,6 +83,9 @@ public:
 
   Tag tag() const { return d_tag; }
   std::vector<Field::SPtr> const& fields() const { return d_fields; }
+  std::vector<LetStatement::SPtr> const& declsPre() const { return d_declsPre; }
+  std::vector<LetStatement::SPtr> const& declsPost() const { return d_declsPost; }
+  std::vector<LetStatement::SPtr> decls() const;
 
   using Node::toString;
   virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
@@ -85,6 +95,8 @@ public:
     Position start,
     Position end,
     std::vector<Field::SPtr>&& fields,
+    std::vector<LetStatement::SPtr>&& declsPre,
+    std::vector<LetStatement::SPtr>&& declsPost,
     Node::SPtr pParent = nullptr);
 };
 
