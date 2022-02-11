@@ -108,6 +108,7 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
       // is this a decl after a field?
       declsSection = true && fieldsSection;
       decls->push_back(pDecl);
+      match(Token::Semicolon, ErrorStrategy::DefaultErrorMessage);
     }
     else // pField != nullptr
     {
@@ -289,8 +290,6 @@ ast::LetStatement::SPtr Parser::letStatement()
   {
     throw error(tokLet, "let statement cannot be empty");
   }
-
-  match(Token::Semicolon, ErrorStrategy::DefaultErrorMessage);
 
   return LetStatement::make_shared(start, isPub, isMut, std::move(parts));
 }
