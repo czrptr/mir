@@ -13,25 +13,31 @@ struct LetStatementPart final : public Node
 private:
   Position d_start;
   std::string_view d_name;
+  Node::SPtr d_pType;
   Node::SPtr d_pValue;
 
 public:
   LetStatementPart(
     Position start,
     std::string_view name,
+    Node::SPtr pType,
     Node::SPtr pValue,
     Node::SPtr pParent = nullptr)
     : Node(pParent)
     , d_start(start)
     , d_name(name)
+    , d_pType(pType)
     , d_pValue(pValue)
-  {}
+  {
+    assert(pValue != nullptr);
+  }
 
   virtual Position start() const override { return d_start; }
   virtual Position end() const override { return d_pValue->end(); }
   virtual bool canBeUsedAsExpression() const override { return false; }
 
   std::string_view name() const { return d_name; }
+  Node::SPtr type() const { return d_pType; }
   Node::SPtr value() const { return d_pValue; }
 
   using Node::toString;
@@ -40,6 +46,7 @@ public:
   static LetStatementPart::SPtr make_shared(
     Position start,
     std::string_view name,
+    Node::SPtr pType,
     Node::SPtr pValue,
     Node::SPtr pParent = nullptr);
 };

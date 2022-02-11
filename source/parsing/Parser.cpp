@@ -102,8 +102,6 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     match(Token::LBrace, "'{' expected");
   }
 
-  // TODO enum fields
-
   std::vector<Field::SPtr> fields;
   std::vector<LetStatement::SPtr>
     declsPre, declsPost, *decls = &declsPre;
@@ -291,6 +289,14 @@ ast::LetStatementPart::SPtr Parser::letStatementPart()
   Token const tokSymbol = match(Token::Symbol);
   Position const start = tokSymbol.start();
 
+  Node::SPtr pType = nullptr;
+  if (next(Token::Colon))
+  {
+    match(Token::Colon);
+    // TODO implement workaround when a = b expression will be implemented and this code will break
+    pType = expression();
+  }
+
   // TODO optional type
   Token const tokEq = match(Token::Operator, "assignement operator '=' expected");
   if (tokEq.text() != "=") // TODO better API
@@ -305,7 +311,7 @@ ast::LetStatementPart::SPtr Parser::letStatementPart()
     throw Error(d_tokenizer.sourcePath(), tokEq.start(), tokEq.end(), Error::Type::Error, "expression expected");
   }
 
-  return LetStatement::Part::make_shared(start, tokSymbol.text(), pValue);
+  return LetStatement::Part::make_shared(start, tokSymbol.text(), pType, pValue);
 }
 
 ast::Node::SPtr Parser::expression()

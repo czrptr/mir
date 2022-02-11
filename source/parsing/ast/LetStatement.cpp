@@ -6,21 +6,34 @@ using namespace ast;
 
 std::string LetStatementPart::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
 {
+  std::vector<Node::SPtr> children;
+  children.reserve(2);
+  if (type() != nullptr)
+  {
+    children.push_back(type());
+  }
+  children.push_back(value());
+
   return fmt::format(
     "{}{} '{}'\n{}",
     prefix(indent, lines, isLast),
     header("LetStatementPart", start(), end(), true),
     name(),
-    childrenToString(std::vector<Node::SPtr>{value()}, indent, lines));
+    childrenToString(children, indent, lines));
 }
 
 LetStatementPart::SPtr LetStatementPart::make_shared(
   Position start,
   std::string_view name,
+  Node::SPtr pType,
   Node::SPtr pValue,
   Node::SPtr pParent)
 {
-  auto pRes = std::make_shared<LetStatementPart>(start, name, pValue, pParent);
+  auto pRes = std::make_shared<LetStatementPart>(start, name, pType, pValue, pParent);
+  if (pType != nullptr)
+  {
+    pType->setParent(pRes);
+  }
   pRes->d_pValue->setParent(pRes);
   return pRes;
 }
