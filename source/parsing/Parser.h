@@ -7,7 +7,7 @@
 
 // TODO move tokenizer into CurrentParsing somehow
 
-struct Parser
+struct Parser final
 {
 private:
   // maybe commit and rollback methods on Parser were better?

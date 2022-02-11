@@ -10,7 +10,7 @@
 
 #include <string>
 
-struct Tokenizer
+struct Tokenizer final
 {
 private:
   // Types

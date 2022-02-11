@@ -4,11 +4,10 @@
 
 #include <fmt/format.h>
 
-#include <exception>
 #include <string>
 #include <vector>
 
-struct Error : public std::exception
+struct Error final
 {
 public:
   enum class Type
