@@ -4,10 +4,11 @@
 #include <parsing/Operator.h>
 #include <Utils.h>
 
-#include <cassert>
-#include <cstring>
 #include <string_view>
 #include <filesystem>
+#include <map>
+#include <cassert>
+#include <cstring>
 
 namespace fs = std::filesystem;
 
@@ -53,6 +54,34 @@ void customDeleter(std::istream* pStream)
   }
   delete pStream;
 }
+
+std::map<std::string_view, Token::Tag> const keywords
+{
+  {"pub", Token::KwPub},
+  {"let", Token::KwLet},
+  {"mut", Token::KwMut},
+  {"comptime", Token::KwComptime},
+  {"struct", Token::KwStruct},
+  {"enum", Token::KwEnum},
+  {"union", Token::KwUnion},
+  {"fn", Token::KwFn},
+  {"if", Token::KwIf},
+  {"else", Token::KwElse},
+  {"switch", Token::KwSwitch},
+  {"loop", Token::KwLoop},
+  {"import", Token::KwImport}, // make reserved symbol?
+  {"return", Token::Operator},
+  {"break", Token::Operator},
+  {"continue", Token::Operator},
+  {"defer", Token::Operator},
+  {"try", Token::Operator},
+  {"catch", Token::Operator},
+  {"orelse", Token::Operator},
+  {"not", Token::Operator},
+  {"and", Token::Operator},
+  {"or", Token::Operator}
+  // {"infer", Token::Operator} // TODO
+};
 
 } // anonymous
 
@@ -595,37 +624,13 @@ Token Tokenizer::tokenEnd()
 
   if (d_currentToken.d_tag == Token::Symbol)
   {
-    // TODO use a map
-    d_currentToken.d_tag = Switch<std::string_view, Token::Tag>(d_currentToken.d_text)
-      .Case("pub", Token::KwPub)
-      .Case("let", Token::KwLet)
-      .Case("mut", Token::KwMut)
-      .Case("comptime", Token::KwComptime)
-      .Case("struct", Token::KwStruct)
-      .Case("enum", Token::KwEnum)
-      .Case("union", Token::KwUnion)
-      .Case("fn", Token::KwFn)
-      .Case("if", Token::KwIf)
-      .Case("else", Token::KwElse)
-      .Case("switch", Token::KwSwitch)
-      .Case("loop", Token::KwLoop)
-      .Case("import", Token::KwImport) // make reserved symbol?
-      .Case("return", Token::Operator)
-      .Case("break", Token::Operator)
-      .Case("continue", Token::Operator)
-      .Case("defer", Token::Operator)
-      .Case("try", Token::Operator)
-      .Case("catch", Token::Operator)
-      .Case("orelse", Token::Operator)
-      .Case("not", Token::Operator)
-      .Case("and", Token::Operator)
-      .Case("or", Token::Operator)
-      // .Case("infer", Token::Operator) // TODO
-      .Default(d_currentToken.d_tag);
+    if (keywords.contains(d_currentToken.d_text))
+    {
+      d_currentToken.d_tag = keywords.at(d_currentToken.d_text);
+    }
   }
 
   // TODO errors for a and= b, a not= b, etc...
-
   if (d_currentToken.d_tag == Token::Operator)
   {
     auto const errMsg = Operator::validate(d_currentToken.d_text);
