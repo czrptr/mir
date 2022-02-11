@@ -25,7 +25,6 @@ public:
     , d_pType(pType)
     , d_pValue(pValue)
   {
-    assert(pType != nullptr || pValue != nullptr);
     if (pType != nullptr)
     {
       assert(pType->canBeUsedAsExpression());

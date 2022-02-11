@@ -13,8 +13,10 @@
 
 std::string sourceText =
 R"SOURCE(
-a: union {
-  a: a = a
+a: enum {
+  a,
+  b,
+  c,
 },
 )SOURCE";
 

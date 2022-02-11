@@ -6,6 +6,9 @@ using namespace ast;
 
 std::string Field::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
 {
+  // due to parsing logic, d_pType & d_pValue cannot both
+  // be set at the same time
+
   char const* fieldType;
   std::vector<Node::SPtr> children;
   // try AST implementing ast "notes" show info above the node same color ar tree branches
@@ -14,12 +17,20 @@ std::string Field::toString(size_t indent, std::vector<size_t> lines, bool isLas
     fieldType = "type";
     children.push_back(d_pType);
   }
-  else // d_pValue != nullptr <- idea, IDE deduce &show these types of comments automatically
+  if (d_pValue != nullptr) // d_pValue != nullptr <- idea, IDE deduce & show these types of comments automatically
   {
     fieldType = "value";
     children.push_back(d_pValue);
   }
 
+  if (children.empty())
+  {
+    return fmt::format(
+      "{}{} '{}'",
+      prefix(indent, lines, isLast),
+      header("Field", start(), end(), true),
+      name());
+  }
   return fmt::format(
     "{}{} '{}' {}\n{}",
     prefix(indent, lines, isLast),
@@ -31,9 +42,13 @@ std::string Field::toString(size_t indent, std::vector<size_t> lines, bool isLas
 
 Position Field::end() const
 {
-  return d_pValue != nullptr
-    ? d_pValue->end()
-    : d_pType->end();
+  if (d_pValue != nullptr)
+  {
+    return d_pValue->end();
+  }
+  return d_pType != nullptr
+    ? d_pType->end()
+    : d_name.end();
 }
 
 Field::SPtr Field::make_shared(Token name, Node::SPtr pType, Node::SPtr pValue, Node::SPtr pParent)

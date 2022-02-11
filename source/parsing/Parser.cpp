@@ -148,11 +148,6 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
           throw Error(d_tokenizer.sourcePath(), pExpr->start(), pExpr->end(), Error::Type::Error,
             "enum variants cannot have type annotations");
         }
-        if (pField->value() == nullptr) // TODO check is this possible?
-        {
-          throw Error(d_tokenizer.sourcePath(), pExpr->start(), pExpr->end(), Error::Type::Error,
-            "enum variants must have values");
-        }
       }
       else // tag == TypeExpression::Struct || tag == TypeExpression::Union
       {
@@ -230,12 +225,6 @@ Field::SPtr Parser::field()
         d_tokenizer.sourcePath(), tokColon.start(), tokColon.end(),
         Error::Type::Error, "expression expected");
     }
-  }
-
-  if (pType == nullptr && pValue == nullptr)
-  {
-    rollback();
-    return nullptr;
   }
 
   commit();
