@@ -26,6 +26,10 @@ public:
 
 public:
   ast::TokenExpression::SPtr tokenExpression();
+  ast::TypeExpression::SPtr typeExpression(bool isRoot = false);
+  ast::Field::SPtr field();
+
+  ast::Node::SPtr expression();
 
 private:
   bool next(Token::Tag tag);

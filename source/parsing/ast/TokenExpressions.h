@@ -1,6 +1,7 @@
 // #pragma once
 
 #include <parsing/ast/Node.h>
+#include <parsing/Token.h>
 
 namespace ast
 {

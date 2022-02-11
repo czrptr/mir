@@ -13,7 +13,13 @@
 
 std::string sourceText =
 R"SOURCE(
-123.432
+struct {
+  a: enum {}
+  b: c,
+  e: union {
+    a: "AAAH"
+  },
+}
 )SOURCE";
 
 int main()
@@ -32,8 +38,8 @@ int main()
 
     Parser parser(Tokenizer(sourceText, "<file>"));
 
-    auto binaryExpr = parser.tokenExpression();
-    fmt::print("{}\n", binaryExpr->toString());
+    auto expr = parser.typeExpression();
+    fmt::print("{}\n", expr->toString());
   }
   catch (Error const& err)
 	{

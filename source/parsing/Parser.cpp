@@ -14,21 +14,30 @@ ast::TokenExpression::SPtr Parser::tokenExpression()
   {
     Token const tokSymbol = match(Token::Symbol);
 
-    // TODO use macro to turn case into value lambda pairs to make the result lazily
-    // evaluated so that the untaken "branches" don't cause memory allocations
-    return Switch<std::string_view, TokenExpression::SPtr>(tokSymbol.text())
-      .Case("true",
-        std::make_shared<BoolExpression>(tokSymbol, true))
-      .Case("false",
-        std::make_shared<BoolExpression>(tokSymbol, false))
-      .Case("null",
-        std::make_shared<NullExpression>(tokSymbol))
-      .Case("undefined",
-        std::make_shared<UndefinedExpression>(tokSymbol))
-      .Case("unreachable",
-        std::make_shared<UnreachableExpression>(tokSymbol))
-      .Default(
-        std::make_shared<SymbolExpression>(tokSymbol));
+      if (tokSymbol.text() == "true")
+      {
+        return std::make_shared<BoolExpression>(tokSymbol, true);
+      }
+      else if (tokSymbol.text() == "false")
+      {
+        return std::make_shared<BoolExpression>(tokSymbol, false);
+      }
+      else if (tokSymbol.text() == "null")
+      {
+        return std::make_shared<NullExpression>(tokSymbol);
+      }
+      else if (tokSymbol.text() == "undefined")
+      {
+        return std::make_shared<UndefinedExpression>(tokSymbol);
+      }
+      else if (tokSymbol.text() == "unreachable")
+      {
+        return std::make_shared<UnreachableExpression>(tokSymbol);
+      }
+      else
+      {
+        return std::make_shared<SymbolExpression>(tokSymbol);
+      }
   }
   if (next(Token::StringLiteral))
   {
@@ -41,6 +50,89 @@ ast::TokenExpression::SPtr Parser::tokenExpression()
     return std::make_shared<NumberExpression>(tokNumber);
   }
   return nullptr;
+}
+
+ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
+{
+  Position start = { 0, 0 };
+  Position end = Position::invalid();
+  TypeExpression::Tag tag = TypeExpression::Struct;
+  if (!isRoot)
+  {
+    if (next(Token::KwStruct))
+    {
+      start = match(Token::KwStruct).start();
+      tag = TypeExpression::Struct;
+    }
+    else if (next(Token::KwEnum))
+    {
+      // TODO enum () { ... }
+      start = match(Token::KwEnum).start();
+      tag = TypeExpression::Enum;
+    }
+    else if (next(Token::KwUnion))
+    {
+      start = match(Token::KwUnion).start();
+      tag = TypeExpression::Union;
+    }
+    else
+    {
+      return nullptr;
+    }
+
+    // TODO match with default message '<>' expected
+    match(Token::LBrace, "'{' expected");
+  }
+
+  std::vector<Field::SPtr> fields;
+  while (auto pField = field())
+  {
+    fields.push_back(pField);
+    skip(Token::Comma);
+  }
+
+  if (!isRoot)
+  {
+    end = match(Token::RBrace, "'}' expected").end();
+  }
+  // TODO end
+
+  return TypeExpression::make_shared(tag, start, end, std::move(fields));
+}
+
+Field::SPtr Parser::field()
+{
+  if (!next(Token::Symbol))
+  {
+    return nullptr;
+  }
+
+  Token const tokName = match(Token::Symbol);
+  Token const tokColon = match(Token::Colon, "':' expected");
+
+  auto const pType = expression();
+  if (pType == nullptr)
+  {
+    throw Error(
+      d_tokenizer.sourcePath(), tokColon.start(), tokColon.end(),
+      Error::Type::Error, "type expression expected");
+  }
+
+  return Field::make_shared(tokName, pType);
+}
+
+ast::Node::SPtr Parser::expression()
+{
+  ast::Node::SPtr pRes;
+  if (pRes = tokenExpression(); pRes != nullptr)
+  {
+    return pRes;
+  }
+  else
+  {
+    pRes = typeExpression();
+    return pRes;
+  }
 }
 
 /* ===================== Helpers ===================== */

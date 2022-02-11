@@ -2,6 +2,7 @@
 
 #include <parsing/ast/Node.h>
 #include <parsing/ast/TokenExpressions.h>
+#include <parsing/ast/TypeExpression.h>
 
 #undef SPTR
 #undef WPTR
