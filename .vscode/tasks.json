@@ -1,0 +1,53 @@
+{
+  "tasks": [
+    {
+      "label": "Run",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "type": "shell",
+      "command": "exec ${workspaceFolder}/build/mir",
+      "dependsOn": [ "Build (mir)" ],
+      "dependsOrder": "sequence"
+    },
+    {
+      "label": "Test",
+      "group":{
+        "kind": "test",
+        "isDefault": true
+      },
+      "type": "shell",
+      "command": "exec ${workspaceFolder}/build/test",
+      "dependsOn": [ "Build (test)" ],
+      "dependsOrder": "sequence"
+    },
+    {
+      "label": "Build (mir)",
+      "group": "build",
+      "type": "shell",
+      "command": "cd ${workspaceFolder}/build; make mir -j 4",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build (test)",
+      "group": "build",
+      "type": "shell",
+      "command": "cd ${workspaceFolder}/build; make test -j 4",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Cmake",
+      "group": "build",
+      "type": "shell",
+      "command": "CC=gcc-11 CXX=g++-11 cmake -S ${workspaceFolder} -B ${workspaceFolder}/build"
+    },
+    {
+      "label": "Clean",
+      "group": "build",
+      "type": "shell",
+      "command": "rm -rf ${workspaceFolder}/build/"
+    }
+  ],
+  "version": "2.0.0"
+}

@@ -1,0 +1,51 @@
+name: CI
+on:
+  push:
+    paths:
+      - "source/**"
+      - "test/**"
+      - "vendor/**"
+      - "CMakeLists.txt"
+      - ".github/worflows/ci.yml"
+  pull_request:
+    paths:
+      - "source/**"
+      - "test/**"
+      - "vendor/**"
+      - "CMakeLists.txt"
+      - ".github/worflows/ci.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    # === DEPENDECIES ===
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install gcc-11 g++-11 libstdc++-11-dev
+
+    - name: Check versions
+      run: g++-11 --version
+
+    # === BUILD MIR ===
+
+    - name: CMake
+      run: CC=gcc-11 CXX=g++-11 cmake -S . -B build
+
+    - name: Build
+      run: cd build; make mir
+
+    # === BUILD TESTS ===
+
+    - name: Build tests
+      run: cd build; make test
+
+    # === RUN TESTS ===
+
+    - name: Run tests
+      run: cd build; ./test
