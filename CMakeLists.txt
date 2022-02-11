@@ -51,6 +51,7 @@ target_link_libraries(mir fmt)
 set(TEST_SOURCES
   ${CMAKE_SOURCE_DIR}/test/Main.cpp
   ${CMAKE_SOURCE_DIR}/test/Tokenizer.cpp
+  ${CMAKE_SOURCE_DIR}/test/Parser.cpp
   $<TARGET_OBJECTS:impl>)
 
 add_executable(test ${TEST_SOURCES})
@@ -59,4 +60,6 @@ add_dependencies(test fmt)
 
 target_link_libraries(test fmt)
 
-target_include_directories(test PRIVATE ${VENDOR_DOCTEST}/include)
+target_include_directories(test PRIVATE
+  ${VENDOR_DOCTEST}/include
+  ${CMAKE_SOURCE_DIR}/test)
