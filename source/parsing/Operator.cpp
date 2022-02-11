@@ -38,8 +38,8 @@ size_t Operator::precedence(Operator::Tag tag)
     BitShl, 6,
     Catch, 7,
     LeEq, 8,
-    AndAnd, 9,
-    OrOr, 10,
+    And, 9,
+    Or, 10,
     Eq, 11,
   };
   // ensure table is well formed
@@ -92,8 +92,8 @@ Operator::Associativity Operator::associativity(Operator::Tag tag)
   case Operator::Tag::Le: return None;     // unchainable
   case Operator::Tag::GeEq: return None;   // unchainable
   case Operator::Tag::LeEq: return None;   // unchainable
-  case Operator::Tag::AndAnd: return Associativity::LeftToRight;
-  case Operator::Tag::OrOr: return Associativity::LeftToRight;
+  case Operator::Tag::And: return Associativity::LeftToRight;
+  case Operator::Tag::Or: return Associativity::LeftToRight;
   case Operator::Tag::DotDot: return None; // unchainable
   case Operator::Tag::Eq: return None;     // unchainable
   }
@@ -132,8 +132,8 @@ bool Operator::chainable(Operator::Tag tag)
   case Operator::Tag::Le: return false;
   case Operator::Tag::GeEq: return false;
   case Operator::Tag::LeEq: return false;
-  case Operator::Tag::AndAnd: return true;
-  case Operator::Tag::OrOr: return true;
+  case Operator::Tag::And: return true;
+  case Operator::Tag::Or: return true;
   case Operator::Tag::DotDot: return false;
   case Operator::Tag::Eq: return false;
   }

@@ -33,10 +33,10 @@ public:
 
     /* ============ Precedence 3 ============ */
 
-    Not,        // !a
+    Not,        // not a
     UnaryMinus, // -a
     UnaryPlus,  // +a
-    BitNot,     // ~!a
+    BitNot,     // !a
     PtrTo,      // ^a
 
     /* ============ Precedence 4 ============ */
@@ -53,14 +53,14 @@ public:
 
     /* ============ Precedence 6 ============ */
 
-    BitShr, // a ~> b
-    BitShl, // a ~< b
+    BitShr, // a >> b
+    BitShl, // a << b
 
     /* ============ Precedence 7 ============ */
 
-    BitAnd, // a ~& b
-    BitOr,  // a ~| b
-    BitXor, // a ~^ b
+    BitAnd, // a & b
+    BitOr,  // a | b
+    BitXor, // a ~ b
     Orelse, // a orelse b
     Catch,  // a catch [|err|] b
 
@@ -75,11 +75,11 @@ public:
 
     /* ============ Precedence 9 ============ */
 
-    AndAnd, // a && b
+    And, // a and b
 
     /* ============ Precedence 10 ============ */
 
-    OrOr, // a || b
+    Or, // a or b
 
     /* ============ Precedence 11 ============ */
 
@@ -186,8 +186,8 @@ struct fmt::formatter<Operator::Tag>
       case Operator::Tag::Le: name = "Le"; break;
       case Operator::Tag::GeEq: name = "GeEq"; break;
       case Operator::Tag::LeEq: name = "LeEq"; break;
-      case Operator::Tag::AndAnd: name = "AndAnd"; break;
-      case Operator::Tag::OrOr: name = "OrOr"; break;
+      case Operator::Tag::And: name = "AndAnd"; break;
+      case Operator::Tag::Or: name = "OrOr"; break;
       case Operator::Tag::DotDot: name = "DotDot"; break;
       case Operator::Tag::Eq: name = "Eq"; break;
       }
@@ -200,10 +200,10 @@ struct fmt::formatter<Operator::Tag>
       case Operator::Tag::Opt: name = "?"; break;
       case Operator::Tag::PtrDeref: name = "^"; break;
       case Operator::Tag::Not_ErrorUnion: name = "!"; break;
-      case Operator::Tag::Not: name = "!"; break;
+      case Operator::Tag::Not: name = "not"; break;
       case Operator::Tag::UnaryMinus: name = "-"; break;
       case Operator::Tag::UnaryPlus: name = "+"; break;
-      case Operator::Tag::BitNot: name = "~!"; break;
+      case Operator::Tag::BitNot: name = "!"; break;
       case Operator::Tag::PtrTo: name = "^"; break;
       case Operator::Tag::Mul: name = "*"; break;
       case Operator::Tag::Div: name = "/"; break;
@@ -211,11 +211,11 @@ struct fmt::formatter<Operator::Tag>
       case Operator::Tag::OrOr_ErrorSet: name = "||"; break;
       case Operator::Tag::Add: name = "+"; break;
       case Operator::Tag::Sub: name = "-"; break;
-      case Operator::Tag::BitShr: name = "~>"; break;
-      case Operator::Tag::BitShl: name = "~<"; break;
-      case Operator::Tag::BitAnd: name = "~&"; break;
-      case Operator::Tag::BitOr: name = "~|"; break;
-      case Operator::Tag::BitXor: name = "~^"; break;
+      case Operator::Tag::BitShr: name = ">>"; break;
+      case Operator::Tag::BitShl: name = "<<"; break;
+      case Operator::Tag::BitAnd: name = "&"; break;
+      case Operator::Tag::BitOr: name = "|"; break;
+      case Operator::Tag::BitXor: name = "~"; break;
       case Operator::Tag::Orelse: name = "orelse"; break;
       case Operator::Tag::Catch: name = "catch"; break;
       case Operator::Tag::EqEq: name = "=="; break;
@@ -224,8 +224,8 @@ struct fmt::formatter<Operator::Tag>
       case Operator::Tag::Le: name = "<"; break;
       case Operator::Tag::GeEq: name = ">="; break;
       case Operator::Tag::LeEq: name = "<="; break;
-      case Operator::Tag::AndAnd: name = "&&"; break;
-      case Operator::Tag::OrOr: name = "||"; break;
+      case Operator::Tag::And: name = "and"; break;
+      case Operator::Tag::Or: name = "or"; break;
       case Operator::Tag::DotDot: name = ".."; break;
       case Operator::Tag::Eq: name = "="; break;
     }

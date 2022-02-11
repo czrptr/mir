@@ -248,12 +248,12 @@ Expression::SPtr Parser::expr00()
 
 Expression::SPtr Parser::expr01()
 {
-  return binaryExpression(&Parser::expr02, {Operator::OrOr});
+  return binaryExpression(&Parser::expr02, {Operator::Or});
 }
 
 Expression::SPtr Parser::expr02()
 {
-  return binaryExpression(&Parser::expr03, {Operator::AndAnd});
+  return binaryExpression(&Parser::expr03, {Operator::And});
 }
 
 Expression::SPtr Parser::expr03()
