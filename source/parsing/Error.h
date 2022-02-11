@@ -27,7 +27,7 @@ public:
 
   public:
     Part(std::string const& filepath, Position start, Position end, Type type, std::string const& message) noexcept
-      : d_filepath(filepath)
+      : d_filepath("<file>") // TODO remove default value
       , d_start(start)
       , d_end(end)
       , d_type(type)

@@ -19,7 +19,6 @@ Token t(Token::Tag tag, size_t startLine, size_t startColumn, size_t endLine, si
   return Token(tag, {startLine, startColumn}, {endLine, endColumn}, Intern::string(text));
 }
 
-
 } // namespace
 
 TEST_SUITE_BEGIN("Tokenizer");
