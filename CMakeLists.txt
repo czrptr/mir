@@ -22,6 +22,7 @@ set(VENDOR_DOCTEST ${CMAKE_SOURCE_DIR}/vendor/doctest/)
 
 set(MIR_SOURCES
   ${CMAKE_SOURCE_DIR}/source/parsing/Intern.cpp
+  ${CMAKE_SOURCE_DIR}/source/parsing/Error.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/Tokenizer.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/ast/Nodes.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/Parser.cpp)

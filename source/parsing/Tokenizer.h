@@ -1,7 +1,12 @@
 #pragma once
 
 #include <parsing/Position.h>
+#include <parsing/Error.h>
 #include <parsing/Token.h>
+
+#include <sstream>
+#include <fstream>
+#include <functional>
 
 #include <string>
 
@@ -19,33 +24,53 @@ private:
 		StringLiteral = 3,
 		NumberLiteralFaction,
 		StringLiteralEscape,
+    StringLiteralEnd,
 		SingleLineComment,
-		MultiLineComment,
-		TokenEnd,
+		MultiLineComment
 	};
 	// TODO enum equality static asserts
 
+  using Deleter = std::function<void(std::istream*)>;
+  using InputStream = std::unique_ptr<std::istream, Deleter>;
+
   // Data
-	std::string d_sourceText;
-	size_t d_currentIdx;
-	size_t d_currentTokenStartIdx;
-	Position d_currentPos;
-	Position d_previousPos;
-	State d_currentState;
+  InputStream d_pInputStream;
+
+	std::string const d_sourcePath;
+
+  bool d_leftOver = false;
+  char d_currentChar;
+  char d_nextChar;
+
+  Position d_currentPos;
+	Position d_nextPos;
+
+  std::string d_currentTokenText;
+
+  State d_currentState;
 	Token d_currentToken;
 
 public:
   // Constructors
-	explicit Tokenizer(std::string const& sourceText);
+	Tokenizer(
+    std::string const& text,
+    std::string const& sourcePath);
+
+  explicit Tokenizer(std::string const& sourcePath);
 
   // Methods
 	Token next();
 
 private:
+  bool inputStreamFinished() const;
+  char inputPeek();
+  char inputNext();
+
 	void advance();
 
-	void token(Token::Tag tag);
+	void tokenStart(Token::Tag tag); // change into macro?
+	[[nodiscard]] Token tokenEnd();
+	[[nodiscard]] Token token(Token::Tag tag);
 
-	void tokenStart(Token::Tag tag);
-	void tokenEnd();
+  Error error(std::string const& message);
 };

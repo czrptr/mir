@@ -25,15 +25,14 @@ TEST_SUITE_BEGIN("Tokenizer");
 
 TEST_CASE("empty text")
 {
-  Tokenizer tk("");
-  CHECK_EQ(tk.next(), t(Token::Eof, 0, 1, 0, 1));
+  REQUIRE_THROWS_AS_MESSAGE(Tokenizer("", "<file>"), Error, "source text is empty");
 }
 
 TEST_CASE("token ending on Eof")
 {
   std::string text = "42.314";
-  Tokenizer tk(text);
-  CHECK_EQ(tk.next(), t(Token::NumberLiteral, 0, 0, 0, 6, text));
+  Tokenizer tk(text, "<file>");
+  REQUIRE_EQ(tk.next(), t(Token::NumberLiteral, 0, 0, 0, 6, text));
 }
 
 TEST_SUITE_END();

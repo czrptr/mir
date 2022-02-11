@@ -2,10 +2,11 @@
 
 #include <parsing/Position.h>
 
+#include <fmt/format.h>
+
 #include <exception>
 #include <string>
 #include <vector>
-#include <fmt/format.h>
 
 struct Error : public std::exception
 {
@@ -27,7 +28,7 @@ public:
 
   public:
     Part(std::string const& filepath, Position start, Position end, Type type, std::string const& message) noexcept
-      : d_filepath("<file>") // TODO remove default value
+      : d_filepath(filepath)
       , d_start(start)
       , d_end(end)
       , d_type(type)
@@ -54,11 +55,13 @@ public:
     : d_parts(std::move(parts))
   {}
 
+  static Error justMessage(std::string const& filepath, std::string const& message);
+
   std::vector<Part> const& parts() const { return d_parts; }
 };
 
 template<>
-struct fmt::formatter<Error::Type> : formatter<string_view>
+struct fmt::formatter<Error::Type> : fmt::formatter<string_view>
 {
   template<typename FormatContext>
   auto format(Error::Type tag, FormatContext& ctx)
@@ -74,16 +77,22 @@ struct fmt::formatter<Error::Type> : formatter<string_view>
 };
 
 template<>
-struct fmt::formatter<Error::Part> : formatter<string_view>
+struct fmt::formatter<Error::Part> : fmt::formatter<fmt::string_view>
 {
   template<typename FormatContext>
   auto format(Error::Part const& part, FormatContext& ctx)
   {
+    if (part.start() == Position::invalid() && part.end() == Position::invalid())
+    {
+      return fmt::format_to(
+        ctx.out(),
+        "{0}: {1}",
+        part.filePath(), part.message());
+    }
     return fmt::format_to(
       ctx.out(),
       "{0}:{1}: {2}: {3}",
-      part.filePath(), part.start(), part.type(), part.message()
-    );
+      part.filePath(), part.start(), part.type(), part.message());
   }
 };
 
