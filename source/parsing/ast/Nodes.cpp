@@ -117,6 +117,16 @@ std::string Root::toString(size_t indent, std::vector<size_t> lines, bool isLast
     childrenToString(d_statements, indent, lines));
 }
 
+std::string LetStatementPart::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
+{
+  return fmt::format(
+    "{}{} '{}'\n{}",
+    prefix(indent, lines, isLast),
+    header(nodeName(), start(), end(), true),
+    name(),
+    value()->toString(indent + 1, lines, true));
+}
+
 std::string LetStatement::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
 {
   return fmt::format(
@@ -128,32 +138,32 @@ std::string LetStatement::toString(size_t indent, std::vector<size_t> lines, boo
     childrenToString(d_parts, indent, lines));
 }
 
-std::string LetStatementPart::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
-{
-  return fmt::format(
-    "{}{} '{}'\n{}",
-    prefix(indent, lines, isLast),
-    header(nodeName(), start(), end(), true),
-    d_name,
-    d_pValue->toString(indent + 1, lines, true));
-}
-
 std::string SymbolExpression::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
 {
   return fmt::format(
     "{}{} '{}'",
     prefix(indent, lines, isLast),
     header(nodeName(), start(), end(), false),
-    d_name);
+    name());
 }
 
 std::string StringExpression::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
 {
   return fmt::format(
-    "{}{} \"{}\"",
+    "{}{} {} len {}",
     prefix(indent, lines, isLast),
     header(nodeName(), start(), end(), false),
-    d_value);
+    value(),
+    unquotedValue().length());
+}
+
+std::string BoolExpression::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
+{
+  return fmt::format(
+    "{}{} {}",
+    prefix(indent, lines, isLast),
+    header(nodeName(), start(), end(), false),
+    value());
 }
 
 } // namespace ast
