@@ -397,4 +397,34 @@ TEST_CASE("block comments must end")
   }
 }
 
+TEST_CASE("line info is correct")
+{
+  std::string const text =
+    "i     i\n"
+    "// comment\n"
+    "  iiii   i   \n"
+    "\n"
+    "/* commment\n"
+    "  /*\n"
+    "    /**/\n"
+    "  */\n"
+    "*/ i\n"
+    "i";
+
+  Tokenizer tk(text, "<file>");
+  REQUIRE_EQ(tk.next(), t(Token::Symbol, 0, 0, 0, 1, "i"));
+  REQUIRE_EQ(tk.next(), t(Token::Symbol, 0, 6, 0, 7, "i"));
+  REQUIRE_EQ(tk.next(), t(Token::Comment, 1, 0, 1, 10, "// comment"));
+  REQUIRE_EQ(tk.next(), t(Token::Symbol, 2, 2, 2, 6, "iiii"));
+  REQUIRE_EQ(tk.next(), t(Token::Symbol, 2, 9, 2, 10, "i"));
+  REQUIRE_EQ(tk.next(), t(Token::Comment, 4, 0, 8, 2,
+    "/* commment\n"
+    "  /*\n"
+    "    /**/\n"
+    "  */\n"
+    "*/"));
+  REQUIRE_EQ(tk.next(), t(Token::Symbol, 8, 3, 8, 4, "i"));
+  REQUIRE_EQ(tk.next(), t(Token::Symbol, 9, 0, 9, 1, "i"));
+}
+
 TEST_SUITE_END();
