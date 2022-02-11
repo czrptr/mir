@@ -14,6 +14,11 @@ template<typename T>
 std::string childrenToString(std::vector<T> const& nodes, size_t indent, std::vector<size_t> lines)
 {
   std::string res = "";
+  if (nodes.empty())
+  {
+    return res;
+  }
+
   for (size_t i = 0; i < nodes.size() - 1; i += 1)
   {
     auto newLines = lines; // TODO use set
@@ -22,9 +27,7 @@ std::string childrenToString(std::vector<T> const& nodes, size_t indent, std::ve
 
     res += nodes[i]->toString(indent + 1, newLines, false) + "\n";
   }
-  if (!nodes.empty())
-  {
-    res += nodes[nodes.size() - 1]->toString(indent + 1, lines, true);
-  }
+  res += nodes[nodes.size() - 1]->toString(indent + 1, lines, true);
+
   return res;
 }
