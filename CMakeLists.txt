@@ -10,8 +10,10 @@ set(CMAKE_CXX_STANDARD 20)
 if(MSVC)
   add_compile_options(/WX /W4)
 else()
-  add_compile_options(-Werror -Wall -Wextra -Wconversion -Wsign-conversion -pedantic -pedantic-errors)
-  # add_compile_options(-Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function)
+  add_compile_options(
+    -Werror -Wall -Wextra -Wconversion -Wsign-conversion -pedantic -pedantic-errors
+    # -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function
+    -Wno-parentheses)
 endif()
 
 # FMT
