@@ -53,24 +53,25 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
 {
   using Field = TypeExpression::Field;
 
-  Position start = { 0, 0 };
-  TypeExpression::Tag tag = TypeExpression::Struct;
+  Token tokTag;
+  TypeExpression::Tag tag;
   Node::SPtr pUnderlyingType = nullptr;
 
   if (!isRoot)
   {
     if (next(Token::KwStruct))
     {
-      start = match(Token::KwStruct).start();
+      tokTag = match(Token::KwStruct);
+      tag = TypeExpression::Struct;
     }
     else if (next(Token::KwEnum))
     {
-      start = match(Token::KwEnum).start();
+      tokTag = match(Token::KwEnum);
       tag = TypeExpression::Enum;
     }
     else if (next(Token::KwUnion))
     {
-      start = match(Token::KwUnion).start();
+      tokTag = match(Token::KwUnion);
       tag = TypeExpression::Union;
     }
     else
@@ -78,14 +79,12 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
       return nullptr;
     }
 
-    // TODO remove required parens: enum(u8) {} -> enum u8 {}
-    if (tag == TypeExpression::Enum && next(Token::LParen))
+    // TODO error for struct and variant: "{}s don't have underlying types"
+    if (tag == TypeExpression::Enum && !next(Token::LBrace))
     {
-      Token const tokLParen = match(Token::LParen);
       pUnderlyingType = expression();
-      throwErrorIfNullOrNotExpression(pUnderlyingType, tokLParen, "type expression expected");
-
-      match(Token::RParen, ErrorStrategy::DefaultErrorMessage);
+      // TODO error pos need to be after tokTag, not on it
+      throwErrorIfNullOrNotExpression(pUnderlyingType, tokTag, "type expression expected");
     }
     match(Token::LBrace, ErrorStrategy::DefaultErrorMessage);
   }
@@ -180,7 +179,7 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     : lastMatchedToken().end();
 
   return TypeExpression::make_shared(
-    tag, start, end, std::move(fields), std::move(declsPre), std::move(declsPost), pUnderlyingType);
+    tag, tokTag.start(), end, std::move(fields), std::move(declsPre), std::move(declsPost), pUnderlyingType);
 }
 
 FunctionExpression::SPtr Parser::functionExpression()
@@ -528,6 +527,9 @@ Error Parser::error(Node::SPtr pNode, std::string const& message)
 
 void Parser::throwErrorIfNotExpression(Node::SPtr pNode, std::string const& message)
 {
+  // TODO check for node type and add notes
+  //   ex: ranges are not expressions, let statements are not expressions, etc
+
   if (pNode != nullptr && !pNode->isExpression())
   {
     throw error(pNode, message);
@@ -536,6 +538,9 @@ void Parser::throwErrorIfNotExpression(Node::SPtr pNode, std::string const& mess
 
 void Parser::throwErrorIfNullOrNotExpression(Node::SPtr pNode, Token fallbackToken, std::string const& message)
 {
+  // TODO check for node type and add notes
+  //   ex: ranges are not expressions, let statements are not expressions, etc
+
   if (pNode == nullptr)
   {
     throw Error(d_tokenizer.sourcePath(), fallbackToken.end(), fallbackToken.end(), message);

@@ -17,7 +17,7 @@ R"SOURCE(
 a: a,
 b: b,
 
-let MyEnum = enum (u8) {
+let MyEnum = enum u8 {
   a = 0,
   b = 2,
 };

@@ -606,23 +606,6 @@ TEST_CASE("enum variants trailing comma is optional (case 2)")
     {}));
 }
 
-TEST_CASE("enums with explicit underlying types must have underlying types")
-{
-  auto prs = parser("enum() {}");
-  try
-  {
-    prs.expression();
-  }
-  catch(Error const& err)
-  {
-    std::string const
-      msg = fmt::to_string(err),
-      expectedMsg = "<file>:0:5: error: type expression expected";
-
-    REQUIRE_EQ(msg, expectedMsg);
-  }
-}
-
 TEST_CASE("enum variants must be grouped together")
 {
   auto prs = parser(
@@ -674,7 +657,7 @@ TEST_CASE("enums")
 
 TEST_CASE("enums with explicity underlying types")
 {
-  auto prs = parser("enum(u8) {}");
+  auto prs = parser("enum u8 {}");
   auto e = prs.expression();
 
   REQUIRE_AST_EQ(e, _enum(symbol("u8"), {}, {}, {}));
@@ -683,7 +666,7 @@ TEST_CASE("enums with explicity underlying types")
 TEST_CASE("enum (complex)")
 {
   auto prs = parser(
-    "enum (ceva) {\n"
+    "enum ceva {\n"
     "  let Self = @Self;\n"
     "\n"
     "  a = 0,\n"
