@@ -262,5 +262,51 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
     return true;
   }
 
+  if (nodesAre(Field))
+  {
+    if (n1->name() != n2->name())
+      return false;
+
+    if (!equal(n1->type(), n2->type()))
+      return false;
+
+    return equal(n1->value(), n2->value());
+  }
+
+  if (nodesAre(TypeExpression))
+  {
+    if (n1->tag() != n2->tag())
+      return false;
+
+    if (n1->tag() == TypeExpression::Enum
+      && !equal(n1->underlyingType(), n2->underlyingType()))
+      return false;
+
+    if (n1->declsPre().size() != n2->declsPre().size())
+      return false;
+
+    if (n1->fields().size() != n2->fields().size())
+      return false;
+
+    if (n1->declsPost().size() != n2->declsPost().size())
+      return false;
+
+    for (size_t i = 0; i < n1->declsPre().size(); i += 1)
+    {
+      if (!equal(n1->declsPre()[i], n2->declsPre()[i]))
+        return false;
+    }
+    for (size_t i = 0; i < n1->fields().size(); i += 1)
+    {
+      if (!equal(n1->fields()[i], n2->fields()[i]))
+        return false;
+    }
+    for (size_t i = 0; i < n1->declsPost().size(); i += 1)
+    {
+      if (!equal(n1->declsPost()[i], n2->declsPost()[i]))
+        return false;
+    }
+    return true;
+  }
   return false;
 }

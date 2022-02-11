@@ -17,6 +17,8 @@ Parser parser(std::string const& text)
 
 TEST_SUITE_BEGIN("Parser");
 
+// TODO test non expressions, ex a = 0..2; enum (let b = 0) { ... }
+
 /* ================== TokenExpression ================== */
 
 TEST_CASE("symbols")
@@ -327,8 +329,281 @@ TEST_CASE("function (complex)")
 
 // TODO "fn() blk: {}" and "fn() Type {}" not being parsed as "fn() (Type{})""
 
-/* ================== TypeExpression ================== */
+/* ================== Structs ================== */
 
-// TODO
+TEST_CASE("struct fields must be grouped together")
+{
+  auto prs = parser(
+    "struct {\n"
+    "  a: i128,\n"
+    "  let A = 0;\n"
+    "  b: f32,\n"
+    "}");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:3:2: error: struct fields must be grouped together";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("struct fields must have type annotations")
+{
+  auto prs = parser("struct { a, }");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:9: error: struct fields must have type annotations";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("struct fields cannot have default values")
+{
+  auto prs = parser("struct { a: u0 = 0, }");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:9: error: struct fields cannot have default values";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("structs")
+{
+  auto prs = parser("struct {}");
+  auto s = prs.expression();
+
+  REQUIRE_AST_EQ(s, _struct({}, {}, {}));
+}
+
+TEST_CASE("structs (complex)")
+{
+  auto prs = parser(
+    "struct {\n"
+    "  let Self = @Self;\n"
+    "\n"
+    "  field: i2,\n"
+    "\n"
+    "  pub let a = 0;\n"
+    "}");
+  auto s = prs.expression();
+
+  REQUIRE_AST_EQ(s, _struct({
+    let(false, false, "Self", builtin("Self"))
+  }, {
+    field("field", symbol("i2"), nullptr)
+  }, {
+    let(true, false, "a", number("0"))
+  }));
+}
+
+/* ================== Enums ================== */
+
+TEST_CASE("enums with explicit underlying types must have underlying types")
+{
+  auto prs = parser("enum() {}");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:5: error: type expression expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("enum variants must be grouped together")
+{
+  auto prs = parser(
+    "enum {\n"
+    "  a,\n"
+    "  let B = 0;\n"
+    "  b,\n"
+    "}");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:3:2: error: enum variants must be grouped together";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("enum variants cannot have type annotations")
+{
+  auto prs = parser("enum { a, }");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg =
+        "<file>:0:7: error: enum variants cannot have type annotations"
+        "<file>:0:7: note: all enum variants share the same underlying type";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("enums")
+{
+  auto prs = parser("enum {}");
+  auto e = prs.expression();
+
+  REQUIRE_AST_EQ(e, _enum({}, {}, {}));
+}
+
+TEST_CASE("enums with explicity underlying types")
+{
+  auto prs = parser("enum(u8) {}");
+  auto e = prs.expression();
+
+  REQUIRE_AST_EQ(e, _enum(symbol("u8"), {}, {}, {}));
+}
+
+TEST_CASE("enum (complex)")
+{
+  auto prs = parser(
+    "enum (ceva) {\n"
+    "  let Self = @Self;\n"
+    "\n"
+    "  a = 0,\n"
+    "  b,\n"
+    "  c = 1\n"
+    "\n"
+    "  pub let a = 0;\n"
+    "}");
+  auto e = prs.expression();
+
+  REQUIRE_AST_EQ(e, _enum( symbol("ceva"), {
+    let(false, false, "Self", builtin("Self"))
+  }, {
+    field("a", nullptr, number("0")),
+    field("b", nullptr, nullptr),
+    field("c", nullptr, number("1"))
+  }, {
+    let(true, false, "a", number("0"))
+  }));
+}
+
+/* ================== Unions ================== */
+
+TEST_CASE("union variants must be grouped together")
+{
+  auto prs = parser(
+    "union {\n"
+    "  a: i128,\n"
+    "  let A = 0;\n"
+    "  b: f32,\n"
+    "}");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:3:2: error: union variants must be grouped together";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("union variants must have type annotations")
+{
+  auto prs = parser("union { a, }");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:8: error: union variants must have type annotations";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("union variants cannot have default values")
+{
+  auto prs = parser("union { a: u0 = 0, }");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:8: error: union variants cannot have default values";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("unions")
+{
+  auto prs = parser("union {}");
+  auto u = prs.expression();
+
+  REQUIRE_AST_EQ(u, _union({}, {}, {}));
+}
+
+TEST_CASE("unions (complex)")
+{
+  auto prs = parser(
+    "union {\n"
+    "  let Self = @Self;\n"
+    "\n"
+    "  v1: i2,\n"
+    "  v2: i4,\n"
+    "\n"
+    "  pub let a = 0;\n"
+    "}");
+  auto u = prs.expression();
+
+  REQUIRE_AST_EQ(u, _union({
+    let(false, false, "Self", builtin("Self"))
+  }, {
+    field("v1", symbol("i2"), nullptr),
+    field("v2", symbol("i4"), nullptr)
+  }, {
+    let(true, false, "a", number("0"))
+  }));
+}
 
 TEST_SUITE_END();

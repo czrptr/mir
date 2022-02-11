@@ -1,6 +1,7 @@
 #include "parsing/Parser.h"
 
 // TODO better error messages
+// TODO check if skip(Token::Comma works correctly)
 
 using namespace ast;
 
@@ -76,6 +77,7 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
       return nullptr;
     }
 
+    // TODO remove required parens: enum(u8) {} -> enum u8 {}
     if (tag == TypeExpression::Enum && next(Token::LParen))
     {
       Token const tokLParen = match(Token::LParen);
@@ -101,7 +103,7 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     if (pDecl == nullptr && pField == nullptr)
     {
       throw error(pExpr,
-        fmt::format("{}s can only contain declarations (let statements), fields or comptime blocks", tag));
+        fmt::format("{}s can only contain declarations (let statements), fields and a comptime block", tag));
     }
     if (pDecl != nullptr)
     {
@@ -132,7 +134,8 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
         {
           fieldsString = "union variant";
         }
-        throw error(pExpr, fmt::format("all {}s must be grouped together", fieldsString));
+        // TODO add note
+        throw error(pExpr, fmt::format("{}s must be grouped together", fieldsString));
       }
 
       if (tag == TypeExpression::Enum)
