@@ -36,6 +36,7 @@ set(MIR_SOURCES
   ${CMAKE_SOURCE_DIR}/source/parsing/Tokenizer.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/Operator.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/ast/Node.cpp
+  ${CMAKE_SOURCE_DIR}/source/parsing/ast/Part.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/ast/TokenExpressions.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/ast/TypeExpression.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/ast/FunctionExpression.cpp

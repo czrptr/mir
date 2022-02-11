@@ -36,12 +36,11 @@ public:
   ast::TokenExpression::SPtr tokenExpression();
 
   ast::TypeExpression::SPtr typeExpression(bool isRoot = false);
-  ast::Field::SPtr field();
 
   ast::FunctionExpression::SPtr functionExpression();
 
   ast::LetStatement::SPtr letStatement();
-  ast::LetStatementPart::SPtr letStatementPart();
+  ast::Part::SPtr part();
 
   ast::BlockExpression::SPtr blockExpression();
 
@@ -61,7 +60,8 @@ private:
   void commit();
 
   // TODO make these const
-  Error error(Token token, std::string const& message);
-  Error error(ast::Node::SPtr pNode, std::string const& message);
+  [[nodiscard]] Error error(Token token, std::string const& message);
+  [[nodiscard]] Error error(ast::Node::SPtr pNode, std::string const& message);
+  void throwErrorIfNotExpression(ast::Node::SPtr pNode, std::string const& message);
   void throwErrorIfNullOrNotExpression(ast::Node::SPtr pNode, Token fallbackToken, std::string const& message);
 };

@@ -115,7 +115,25 @@ TEST_CASE("let statements cannot be empty")
   }
 }
 
-TEST_CASE("let statement parts must be assigned")
+TEST_CASE("use 'undefined' to leave variables uninitialzed")
+{
+  auto prs = parser("let mut a = undefined");
+
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:8: error: assign 'undefined' to leave variables uninitialzed";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("constants must be initialized")
 {
   auto prs = parser("let a");
 
@@ -127,10 +145,63 @@ TEST_CASE("let statement parts must be assigned")
   {
     std::string const
       msg = fmt::to_string(err),
-      expectedMsg = "<file>:0:5: error: assignement operator '=' expected";
+      expectedMsg = "<file>:0:4: error: constants must be initialized";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
+}
+
+TEST_CASE("constants must be initialized with a proper value")
+{
+  auto prs = parser("let a = undefined");
+
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:4: error: constants must be initialized with a proper value";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("let statement parts must be separated by a comma")
+{
+  auto prs = parser("let a = a b = b");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:9: error: ',' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("let statement parts can have a trailing comma")
+{
+  auto prs = parser("let a = a,");
+  auto l = prs.expression();
+
+  REQUIRE_AST_EQ(l,
+    let(false, false, "a", nullptr, symbol("a")));
+}
+
+TEST_CASE("let statement parts trailing comma is optional")
+{
+  auto prs = parser("let a = a");
+  auto l = prs.expression();
+
+  REQUIRE_AST_EQ(l,
+    let(false, false, "a", nullptr, symbol("a")));
 }
 
 TEST_CASE("let statement parts must be assigned a value")

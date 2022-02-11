@@ -1,11 +1,10 @@
 #include "parsing/Parser.h"
 
 // TODO better error messages
-// TODO check if skip(Token::Comma works correctly)
 
 using namespace ast;
 
-ast::TokenExpression::SPtr Parser::tokenExpression()
+TokenExpression::SPtr Parser::tokenExpression()
 {
   if (next(Token::Symbol))
   {
@@ -50,8 +49,10 @@ ast::TokenExpression::SPtr Parser::tokenExpression()
   return nullptr;
 }
 
-ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
+TypeExpression::SPtr Parser::typeExpression(bool isRoot)
 {
+  using Field = TypeExpression::Field;
+
   Position start = { 0, 0 };
   TypeExpression::Tag tag = TypeExpression::Struct;
   Node::SPtr pUnderlyingType = nullptr;
@@ -182,46 +183,7 @@ ast::TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     tag, start, end, std::move(fields), std::move(declsPre), std::move(declsPost), pUnderlyingType);
 }
 
-Field::SPtr Parser::field()
-{
-  if (!next(Token::Symbol))
-  {
-    return nullptr;
-  }
-
-  setRollbackPoint();
-  Token const tokName = match(Token::Symbol);
-  Node::SPtr
-    pType = nullptr,
-    pValue = nullptr;
-
-  if (next(Token::Colon))
-  {
-    Token const tokColon = match(Token::Colon);
-    // TODO implement workaround when a = b expression will be implemented and this code will break
-    pType = expression();
-    throwErrorIfNullOrNotExpression(pType, tokColon, "type expression expected");
-  }
-
-  if (next(Token::Operator))
-  {
-    Token const tokColon = match(Token::Operator);
-    if (tokColon.text() != "=")
-    {
-      // TODO test this case !!!
-      rollback();
-      return nullptr;
-    }
-
-    pValue = expression();
-    throwErrorIfNullOrNotExpression(pValue, tokColon, "expression expected");
-  }
-
-  commit();
-  return Field::make_shared(tokName, pType, pValue);
-}
-
-ast::FunctionExpression::SPtr Parser::functionExpression()
+FunctionExpression::SPtr Parser::functionExpression()
 {
   Token tokFn;
   if (!next(Token::KwFn))
@@ -255,10 +217,10 @@ ast::FunctionExpression::SPtr Parser::functionExpression()
 
   auto pBody = blockExpression();
 
-  return ast::FunctionExpression::make_shared(tokFn, std::move(parameters), pReturnType, pBody);
+  return FunctionExpression::make_shared(tokFn, std::move(parameters), pReturnType, pBody);
 }
 
-ast::LetStatement::SPtr Parser::letStatement()
+LetStatement::SPtr Parser::letStatement()
 {
   auto start = Position::invalid();
   bool
@@ -288,12 +250,35 @@ ast::LetStatement::SPtr Parser::letStatement()
     isMut = true;
   }
 
-  // TODO end on trailing comma if present?
-  std::vector<LetStatement::Part::SPtr> parts;
-  while (auto pPart = letStatementPart())
+  size_t commaCount = 0;
+  std::vector<Part::SPtr> parts;
+  while (auto pPart = part())
   {
+    if (!pPart->hasValue())
+    {
+      if (isMut)
+      {
+        throw error(pPart, "assign 'undefined' to leave variables uninitialzed");
+      }
+      else
+      {
+        throw error(pPart, "constants must be initialized");
+      }
+    }
+    if (!isMut && std::dynamic_pointer_cast<UndefinedExpression>(pPart->value()) != nullptr)
+    {
+      // TODO add note
+      throw error(pPart, "constants must be initialized with a proper value");
+    }
+
+    // force commas between parts
+    if (commaCount != parts.size())
+    {
+      auto const errPos = parts.back()->end();
+      throw Error(d_tokenizer.sourcePath(), errPos, errPos, "',' expected");
+    }
     parts.push_back(pPart);
-    skip(Token::Comma);
+    commaCount += static_cast<size_t>(skip(Token::Comma));
   }
 
   if (parts.empty())
@@ -304,37 +289,44 @@ ast::LetStatement::SPtr Parser::letStatement()
   return LetStatement::make_shared(start, isPub, isMut, std::move(parts));
 }
 
-ast::LetStatementPart::SPtr Parser::letStatementPart()
+Part::SPtr Parser::part()
 {
   if (!next(Token::Symbol))
   {
     return nullptr;
   }
 
+  // setRollbackPoint();
   Token const tokSymbol = match(Token::Symbol);
-  Position const start = tokSymbol.start();
+
+  // TODO implement workaround when a = b expression will be implemented and this code will break
 
   Node::SPtr pType = nullptr;
   if (skip(Token::Colon))
   {
-    // TODO implement workaround when a = b expression will be implemented and this code will break
     pType = expression();
+    throwErrorIfNotExpression(pType, "type expression expected");
   }
 
-  // TODO match(Operator::Tag)
-  Token const tokEq = match(Token::Operator, "assignement operator '=' expected");
-  if (tokEq.text() != "=")
+  Node::SPtr pValue = nullptr;
+  if (next(Token::Operator))
   {
-    throw error(tokEq, "assignement operator '=' expected");
+    Token const tokEq = match(Token::Operator, "assignement operator '=' expected");
+    if (tokEq.text() != "=")
+    {
+      // rollback();
+      // return nullptr;
+      throw error(tokEq, "assignement operator '=' expected");
+    }
+    pValue = expression();
+    throwErrorIfNullOrNotExpression(pValue, tokEq, "expression expected");
   }
 
-  auto const pValue = expression();
-  throwErrorIfNullOrNotExpression(pValue, tokEq, "expression expected");
-
-  return LetStatement::Part::make_shared(start, tokSymbol.text(), pType, pValue);
+  // commit();
+  return Part::make_shared(tokSymbol, pType, pValue);
 }
 
-ast::BlockExpression::SPtr Parser::blockExpression()
+BlockExpression::SPtr Parser::blockExpression()
 {
   Token tokLBrace;
   if (!next(Token::LBrace))
@@ -343,7 +335,7 @@ ast::BlockExpression::SPtr Parser::blockExpression()
   }
   tokLBrace = match(Token::LBrace);
 
-  std::vector<ast::Node::SPtr> statements;
+  std::vector<Node::SPtr> statements;
   while (auto pStmt = expression())
   {
     statements.push_back(pStmt);
@@ -352,11 +344,11 @@ ast::BlockExpression::SPtr Parser::blockExpression()
 
   Token const tokRBrace = match(Token::RBrace, ErrorStrategy::DefaultErrorMessage);
 
-  return ast::BlockExpression::make_shared(
+  return BlockExpression::make_shared(
     tokLBrace.start(), tokRBrace.start(), std::string_view(), std::move(statements));
 }
 
-ast::Node::SPtr Parser::expression()
+Node::SPtr Parser::expression()
 {
   // TODO parse comptime here
   // add marked comptime field to Node?
@@ -385,7 +377,7 @@ ast::Node::SPtr Parser::expression()
     }
   }
 
-  ast::Node::SPtr pRes = nullptr;
+  Node::SPtr pRes = nullptr;
   if (auto pTemp = typeExpression(); pTemp != nullptr)
   {
     pRes = pTemp;
@@ -408,7 +400,7 @@ ast::Node::SPtr Parser::expression()
   }
 
   // TODO add if, loop check
-  auto pBlock = std::dynamic_pointer_cast<ast::BlockExpression>(pRes);
+  auto pBlock = std::dynamic_pointer_cast<BlockExpression>(pRes);
 
   if (pBlock == nullptr && isLabeled)
   {
@@ -421,17 +413,17 @@ ast::Node::SPtr Parser::expression()
   return pRes;
 }
 
-ast::Node::SPtr Parser::expressionOrField()
+Node::SPtr Parser::expressionOrField()
 {
   /*
     this fixes: a: b = c,
-      being parsed with two recursive calls to field()
+      being parsed with two recursive calls to part()
     expression()
-    ->field() a:
+    ->part() a:
       ->expression()
-        ->field() a = c
+        ->part() a = c
   */
-  if (auto pRes = field(); pRes != nullptr)
+  if (auto pRes = part(); pRes != nullptr)
   {
     return pRes;
   }
@@ -529,12 +521,20 @@ Error Parser::error(Token token, std::string const& message)
   return Error(d_tokenizer.sourcePath(), token.start(), token.end(), message);
 }
 
-Error Parser::error(ast::Node::SPtr pNode, std::string const& message)
+Error Parser::error(Node::SPtr pNode, std::string const& message)
 {
   return Error(d_tokenizer.sourcePath(), pNode->start(), pNode->end(), message);
 }
 
-void Parser::throwErrorIfNullOrNotExpression(ast::Node::SPtr pNode, Token fallbackToken, std::string const& message)
+void Parser::throwErrorIfNotExpression(Node::SPtr pNode, std::string const& message)
+{
+  if (pNode != nullptr && !pNode->isExpression())
+  {
+    throw error(pNode, message);
+  }
+}
+
+void Parser::throwErrorIfNullOrNotExpression(Node::SPtr pNode, Token fallbackToken, std::string const& message)
 {
   if (pNode == nullptr)
   {

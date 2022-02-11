@@ -58,54 +58,62 @@ UnreachableExpression::SPtr unreachable()
   return std::make_shared<UnreachableExpression>(tok);
 }
 
-Field::SPtr field(std::string const& name, Node::SPtr type, Node::SPtr value)
-{
-  Token tok(Token::Symbol, Position::invalid(), Position::invalid(), Intern::string(name));
-  return Field::make_shared(tok, type, value);
-}
-
 TypeExpression::SPtr _struct(
-  list<LetStatement::SPtr> declsPre, list<Field::SPtr> fields, list<LetStatement::SPtr> declsPost)
+  list<LetStatement::SPtr> declsPre, list<TypeExpression::Field::SPtr> fields, list<LetStatement::SPtr> declsPost)
 {
   return TypeExpression::make_shared(TypeExpression::Struct, Position::invalid(), Position::invalid(),
     fields, declsPre, declsPost);
 }
 
 TypeExpression::SPtr _enum(
-  list<LetStatement::SPtr> declsPre, list<Field::SPtr> fields, list<LetStatement::SPtr> declsPost)
+  list<LetStatement::SPtr> declsPre, list<TypeExpression::Field::SPtr> fields, list<LetStatement::SPtr> declsPost)
 {
   return TypeExpression::make_shared(TypeExpression::Enum, Position::invalid(), Position::invalid(),
     fields, declsPre, declsPost);
 }
 
 TypeExpression::SPtr _enum(
-  Node::SPtr underlyingType, list<LetStatement::SPtr> declsPre, list<Field::SPtr> fields, list<LetStatement::SPtr> declsPost)
+  Node::SPtr underlyingType, list<LetStatement::SPtr> declsPre, list<TypeExpression::Field::SPtr> fields, list<LetStatement::SPtr> declsPost)
 {
   return TypeExpression::make_shared(TypeExpression::Enum, Position::invalid(), Position::invalid(),
     fields, declsPre, declsPost, underlyingType);
 }
 
 TypeExpression::SPtr _union(
-  list<LetStatement::SPtr> declsPre, list<Field::SPtr> fields, list<LetStatement::SPtr> declsPost)
+  list<LetStatement::SPtr> declsPre, list<TypeExpression::Field::SPtr> fields, list<LetStatement::SPtr> declsPost)
 {
   return TypeExpression::make_shared(TypeExpression::Union, Position::invalid(), Position::invalid(),
     fields, declsPre, declsPost);
 }
 
-LetStatementPart::SPtr part(
+Part::SPtr part(
   std::string const& name, Node::SPtr type, Node::SPtr value)
 {
-  return LetStatementPart::make_shared(Position::invalid(), Intern::string(name), type, value);
+  Token tok(Token::Symbol, Position::invalid(), Position::invalid(), Intern::string(name));
+  return Part::make_shared(tok, type, value);
 }
 
-LetStatementPart::SPtr part(
+Part::SPtr part(
   std::string const& name, Node::SPtr value)
 {
-  return LetStatementPart::make_shared(Position::invalid(), Intern::string(name), nullptr, value);
+  Token tok(Token::Symbol, Position::invalid(), Position::invalid(), Intern::string(name));
+  return Part::make_shared(tok, nullptr, value);
+}
+
+TypeExpression::Field::SPtr field(
+  std::string const& name, Node::SPtr type, Node::SPtr value)
+{
+  return part(name, type, value);
+}
+
+TypeExpression::Field::SPtr field(
+  std::string const& name, Node::SPtr value)
+{
+  return part(name, nullptr, value);
 }
 
 LetStatement::SPtr let(
-  bool isPub, bool isMut, list<LetStatementPart::SPtr> parts)
+  bool isPub, bool isMut, list<Part::SPtr> parts)
 {
   return LetStatement::make_shared(Position::invalid(), isPub, isMut, parts);
 }
@@ -193,7 +201,7 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
   if (nodesAre(UnreachableExpression))
     return true;
 
-  if (nodesAre(LetStatement::Part))
+  if (nodesAre(Part))
   {
     if (n1->name() != n2->name())
       return false;
@@ -262,7 +270,7 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
     return true;
   }
 
-  if (nodesAre(Field))
+  if (nodesAre(TypeExpression::Field))
   {
     if (n1->name() != n2->name())
       return false;

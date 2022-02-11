@@ -2,63 +2,6 @@
 
 using namespace ast;
 
-void Field::toStringData(
-  std::vector<Node::SPtr>* subNodes,
-  std::string* nodeName,
-  std::string* additionalInfo) const
-{
-  assert(subNodes->empty());
-
-  // due to parsing logic, hasType() and hasValue()
-  // cannot both be true at the same time
-
-  char const* fieldType = nullptr;
-  // try AST implementing ast "notes" show info above the node same color ar tree branches
-  if (hasType())
-  {
-    fieldType = "type";
-    subNodes->push_back(type());
-  }
-  if (hasValue()) // d_pValue != nullptr <- idea, IDE deduce & show these types of comments automatically
-  {
-    fieldType = "value";
-    subNodes->push_back(value());
-  }
-
-  *nodeName = "Field";
-
-  *additionalInfo = fmt::format("'{}'", name());
-  if (fieldType != nullptr)
-  {
-    *additionalInfo += fmt::format(" {}", fieldType);
-  }
-}
-
-Position Field::end() const
-{
-  if (d_pValue != nullptr)
-  {
-    return d_pValue->end();
-  }
-  return d_pType != nullptr
-    ? d_pType->end()
-    : d_name.end();
-}
-
-Field::SPtr Field::make_shared(Token name, Node::SPtr pType, Node::SPtr pValue, Node::SPtr pParent)
-{
-  auto pRes = std::make_shared<Field>(name, pType, pValue, pParent);
-  if (pType != nullptr)
-  {
-    pType->setParent(pRes);
-  }
-  if (pValue != nullptr)
-  {
-    pValue->setParent(pRes);
-  }
-  return pRes;
-}
-
 void TypeExpression::toStringData(
   std::vector<Node::SPtr>* subNodes,
   std::string* nodeName,

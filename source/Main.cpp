@@ -14,7 +14,13 @@
 std::string sourceText =
 R"SOURCE(
 
-let NothingFn = fn () void;
+a: a,
+b: b,
+
+let MyEnum = enum (u8) {
+  a = 0,
+  b = 2,
+};
 
 let nothingFn: NothingFn = fn () void {};
 
