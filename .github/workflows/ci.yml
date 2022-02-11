@@ -48,4 +48,4 @@ jobs:
     # === RUN TESTS ===
 
     - name: Run tests
-      run: .build/test
+      run: ./build/test
