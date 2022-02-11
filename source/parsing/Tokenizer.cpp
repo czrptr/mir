@@ -103,28 +103,7 @@ Token Tokenizer::next()
 
   while (!inputStreamFinished())
   {
-    d_currentPos = d_nextPos;
-
-    if (!d_leftOver)
-    {
-      d_currentChar = inputNext();
-      d_nextChar = inputPeek(); // maybe get rid of this?
-    }
-    else
-    {
-      d_leftOver = false;
-    }
-    d_currentTokenText += d_currentChar;
-
-    if (d_currentChar == '\n')
-    {
-      d_nextPos.line += 1;
-      d_nextPos.column = 0;
-    }
-    else
-    {
-      d_nextPos.column += 1;
-    }
+    advance();
 
     switch (d_currentState)
     {
@@ -198,22 +177,30 @@ Token Tokenizer::next()
 
       case '/':
       {
-        if (d_nextChar == '/')
-        {
-          tokenStart(Token::Comment);
-          advance();
-          d_currentState = SingleLineComment;
-        }
-        else if (d_nextChar == '*')
-        {
-          tokenStart(Token::Comment);
-          advance();
-          commentNestLevel += 1;
-          d_currentState = MultiLineComment;
-        }
-        else
-        {
-          tokenStart(Token::Operator);
+          SWITCH_NEXT_CHAR()
+         {
+          case '/':
+          {
+            tokenStart(Token::Comment);
+            advance();
+            d_currentState = LineComment;
+          }
+          break;
+
+          case '*':
+          {
+            tokenStart(Token::Comment);
+            advance();
+            commentNestLevel += 1;
+            d_currentState = BlockComment;
+          }
+          break;
+
+          default:
+          {
+            tokenStart(Token::Operator);
+          }
+          break;
         }
       }
       break;
@@ -263,7 +250,7 @@ Token Tokenizer::next()
 
       case '@':
       {
-        throw error(fmt::format("'{}' can only be used as a prefix to denote compiler builtin functions", d_currentChar));
+        throw error("'@' can only be used as a prefix to denote compiler builtin functions");
       }
       break;
 
@@ -346,12 +333,12 @@ Token Tokenizer::next()
 
     SWITCH_CURRENT_CHAR(StringLiteral)
     {
-      case '\t':
       case '\n':
+      case '\t':
       case '\r':
       {
         // TODO multiline string literals (see Swift)
-        throw error("string literals cannot contain unescaped tabs, carriage returns or new lines");
+        throw error("string literals cannot contain unescaped new lines, tabs or carriage returns");
       }
       break;
 
@@ -405,7 +392,7 @@ Token Tokenizer::next()
     }
     END(); // StringLiteralEscape
 
-    SWITCH_CURRENT_CHAR(SingleLineComment)
+    SWITCH_CURRENT_CHAR(LineComment)
     {
       case '\n':
       {
@@ -421,46 +408,77 @@ Token Tokenizer::next()
       }
       break;
     }
-    END(); // SingleLineComment
+    END(); // LineComment
 
-    SWITCH_CURRENT_CHAR(MultiLineComment)
+    SWITCH_CURRENT_CHAR(BlockComment)
     {
       case '/':
       {
-        if (d_nextChar == '*')
+        SWITCH_NEXT_CHAR()
         {
-          advance();
-          commentNestLevel += 1;
+          case '*':
+          {
+            advance();
+            commentNestLevel += 1;
+          }
+          break;
+
+          default:
+          {
+            // continue parsing
+          }
+          break;
         }
       }
       break;
 
       case '*':
       {
-        if (d_nextChar == '/')
+        SWITCH_NEXT_CHAR()
         {
-          advance();
-          commentNestLevel -= 1;
-          if (commentNestLevel == 0)
+          case '/':
           {
-            return tokenEnd();
+            advance();
+            commentNestLevel -= 1;
           }
-          else if (commentNestLevel < 0)
+          break;
+
+          default:
           {
-            throw error("unpaired multiline comment ending");
+            // continue parsing
           }
+          break;
         }
       }
       break;
 
       default:
       {
-        // continue parsing
+        if (commentNestLevel == 0)
+        {
+          return tokenEnd();
+        }
+        else
+        {
+          // continue parsing
+        }
       }
       break;
     }
-    END(); // MultiLineComment
+    END(); // BlockComment
     }
+  }
+
+  if (d_currentState == StringLiteral)
+  {
+    throw Error(d_sourcePath, d_nextPos, "string literal missing terminating '\"'")
+      .note(d_currentToken.d_start, "string literal starts here");
+  }
+
+  if (d_currentState == BlockComment && commentNestLevel > 0)
+  {
+    throw Error(d_sourcePath, d_nextPos, "block comment missing terminating '*/'")
+      .note(d_currentToken.d_start, "block comment starts here");
   }
 
   if (!d_currentTokenText.empty())
@@ -474,8 +492,7 @@ Token Tokenizer::next()
     return res;
   }
 
-  auto const eofPos = d_currentPos.nextColumn();
-  return Token(Token::Eof, eofPos, eofPos, "Eof");
+  return Token(Token::Eof, d_nextPos, d_nextPos, "");
 }
 
 std::string const& Tokenizer::sourcePath() const
@@ -490,6 +507,7 @@ bool Tokenizer::inputStreamFinished() const
 
 char Tokenizer::inputPeek()
 {
+  // TODO return \0 on Eof
   try
   {
     return d_pInputStream->peek();
@@ -502,6 +520,7 @@ char Tokenizer::inputPeek()
 
 char Tokenizer::inputNext()
 {
+  // TODO return \0 on Eof
   try
   {
     char res;
@@ -516,7 +535,28 @@ char Tokenizer::inputNext()
 
 void Tokenizer::advance()
 {
-  d_currentPos = d_currentPos.nextColumn();
+  d_currentPos = d_nextPos;
+
+  if (!d_leftOver)
+  {
+    d_currentChar = inputNext();
+    d_nextChar = inputPeek(); // maybe get rid of this?
+  }
+  else
+  {
+    d_leftOver = false;
+  }
+  d_currentTokenText += d_currentChar;
+
+  if (d_currentChar == '\n')
+  {
+    d_nextPos.line += 1;
+    d_nextPos.column = 0;
+  }
+  else
+  {
+    d_nextPos.column += 1;
+  }
 }
 
 void Tokenizer::tokenStart(Token::Tag tag)
@@ -548,6 +588,8 @@ Token Tokenizer::tokenEnd()
   }
 
   d_currentToken.d_end = d_currentPos;
+  // TODO don't intern keywords, you can "calculate" its string representation
+  //   because it cannot vary
   d_currentToken.d_text = Intern::string(d_currentTokenText);
   d_currentTokenText.clear();
 
@@ -555,9 +597,8 @@ Token Tokenizer::tokenEnd()
 
   if (d_currentToken.d_tag == Token::Symbol)
   {
-    // TODO construct only once
+    // TODO use a map
     d_currentToken.d_tag = Switch<std::string_view, Token::Tag>(d_currentToken.d_text)
-      // TODO order cases in order of observerd usage
       .Case("pub", Token::KwPub)
       .Case("let", Token::KwLet)
       .Case("mut", Token::KwMut)
@@ -566,17 +607,17 @@ Token Tokenizer::tokenEnd()
       .Case("enum", Token::KwEnum)
       .Case("union", Token::KwUnion)
       .Case("fn", Token::KwFn)
-      .Case("infer", Token::KwInfer)
-      .Case("try", Token::KwTry)
+      .Case("infer", Token::KwInfer) // make operator
+      .Case("try", Token::KwTry) // make operator
       .Case("if", Token::KwIf)
       .Case("else", Token::KwElse)
       .Case("switch", Token::KwSwitch)
       .Case("loop", Token::KwLoop)
-      .Case("return", Token::KwReturn)
-      .Case("break", Token::KwBreak)
-      .Case("continue", Token::KwContinue)
-      .Case("defer", Token::KwDefer)
-      .Case("import", Token::KwImport)
+      .Case("return", Token::KwReturn) // make operator
+      .Case("break", Token::KwBreak) // make operator
+      .Case("continue", Token::KwContinue) // make operator
+      .Case("defer", Token::KwDefer) // make operator
+      .Case("import", Token::KwImport) // make reserved symbol?
       .Case("not", Token::Operator)
       .Case("catch", Token::Operator)
       .Case("orelse", Token::Operator)
@@ -584,6 +625,9 @@ Token Tokenizer::tokenEnd()
       .Case("or", Token::Operator)
       .Default(d_currentToken.d_tag);
   }
+
+  // TODO validate rune operators
+  // TODO errors for a and= b, a not= b, etc...
 
   return d_currentToken;
 }

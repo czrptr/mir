@@ -16,9 +16,9 @@ public:
   enum Tag
   {
     Symbol = 0,
-    Operator = 1,
-    NumberLiteral = 2,
-    StringLiteral = 3,
+    NumberLiteral = 1,
+    StringLiteral = 2,
+    Operator = 3,
     // "runes"
     Comma,
     Colon,
@@ -245,12 +245,12 @@ struct fmt::formatter<Token>
       {
         return fmt::format_to(
           ctx.out(),
-          "Token{{{0}, {1:ds}, {2:ds}, \"{3}\"}}",
+          "Token{{{0:d}, {1:ds}, {2:ds}, \"{3}\"}}",
           tok.tag(), tok.start(), tok.end(), tok.text());
       }
       return fmt::format_to(
         ctx.out(),
-        "Token{{tag = {0}, start = {1:d}, end = {2:d}, text = \"{3}\"}}",
+        "Token{{tag = {0:d}, start = {1:d}, end = {2:d}, text = \"{3}\"}}",
         tok.tag(), tok.start(), tok.end(), tok.text());
     }
     return fmt::format_to(

@@ -203,7 +203,7 @@ Field::SPtr Parser::field()
     }
 
     pValue = expression();
-  throwErrorIfNullOrNotExpression(pValue, tokColon, "expression expected");
+    throwErrorIfNullOrNotExpression(pValue, tokColon, "expression expected");
   }
 
   commit();
@@ -349,12 +349,13 @@ ast::BlockExpression::SPtr Parser::blockExpression()
   Token const tokRBrace = match(Token::RBrace, ErrorStrategy::DefaultErrorMessage);
 
   return ast::BlockExpression::make_shared(
-    tokLBrace.start(), tokRBrace.start(), label, std::move(statements));
+    tokLBrace.start(), tokRBrace.start(), "", std::move(statements));
 }
 
 ast::Node::SPtr Parser::expression()
 {
   // TODO parse labels here
+  // and then check that the expression is block, if or loop
 
   ast::Node::SPtr pRes;
   if (pRes = typeExpression(); pRes != nullptr)

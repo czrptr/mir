@@ -50,20 +50,13 @@ public:
     d_parts.emplace_back(filepath, start, end, Tag::Error, message);
   }
 
+  Error(std::string const& filepath, Position position, std::string const& message)
+    : Error(filepath, position, position.nextColumn(), message)
+  {}
+
   Error(std::string const& filepath, std::string const& message)
     : Error(filepath, Position::invalid(), Position::invalid(), message)
   {}
-
-  Error& note(Position start, Position end, std::string const& message)
-  {
-    d_parts.emplace_back(d_parts.back().filePath(), start, end, Tag::Note, message);
-    return *this;
-  }
-
-  Error& note(std::string const& message)
-  {
-    return note(d_parts.back().start(), d_parts.back().end(), message);
-  }
 
   Error& note(std::string const& filepath, Position start, Position end, std::string const& message)
   {
@@ -71,9 +64,32 @@ public:
     return *this;
   }
 
+  Error& note(std::string const& filepath, Position position, std::string const& message)
+  {
+    d_parts.emplace_back(filepath, position, position.nextColumn(), Tag::Note, message);
+    return *this;
+  }
+
   Error& note(std::string const& filepath, std::string const& message)
   {
     return note(filepath, d_parts.back().start(), d_parts.back().end(), message);
+  }
+
+  Error& note(Position start, Position end, std::string const& message)
+  {
+    d_parts.emplace_back(d_parts.back().filePath(), start, end, Tag::Note, message);
+    return *this;
+  }
+
+  Error& note(Position position, std::string const& message)
+  {
+    d_parts.emplace_back(d_parts.back().filePath(), position, position.nextColumn(), Tag::Note, message);
+    return *this;
+  }
+
+  Error& note(std::string const& message)
+  {
+    return note(d_parts.back().start(), d_parts.back().end(), message);
   }
 
   std::vector<Part> const& parts() const { return d_parts; }

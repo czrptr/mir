@@ -16,19 +16,23 @@ private:
   // Types
 	enum State
 	{
-		Start = -2,
-		Finished = -1,
+		Start = -1,
 		Symbol = 0,
-		Operator = 1,
-		NumberLiteral = 2,
-		StringLiteral = 3,
+		NumberLiteral = 1,
+		StringLiteral = 2,
+		Operator = 3,
 		NumberLiteralFaction,
 		StringLiteralEscape,
     StringLiteralEnd,
-		SingleLineComment,
-		MultiLineComment
+		LineComment,
+		BlockComment,
 	};
-	// TODO enum equality static asserts
+
+  // keep Token::Tag and Tokenizer::State in sync
+  static_assert(static_cast<int>(State::Symbol) == static_cast<int>(Token::Symbol));
+  static_assert(static_cast<int>(State::NumberLiteral) == static_cast<int>(Token::NumberLiteral));
+  static_assert(static_cast<int>(State::StringLiteral) == static_cast<int>(Token::StringLiteral));
+  static_assert(static_cast<int>(State::Operator) == static_cast<int>(Token::Operator));
 
   using Deleter = std::function<void(std::istream*)>;
   using InputStream = std::unique_ptr<std::istream, Deleter>;
