@@ -13,9 +13,9 @@ size_t Operator::precedence() const
   return precedence(d_tag);
 }
 
-bool Operator::chainability() const
+bool Operator::chainable() const
 {
-  return chainability(d_tag);
+  return chainable(d_tag);
 }
 
 Operator::Associativity Operator::associativity() const
@@ -58,6 +58,10 @@ size_t Operator::precedence(Operator::Tag tag)
 
 Operator::Associativity Operator::associativity(Operator::Tag tag)
 {
+  // use LeftToRight as None because parsing LeftToRight doesn't
+  // require a recursive call
+  constexpr auto None = Associativity::LeftToRight;
+
   switch (tag)
   {
   case Operator::Tag::Dot: return Associativity::LeftToRight;
@@ -68,7 +72,7 @@ Operator::Associativity Operator::associativity(Operator::Tag tag)
   case Operator::Tag::UnaryMinus: return Associativity::RightToLeft;
   case Operator::Tag::UnaryPlus: return Associativity::RightToLeft;
   case Operator::Tag::BitNot: return Associativity::RightToLeft;
-  case Operator::Tag::PtrTo: return Associativity::None; // unchainable
+  case Operator::Tag::PtrTo: return None; // unchainable
   case Operator::Tag::Mul: return Associativity::LeftToRight;
   case Operator::Tag::Div: return Associativity::LeftToRight;
   case Operator::Tag::Mod: return Associativity::LeftToRight;
@@ -82,21 +86,21 @@ Operator::Associativity Operator::associativity(Operator::Tag tag)
   case Operator::Tag::BitXor: return Associativity::LeftToRight;
   case Operator::Tag::Orelse: return Associativity::RightToLeft; // !!
   case Operator::Tag::Catch: return Associativity::RightToLeft;  // !!
-  case Operator::Tag::EqEq: return Associativity::None;   // unchainable
-  case Operator::Tag::NotEq: return Associativity::None;  // unchainable
-  case Operator::Tag::Ge: return Associativity::None;     // unchainable
-  case Operator::Tag::Le: return Associativity::None;     // unchainable
-  case Operator::Tag::GeEq: return Associativity::None;   // unchainable
-  case Operator::Tag::LeEq: return Associativity::None;   // unchainable
+  case Operator::Tag::EqEq: return None;   // unchainable
+  case Operator::Tag::NotEq: return None;  // unchainable
+  case Operator::Tag::Ge: return None;     // unchainable
+  case Operator::Tag::Le: return None;     // unchainable
+  case Operator::Tag::GeEq: return None;   // unchainable
+  case Operator::Tag::LeEq: return None;   // unchainable
   case Operator::Tag::AndAnd: return Associativity::LeftToRight;
   case Operator::Tag::OrOr: return Associativity::LeftToRight;
-  case Operator::Tag::DotDot: return Associativity::None; // unchainable
-  case Operator::Tag::Eq: return Associativity::None; // unchainable
+  case Operator::Tag::DotDot: return None; // unchainable
+  case Operator::Tag::Eq: return None;     // unchainable
   }
   assert(false); // unreachable
 }
 
-bool Operator::chainability(Operator::Tag tag)
+bool Operator::chainable(Operator::Tag tag)
 {
     switch (tag)
   {
@@ -104,10 +108,10 @@ bool Operator::chainability(Operator::Tag tag)
   case Operator::Tag::Opt: return true;
   case Operator::Tag::PtrDeref: return true;
   case Operator::Tag::Not_ErrorUnion: return true;
-  case Operator::Tag::Not: return true;
-  case Operator::Tag::UnaryMinus: return true;
-  case Operator::Tag::UnaryPlus: return true;
-  case Operator::Tag::BitNot: return true;
+  case Operator::Tag::Not: return true;         // TODO make false
+  case Operator::Tag::UnaryMinus: return true;  // TODO make false
+  case Operator::Tag::UnaryPlus: return true;   // TODO make false
+  case Operator::Tag::BitNot: return true;      // TODO make false
   case Operator::Tag::PtrTo: return false;
   case Operator::Tag::Mul: return true;
   case Operator::Tag::Div: return true;

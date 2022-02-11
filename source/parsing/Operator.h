@@ -89,7 +89,6 @@ public:
 
   enum class Associativity
   {
-    None,
     LeftToRight,
     RightToLeft,
   };
@@ -117,11 +116,11 @@ public:
 
   size_t precedence() const;
   Associativity associativity() const;
-  bool chainability() const;
+  bool chainable() const;
 
   static size_t precedence(Operator::Tag tag);
   static Associativity associativity(Operator::Tag tag);
-  static bool chainability(Operator::Tag tag);
+  static bool chainable(Operator::Tag tag);
 };
 
 template<>
@@ -243,7 +242,6 @@ struct fmt::formatter<Operator::Associativity> : fmt::formatter<fmt::string_view
     std::string_view name = "OPERATOR_ASSOCIATIVITY_INVALID";
     switch (assoc)
     {
-    case Operator::Associativity::None: name = "None"; break;
     case Operator::Associativity::LeftToRight: name = "LeftToRight"; break;
     case Operator::Associativity::RightToLeft: name = "RightToLeft"; break;
     }

@@ -5,6 +5,8 @@
 #include <parsing/Tokenizer.h>
 #include <parsing/ast/Nodes.h>
 
+#include <map>
+
 struct Parser final
 {
 private:
@@ -38,16 +40,27 @@ public: // TODO make private:
   ast::Expression::SPtr atomicExpression();
 
 
-  [[gnu::always_inline]] inline
+  // TODO remove this, only used for prototyping
+  // every exprXX should be implemented by hand when the
+  // syntax gets set in stone
+  inline
   ast::Expression::SPtr binaryExpression(
     ExpressionParser nextParser,
-    // TODO these contain chainability and asociativity info?
-    std::vector<Operator::Tag> operators);
+    std::vector<Operator::Tag> const& operators,
+    std::map<Operator::Tag, size_t> chainCount = {});
 
-  // TODO generate these based on Operator::Tag
+  // TODO
+  //  generate these based on Operator::Tag
+  //  see results with [[gnu::flatten]]
+
   ast::Expression::SPtr expr00();
   ast::Expression::SPtr expr01();
   ast::Expression::SPtr expr02();
+  ast::Expression::SPtr expr03();
+  ast::Expression::SPtr expr04();
+  ast::Expression::SPtr expr05();
+  ast::Expression::SPtr expr06();
+  ast::Expression::SPtr expr07();
 
 private:
   bool next(Token::Tag tag);

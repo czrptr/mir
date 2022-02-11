@@ -172,7 +172,8 @@ Expression::SPtr Parser::atomicExpression()
 
 ast::Expression::SPtr Parser::binaryExpression(
   ExpressionParser nextParser,
-  std::vector<Operator::Tag> operators)
+  std::vector<Operator::Tag> const& operators,
+  std::map<Operator::Tag, size_t> chainCount)
 {
   auto pLhs = (this->*nextParser)();
   if (pLhs == nullptr)
@@ -202,15 +203,39 @@ ast::Expression::SPtr Parser::binaryExpression(
       op.setTag(*tagIt);
     }
 
-    auto pRhs = (this->*nextParser)();
-    if (pRhs == nullptr)
+    // insertion of 0 is intentional
+    chainCount[op.tag()] += 1;
+    if (!op.chainable() && chainCount[op.tag()] > 1)
     {
-      // TODO better positions
-      throw Error(d_tokenizer.sourcePath(), op.start(), op.end(), Error::Type::Error, "expression expected");
+      throw Error(d_tokenizer.sourcePath(), op.start(), op.end(), Error::Type::Error,
+        fmt::format("operator '{}' cannot be chained", op));
     }
 
-    commit();
-    pRes = BinaryExpression::make_shared(pRes, pRhs, op);
+    if (op.associativity() == Operator::Associativity::LeftToRight)
+    {
+      auto pRhs = (this->*nextParser)();
+      if (pRhs == nullptr)
+      {
+        // TODO better positions
+        throw Error(d_tokenizer.sourcePath(), op.start(), op.end(), Error::Type::Error, "expression expected");
+      }
+
+      commit();
+      pRes = BinaryExpression::make_shared(pRes, pRhs, op);
+    }
+    else // Operator::Associativity::RightToLeft
+    {
+      commit();
+      std::vector<Operator::Tag> leftToRightOperators;
+
+      std::copy_if(operators.begin(), operators.end(), std::back_inserter(leftToRightOperators),
+        [](Operator::Tag const& tag)
+          {
+            return Operator::associativity(tag) == Operator::Associativity::RightToLeft;
+          });
+
+      pRes = BinaryExpression::make_shared(pRes, binaryExpression(nextParser, leftToRightOperators, chainCount), op);
+    }
   }
 
   return pRes;
@@ -218,46 +243,7 @@ ast::Expression::SPtr Parser::binaryExpression(
 
 Expression::SPtr Parser::expr00()
 {
-  auto pLhs = expr01();
-  if (pLhs == nullptr)
-  {
-    return nullptr;
-  }
-
-  Expression::SPtr pRes = pLhs;
-  size_t count = 0;
-  while (next(Token::Operator))
-  {
-    setRollbackPoint();
-    auto op = Operator(match(Token::Operator));
-    if (op.text() != fmt::to_string(Operator::DotDot))
-    {
-      rollback();
-      return pRes;
-    }
-    else
-    {
-      op.setTag(Operator::DotDot);
-    }
-
-    count += 1;
-    if (count > 1)
-    {
-      throw Error(d_tokenizer.sourcePath(), op.start(), op.end(), Error::Type::Error, "operator '..' cannot be chained");
-    }
-
-    auto pRhs = expr01();
-    if (pRhs == nullptr)
-    {
-      // TODO better positions
-      throw Error(d_tokenizer.sourcePath(), op.start(), op.end(), Error::Type::Error, "expression expected");
-    }
-
-    commit();
-    pRes = BinaryExpression::make_shared(pRes, pRhs, op);
-  }
-
-  return pRes;
+  return binaryExpression(&Parser::expr01, {Operator::DotDot, Operator::Eq});
 }
 
 Expression::SPtr Parser::expr01()
@@ -267,7 +253,38 @@ Expression::SPtr Parser::expr01()
 
 Expression::SPtr Parser::expr02()
 {
-  return binaryExpression(&Parser::atomicExpression, {Operator::AndAnd});
+  return binaryExpression(&Parser::expr03, {Operator::AndAnd});
+}
+
+Expression::SPtr Parser::expr03()
+{
+  return binaryExpression(&Parser::expr04,
+  {Operator::EqEq, Operator::NotEq, Operator::Ge, Operator::Le, Operator::GeEq, Operator::LeEq});
+}
+
+Expression::SPtr Parser::expr04()
+{
+  // TODO implement catch |err|
+  return binaryExpression(&Parser::expr05,
+    {Operator::BitAnd, Operator::BitOr, Operator::BitXor, Operator::Orelse, Operator::Catch});
+}
+
+Expression::SPtr Parser::expr05()
+{
+  return binaryExpression(&Parser::expr06,
+    {Operator::BitShr, Operator::BitShl});
+}
+
+Expression::SPtr Parser::expr06()
+{
+  return binaryExpression(&Parser::expr07,
+    {Operator::Add, Operator::Sub});
+}
+
+Expression::SPtr Parser::expr07()
+{
+  return binaryExpression(&Parser::atomicExpression,
+    {Operator::Mul, Operator::Div, Operator::Mod, Operator::OrOr_ErrorSet});
 }
 
 /* ===================== Helpers ===================== */

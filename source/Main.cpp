@@ -13,7 +13,7 @@
 
 std::string sourceText =
 R"SOURCE(
-b .. c && d || e && f
+a + b * c / d - e % f
 )SOURCE";
 //R"SOURCE(
 // pub let mut
