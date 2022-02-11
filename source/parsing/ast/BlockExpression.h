@@ -15,6 +15,12 @@ private:
   std::string_view d_label;
   std::vector<Node::SPtr> d_statements;
 
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
+
 public:
   BlockExpression(
     Position start,
@@ -39,9 +45,6 @@ public:
   std::string_view label() const { return d_label; }
 
   std::vector<Node::SPtr> const& statements() const { return d_statements; }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 
   static BlockExpression::SPtr make_shared(
     Position start,

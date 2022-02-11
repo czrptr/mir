@@ -16,6 +16,12 @@ private:
   Node::SPtr d_pType;
   Node::SPtr d_pValue;
 
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
+
 public:
   LetStatementPart(
     Position start,
@@ -37,11 +43,9 @@ public:
   virtual bool isExpression() const override { return false; }
 
   std::string_view name() const { return d_name; }
+  bool hasType() const { return d_pType != nullptr; }
   Node::SPtr type() const { return d_pType; }
   Node::SPtr value() const { return d_pValue; }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 
   static LetStatementPart::SPtr make_shared(
     Position start,
@@ -64,6 +68,12 @@ private:
   bool d_isMut;
   std::vector<Part::SPtr> d_parts;
 
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
+
 public:
   LetStatement(
     Position start,
@@ -85,9 +95,6 @@ public:
   bool isPub() const { return d_isPub; }
   bool isMut() const { return d_isMut; }
   std::vector<Part::SPtr> const& parts() const { return d_parts; }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 
   static LetStatement::SPtr make_shared(
     Position start,

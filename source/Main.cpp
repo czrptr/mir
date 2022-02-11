@@ -14,9 +14,11 @@
 std::string sourceText =
 R"SOURCE(
 
-let print = fn () ah;
+let NothingFn = fn () void;
 
-let main = fn (args: ArgsType) void {
+let nothingFn: NothingFn = fn () void {};
+
+pub let main = fn (args: ArgsType) void {
   let
     num = 0,
     str = "Hello, world!";

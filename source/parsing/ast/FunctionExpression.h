@@ -23,6 +23,12 @@ private:
   Node::SPtr d_pReturnType;
   BlockExpression::SPtr d_pBody;
 
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
+
 public:
   FunctionExpression(
     Token fn,
@@ -43,10 +49,8 @@ public:
 
   std::vector<Parameter> const& parameters() const { return d_parameters; }
   Node::SPtr returnType() const { return d_pReturnType; }
+  bool isType() const { return d_pBody == nullptr; }
   BlockExpression::SPtr body() const { return d_pBody; }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 
   static FunctionExpression::SPtr make_shared(
     Token fn,

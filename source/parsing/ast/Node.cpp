@@ -1,4 +1,4 @@
-#include "parsing/ast/Utils.h"
+#include "parsing/ast/Node.h"
 
 #include <fmt/core.h>
 #include <fmt/color.h>
@@ -70,4 +70,42 @@ std::string prefix(size_t indent, std::vector<size_t> lines, bool isLast)
   res += (isLast ? lastPrefix : middlePrefix);
 
   return fmt::format(style, "{}", res);
+}
+
+template<typename T>
+std::string childrenToString(std::vector<T> const& nodes, size_t indent, std::vector<size_t> lines)
+{
+  std::string res = "";
+  if (nodes.empty())
+  {
+    return res;
+  }
+
+  for (size_t i = 0; i < nodes.size() - 1; i += 1)
+  {
+    auto newLines = lines; // TODO use set
+    newLines.push_back(indent);
+    std::sort(newLines.begin(), newLines.end());
+
+    res += nodes[i]->toString(indent + 1, newLines, false) + "\n";
+  }
+  res += nodes[nodes.size() - 1]->toString(indent + 1, lines, true);
+
+  return res;
+}
+
+using namespace ast;
+
+std::string Node::toString(size_t indent = 0, std::vector<size_t> lines = {}, bool isLast = false) const
+{
+  std::vector<Node::SPtr> subNodes;
+  std::string name, additionalInfo;
+  toStringData(&subNodes, &name, &additionalInfo);
+
+  return fmt::format(
+    "{}{}{}{}",
+    prefix(indent, lines, isLast),
+    header(name, start(), end(), !subNodes.empty()),
+    (additionalInfo.empty() ? "" : (" " + additionalInfo)),
+    (subNodes.empty() ? "" : ("\n" + childrenToString(subNodes, indent, lines))));
 }

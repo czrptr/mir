@@ -18,6 +18,12 @@ private:
   Node::SPtr d_pType;
   Node::SPtr d_pValue;
 
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
+
 public:
   Field(Token name, Node::SPtr pType, Node::SPtr pValue, Node::SPtr pParent = nullptr)
     : Node(pParent)
@@ -40,11 +46,10 @@ public:
   virtual bool isExpression() const override { return false; }
 
   std::string_view name() const { return d_name.text(); }
+  bool hasType() const { return d_pType != nullptr; }
   Node::SPtr type() const { return d_pType; }
+  bool hasValue() const { return d_pValue != nullptr; }
   Node::SPtr value() const { return d_pValue; }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 
   static Field::SPtr make_shared(Token name, Node::SPtr pType, Node::SPtr pValue, Node::SPtr pParent = nullptr);
 };
@@ -69,6 +74,12 @@ private:
   std::vector<LetStatement::SPtr> d_declsPre;
   std::vector<LetStatement::SPtr> d_declsPost;
   Node::SPtr d_pUnderlyingType; // in case of enum
+
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
 
 public:
   TypeExpression(
@@ -99,10 +110,8 @@ public:
   std::vector<LetStatement::SPtr> const& declsPre() const { return d_declsPre; }
   std::vector<LetStatement::SPtr> const& declsPost() const { return d_declsPost; }
   std::vector<LetStatement::SPtr> decls() const;
+  bool hasUnderlyingType() const { return d_pUnderlyingType != nullptr; }
   Node::SPtr underlyingType() const { return d_pUnderlyingType; }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 
   static TypeExpression::SPtr make_shared(
     Tag tag,

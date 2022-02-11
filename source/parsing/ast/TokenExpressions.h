@@ -33,15 +33,18 @@ struct SymbolExpression final : public TokenExpression
 {
   PTR(SymbolExpression)
 
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
+
 public:
   SymbolExpression(Token token, Node::SPtr pParent = nullptr)
     : TokenExpression(token, pParent)
   {}
 
   std::string_view name() const { return d_token.text(); }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 };
 
 /* ===================== BuiltinExpression ===================== */
@@ -49,6 +52,12 @@ public:
 struct BuiltinExpression final : public TokenExpression
 {
   PTR(BuiltinExpression)
+
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
 
 public:
   BuiltinExpression(Token token, Node::SPtr pParent = nullptr)
@@ -58,9 +67,6 @@ public:
   }
 
   std::string_view name() const { return d_token.text().substr(1); }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 };
 
 /* ===================== StringExpression ===================== */
@@ -69,20 +75,19 @@ struct StringExpression final : public TokenExpression
 {
   PTR(StringExpression)
 
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
+
 public:
   StringExpression(Token token, Node::SPtr pParent = nullptr)
     : TokenExpression(token, pParent)
   {}
 
-  std::string_view value() const
-  {
-    auto const text = d_token.text();
-    return text.substr(1, text.length() - 2);
-  }
+  std::string_view value() const;
   std::string_view quotedValue() const { return d_token.text(); }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 };
 
 /* ===================== NumberExpression ===================== */
@@ -91,15 +96,18 @@ struct NumberExpression final : public TokenExpression
 {
   PTR(NumberExpression)
 
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
+
 public:
   NumberExpression(Token token, Node::SPtr pParent = nullptr)
     : TokenExpression(token, pParent)
   {}
 
   std::string_view valueToString() const { return d_token.text(); }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 };
 
 /* ===================== BoolExpression ===================== */
@@ -111,6 +119,12 @@ struct BoolExpression final : public TokenExpression
 private:
   bool d_value;
 
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
+
 public:
   BoolExpression(Token token, bool value, Node::SPtr pParent = nullptr)
     : TokenExpression(token, pParent)
@@ -120,9 +134,6 @@ public:
   }
 
   bool value() const { return d_value; }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 };
 
 /* ===================== NullExpression ===================== */
@@ -131,15 +142,18 @@ struct NullExpression final : public TokenExpression
 {
   PTR(NullExpression)
 
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
+
 public:
   NullExpression(Token token, Node::SPtr pParent = nullptr)
     : TokenExpression(token, pParent)
   {
     assert(token.text() == "null");
   }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 };
 
 /* ===================== UndefinedExpression ===================== */
@@ -148,15 +162,18 @@ struct UndefinedExpression final : public TokenExpression
 {
   PTR(UndefinedExpression)
 
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
+
 public:
   UndefinedExpression(Token token, Node::SPtr pParent = nullptr)
     : TokenExpression(token, pParent)
   {
     assert(token.text() == "undefined");
   }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 };
 
 /* ===================== UnreachableExpression ===================== */
@@ -165,15 +182,18 @@ struct UnreachableExpression final : public TokenExpression
 {
   PTR(UnreachableExpression)
 
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
+
 public:
   UnreachableExpression(Token token, Node::SPtr pParent = nullptr)
     : TokenExpression(token, pParent)
   {
     assert(token.text() == "unreachable");
   }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 };
 
 } // namespace ast

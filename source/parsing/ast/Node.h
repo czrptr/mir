@@ -37,15 +37,18 @@ protected:
     : d_pParent(pParent)
   {}
 
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const = 0;
+
 public:
   virtual ~Node() = default;
 
   virtual Position start() const = 0;
   virtual Position end() const = 0;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const = 0;
   virtual bool isExpression() const = 0;
 
-  std::string toString() const { return toString(0, {}, false); }
   void setParent(Node::SPtr pParent) { d_pParent = pParent; }
 
   template<typename NodeT = Node>
@@ -59,6 +62,9 @@ public:
     }
     return std::weak_ptr<NodeT>();
   }
+
+  std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const;
+  std::string toString() const { return toString(0, {}, true); }
 };
 
 } // namespace ast

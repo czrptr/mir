@@ -1,7 +1,6 @@
 #include "parsing/ast/FunctionExpression.h"
 
 #include <parsing/ast/TokenExpressions.h>
-#include <parsing/ast/Utils.h>
 
 using namespace ast;
 
@@ -12,6 +11,12 @@ struct ParameterNode final : public Node
 private:
   FunctionExpression::Parameter d_value;
 
+protected:
+  virtual void toStringData(
+    std::vector<Node::SPtr>* subNodes,
+    std::string* nodeName,
+    std::string* additionalInfo) const override;
+
 public:
   ParameterNode(FunctionExpression::Parameter value)
     : Node(nullptr)
@@ -21,47 +26,42 @@ public:
   virtual Position start() const override { return d_value.name.start(); }
   virtual Position end() const override { return d_value.type->end(); }
   virtual bool isExpression() const override { return false; }
-
-  using Node::toString;
-  virtual std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const override;
 };
 
-std::string ParameterNode::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
+void ParameterNode::toStringData(
+  std::vector<Node::SPtr>* subNodes,
+  std::string* nodeName,
+  std::string* additionalInfo) const
 {
-  std::vector<Node::SPtr> const members
-  {
-    std::make_shared<SymbolExpression>(d_value.name),
-    d_value.type
-  };
+  assert(subNodes->empty());
+  subNodes->reserve(2);
+  subNodes->push_back(std::make_shared<SymbolExpression>(d_value.name));
+  subNodes->push_back(d_value.type);
 
-  return fmt::format(
-    "{}{}\n{}",
-    prefix(indent, lines, isLast),
-    header("Parameter", start(), end(), true),
-    childrenToString(members, indent, lines)
-  );
+  *nodeName = "Parameter";
+  assert(additionalInfo->empty());
 }
 
-std::string FunctionExpression::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
+void FunctionExpression::toStringData(
+  std::vector<Node::SPtr>* subNodes,
+  std::string* nodeName,
+  std::string* additionalInfo) const
 {
-  std::vector<Node::SPtr> members;
+  assert(subNodes->empty());
+  // + 2 for the return type and body
+  subNodes->reserve(parameters().size() + 2);
   for (auto const& parameter : parameters())
   {
-    members.push_back(std::make_shared<ParameterNode>(parameter));
+    subNodes->push_back(std::make_shared<ParameterNode>(parameter));
   }
-  members.push_back(returnType());
-  if (body() != nullptr)
+  subNodes->push_back(returnType());
+  if (!isType())
   {
-    members.push_back(body());
+    subNodes->push_back(body());
   }
 
-  return fmt::format(
-    "{}{}{}\n{}",
-    prefix(indent, lines, isLast),
-    header("FunctionLiteral", start(), end(), true),
-    (body() == nullptr ? " type" : ""),
-    childrenToString(members, indent, lines)
-  );
+  *nodeName = "FunctionLiteral";
+  *additionalInfo = isType() ? "type" : "";
 }
 
 FunctionExpression::SPtr FunctionExpression::make_shared(

@@ -1,25 +1,22 @@
 #include "parsing/ast/LetStatement.h"
 
-#include <parsing/ast/Utils.h>
-
 using namespace ast;
 
-std::string LetStatementPart::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
+void LetStatementPart::toStringData(
+  std::vector<Node::SPtr>* subNodes,
+  std::string* nodeName,
+  std::string* additionalInfo) const
 {
-  std::vector<Node::SPtr> children;
-  children.reserve(2);
-  if (type() != nullptr)
+  assert(subNodes->empty());
+  subNodes->reserve(2);
+  if (hasType())
   {
-    children.push_back(type());
+    subNodes->push_back(type());
   }
-  children.push_back(value());
+  subNodes->push_back(value());
 
-  return fmt::format(
-    "{}{} '{}'\n{}",
-    prefix(indent, lines, isLast),
-    header("LetStatementPart", start(), end(), true),
-    name(),
-    childrenToString(children, indent, lines));
+  *nodeName = "Part";
+  *additionalInfo = fmt::format("'{}'", name());
 }
 
 LetStatementPart::SPtr LetStatementPart::make_shared(
@@ -38,15 +35,30 @@ LetStatementPart::SPtr LetStatementPart::make_shared(
   return pRes;
 }
 
-std::string LetStatement::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
+void LetStatement::toStringData(
+  std::vector<Node::SPtr>* subNodes,
+  std::string* nodeName,
+  std::string* additionalInfo) const
 {
-  return fmt::format(
-    "{}{}{}{}\n{}",
-    prefix(indent, lines, isLast),
-    header("LetStatement", start(), end(), true),
-    (isPub() ? " pub" : ""),
-    (isMut() ? " mut" : ""),
-    childrenToString(parts(), indent, lines));
+  assert(subNodes->empty());
+  subNodes->reserve(parts().size());
+  for (auto const& pPart : parts())
+  {
+    subNodes->push_back(pPart);
+  }
+
+  *nodeName = "LetStatement";
+
+  *additionalInfo = "";
+  if (isPub())
+  {
+    *additionalInfo += "pub";
+  }
+  if (isMut())
+  {
+    auto separator = additionalInfo->empty() ? "" : " ";
+    *additionalInfo += fmt::format("{}mut", separator);
+  }
 }
 
 LetStatement::SPtr LetStatement::make_shared(

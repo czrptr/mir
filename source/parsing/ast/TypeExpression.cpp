@@ -1,43 +1,37 @@
 #include "parsing/ast/TypeExpression.h"
 
-#include <parsing/ast/Utils.h>
-
 using namespace ast;
 
-std::string Field::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
+void Field::toStringData(
+  std::vector<Node::SPtr>* subNodes,
+  std::string* nodeName,
+  std::string* additionalInfo) const
 {
-  // due to parsing logic, d_pType & d_pValue cannot both
-  // be set at the same time
+  assert(subNodes->empty());
 
-  char const* fieldType;
-  std::vector<Node::SPtr> children;
+  // due to parsing logic, hasType() and hasValue()
+  // cannot both be true at the same time
+
+  char const* fieldType = nullptr;
   // try AST implementing ast "notes" show info above the node same color ar tree branches
-  if (d_pType != nullptr)
+  if (hasType())
   {
     fieldType = "type";
-    children.push_back(d_pType);
+    subNodes->push_back(type());
   }
-  if (d_pValue != nullptr) // d_pValue != nullptr <- idea, IDE deduce & show these types of comments automatically
+  if (hasValue()) // d_pValue != nullptr <- idea, IDE deduce & show these types of comments automatically
   {
     fieldType = "value";
-    children.push_back(d_pValue);
+    subNodes->push_back(value());
   }
 
-  if (children.empty())
+  *nodeName = "Field";
+
+  *additionalInfo = fmt::format("'{}'", name());
+  if (fieldType != nullptr)
   {
-    return fmt::format(
-      "{}{} '{}'",
-      prefix(indent, lines, isLast),
-      header("Field", start(), end(), false),
-      name());
+    *additionalInfo += fmt::format(" {}", fieldType);
   }
-  return fmt::format(
-    "{}{} '{}' {}\n{}",
-    prefix(indent, lines, isLast),
-    header("Field", start(), end(), true),
-    name(),
-    fieldType,
-    childrenToString(children, indent, lines));
 }
 
 Position Field::end() const
@@ -65,34 +59,26 @@ Field::SPtr Field::make_shared(Token name, Node::SPtr pType, Node::SPtr pValue, 
   return pRes;
 }
 
-std::string TypeExpression::toString(size_t indent, std::vector<size_t> lines, bool isLast) const
+void TypeExpression::toStringData(
+  std::vector<Node::SPtr>* subNodes,
+  std::string* nodeName,
+  std::string* additionalInfo) const
 {
+  assert(subNodes->empty());
   // TODO: size, aligmnent, wasted bits
 
-  std::vector<Node::SPtr> members;
-  members.reserve(d_fields.size() + d_declsPre.size() + d_declsPost.size() + 1/*enum underlying type*/);
-  if (tag() == Tag::Enum && d_pUnderlyingType != nullptr)
+  // + 1 for enum underlying type
+  subNodes->reserve(fields().size() + decls().size() + 1);
+  if (tag() == Tag::Enum && hasUnderlyingType())
   {
-    members.push_back(d_pUnderlyingType);
+    subNodes->push_back(underlyingType());
   }
-  members.insert(members.end(), d_declsPre.begin(), d_declsPre.end());
-  members.insert(members.end(), d_fields.begin(), d_fields.end());
-  members.insert(members.end(), d_declsPost.begin(), d_declsPost.end());
+  subNodes->insert(subNodes->end(), declsPre().begin(), declsPre().end());
+  subNodes->insert(subNodes->end(), fields().begin(), fields().end());
+  subNodes->insert(subNodes->end(), declsPost().begin(), declsPost().end());
 
-  if (members.empty())
-  {
-    return fmt::format(
-      "{}{} {}",
-      prefix(indent, lines, isLast),
-      header("TypeLiteral", start(), end(), false),
-      tag());
-  }
-  return fmt::format(
-    "{}{} {}\n{}",
-    prefix(indent, lines, isLast),
-    header("TypeLiteral", start(), end(), true),
-    tag(),
-    childrenToString(members, indent, lines));
+  *nodeName = "TypeLiteral";
+  *additionalInfo = fmt::to_string(tag());
 }
 
 std::vector<LetStatement::SPtr> TypeExpression::decls() const
