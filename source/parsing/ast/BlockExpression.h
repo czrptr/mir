@@ -38,7 +38,7 @@ public:
   virtual Position start() const override { return d_start; }
   virtual Position end() const override { return d_end; }
 
-  // TODO this needs to be determined in sema
+  // TODO check for break statements
   virtual bool isExpression() const override { return true; }
 
   bool isLabeled() const { return !d_label.empty(); }

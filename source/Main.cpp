@@ -30,6 +30,8 @@ pub let main = fn (args: ArgsType) void {
     str = "Hello, world!";
 };
 
+let a = if 0 { } else |err| {};
+
 )SOURCE";
 
 int main()
@@ -49,7 +51,14 @@ int main()
     Parser parser(Tokenizer(sourceText, "<file>"));
 
     auto expr = parser.typeExpression(true);
-    fmt::print("{}\n", expr->toString());
+    if (expr != nullptr)
+    {
+      fmt::print("{}\n", expr->toString());
+    }
+    else
+    {
+      fmt::print("didn't parse anything\n");
+    }
   }
   catch (Error const& err)
 	{

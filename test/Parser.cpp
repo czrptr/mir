@@ -461,7 +461,7 @@ TEST_CASE("function (complex)")
 
 // TODO "fn() Type {}" not being parsed as "fn() (Type{})""
 
-/* ================== Structs ================== */
+/* ================== Struct ================== */
 
 TEST_CASE("struct fields must be separated by a comma")
 {
@@ -587,7 +587,7 @@ TEST_CASE("structs (complex)")
   }));
 }
 
-/* ================== Enums ================== */
+/* ================== Enum ================== */
 
 TEST_CASE("enum variants must be separated by a comma (case 1)")
 {
@@ -749,7 +749,7 @@ TEST_CASE("enum (complex)")
   }));
 }
 
-/* ================== Unions ================== */
+/* ================== Union ================== */
 
 TEST_CASE("union variants must be separated by a comma")
 {
@@ -876,5 +876,9 @@ TEST_CASE("unions (complex)")
     let(true, false, "a", number("0"))
   }));
 }
+
+/* ================== IfExpressions ================== */
+
+// TODO
 
 TEST_SUITE_END();

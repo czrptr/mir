@@ -25,7 +25,7 @@
 namespace ast
 {
 
-struct Node
+struct Node : public std::enable_shared_from_this<Node>
 {
   PTR(Node)
 
@@ -61,6 +61,28 @@ public:
       return pParentAsNodeT;
     }
     return std::weak_ptr<NodeT>();
+  }
+
+  template<typename NodeT>
+  bool is() const
+  {
+    return dynamic_cast<NodeT const*>(this) != nullptr;
+  }
+
+  template<typename NodeT>
+  std::shared_ptr<NodeT> as()
+  {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wnonnull-compare"
+    if (this == nullptr)
+    {
+      return nullptr;
+    }
+    #pragma GCC diagnostic pop
+
+    auto pRes = std::dynamic_pointer_cast<NodeT>(shared_from_this());
+    assert(pRes != nullptr);
+    return pRes;
   }
 
   std::string toString(size_t indent, std::vector<size_t> lines, bool isLast) const;

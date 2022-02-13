@@ -159,6 +159,51 @@ FunctionExpression::SPtr fn(
   return FunctionExpression::make_shared(tok, std::move(params), returnType, body);
 }
 
+IfExpression::SPtr _if(
+  Node::SPtr condition,
+  Node::SPtr capture = nullptr,
+  BlockExpression::SPtr block = nullptr)
+{
+  std::vector<IfExpression::Clause> clauses;
+  Token tokIf(Token::KwIf, Position::invalid(), Position::invalid(), Intern::string("if"));
+  clauses.push_back({IfExpression::Clause::If, tokIf, condition, capture, block});
+
+  return IfExpression::make_shared(std::move(clauses));
+}
+
+IfExpression::SPtr _if(
+  Node::SPtr condition,
+  Node::SPtr capture,
+  BlockExpression::SPtr block,
+  list<IfExpression::Clause> clauses)
+{
+  std::vector<IfExpression::Clause> temp;
+  temp.reserve(1 + clauses.size());
+
+  Token tokIf(Token::KwIf, Position::invalid(), Position::invalid(), Intern::string("if"));
+  temp.push_back({IfExpression::Clause::If, tokIf, condition, capture, block});
+  temp.insert(temp.end(), clauses);
+
+  return IfExpression::make_shared(std::move(clauses));
+}
+
+IfExpression::Clause _elseIf(
+  Node::SPtr condition,
+  Node::SPtr capture = nullptr,
+  BlockExpression::SPtr block = nullptr)
+{
+  Token tokElse(Token::KwElse, Position::invalid(), Position::invalid(), Intern::string("else"));
+  return {IfExpression::Clause::ElseIf, tokElse, condition, capture, block};
+}
+
+IfExpression::Clause _else(
+  Node::SPtr capture = nullptr,
+  BlockExpression::SPtr block = nullptr)
+{
+  Token tokElse(Token::KwElse, Position::invalid(), Position::invalid(), Intern::string("else"));
+  return {IfExpression::Clause::Else, tokElse, nullptr, capture, block};
+}
+
 template<typename T>
 std::tuple<std::shared_ptr<T>, std::shared_ptr<T>, bool> nodesAreImpl(
   Node::SPtr node1, Node::SPtr node2)
@@ -316,5 +361,31 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
     }
     return true;
   }
+
+  if (nodesAre(IfExpression))
+  {
+    if (n1->clauses().size() != n2->clauses().size())
+      return false;
+
+    for (size_t i = 0; i < n1->clauses().size(); i += 1)
+    {
+      auto const&
+        c1 = n1->clauses()[i],
+        c2 = n2->clauses()[i];
+
+      if (c1.tag != c2.tag)
+        return false;
+
+      if (!equal(c1.condition, c2.condition))
+        return false;
+
+      if (!equal(c1.capture, c2.capture))
+        return false;
+
+      return equal(c1.block, c2.block);
+    }
+  }
   return false;
 }
+
+#undef nodesAre

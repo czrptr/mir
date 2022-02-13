@@ -87,7 +87,8 @@ public:
 template<>
 struct fmt::formatter<ast::TypeExpression::Tag>
 {
-  bool debug { false };
+  bool debug = false;
+  bool field = false;
   fmt::formatter<fmt::string_view> underlying_formatter;
 
   constexpr auto parse(fmt::format_parse_context& ctx)
@@ -98,15 +99,31 @@ struct fmt::formatter<ast::TypeExpression::Tag>
 
     if (it != end)
     {
+      if (std::memcmp(it, "field", 5) == 0)
+      {
+        if (debug)
+        {
+          throw fmt::format_error("field and debug options are incompatible");
+        }
+
+        field = true;
+        it += 5;
+        ctx.advance_to(it);
+        return underlying_formatter.parse(ctx);
+      }
+
       if (*it == 'd')
       {
+        if (field)
+        {
+          throw fmt::format_error("field and debug options are incompatible");
+        }
+
         debug = true;
         it += 1;
         ctx.advance_to(it);
         return underlying_formatter.parse(ctx);
       }
-
-      return it;
     }
     return it;
   }
@@ -122,6 +139,17 @@ struct fmt::formatter<ast::TypeExpression::Tag>
       case ast::TypeExpression::Tag::Struct: name = "Struct"; break;
       case ast::TypeExpression::Tag::Enum: name = "Enum"; break;
       case ast::TypeExpression::Tag::Union: name = "Union"; break;
+      }
+      return underlying_formatter.format(name, ctx);
+    }
+
+    if (field)
+    {
+      switch (tag)
+      {
+      case ast::TypeExpression::Tag::Struct: name = "struct field"; break;
+      case ast::TypeExpression::Tag::Enum: name = "enum variant"; break;
+      case ast::TypeExpression::Tag::Union: name = "union variant"; break;
       }
       return underlying_formatter.format(name, ctx);
     }

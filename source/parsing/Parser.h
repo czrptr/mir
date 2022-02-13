@@ -51,15 +51,25 @@ public:
 
   ast::BlockExpression::SPtr blockExpression();
 
+  ast::IfExpression::SPtr ifExpression();
+
   ast::Node::SPtr expression();
 
-  ast::Node::SPtr expressionOrField(); // use only int typeExpression()
+  ast::Node::SPtr expressionOrField(); // use only in typeExpression()
+
 
 private:
   bool next(Token::Tag tag);
   Token match(Token::Tag tag, std::string const& errorMessage);
   Token match(Token::Tag tag, ErrorStrategy strategy = ErrorStrategy::Unreachable);
   bool skip(Token::Tag tag);
+
+  bool next(Operator::Tag tag);
+  // TODO template and construct Token or Operator
+  Token match(Operator::Tag tag, std::string const& errorMessage);
+  Token match(Operator::Tag tag, ErrorStrategy strategy = ErrorStrategy::Unreachable);
+  bool skip(Operator::Tag tag);
+
   Token lastMatchedToken();
 
   void setRollbackPoint();

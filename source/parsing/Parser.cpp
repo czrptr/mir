@@ -1,9 +1,16 @@
 #include "parsing/Parser.h"
 
 // TODO better error messages
-// TODO is<> and as<> for Node instead of std::dynamic_pointer_cast<>
+// TODO? error on "[else] if ()", "switch ()", "loop ()", "enum ()"
 
 using namespace ast;
+
+namespace Runes
+{
+
+static constexpr Operator::Tag Bar = Operator::BitOr;
+
+}
 
 TokenExpression::SPtr Parser::tokenExpression()
 {
@@ -54,8 +61,8 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
 {
   using Field = TypeExpression::Field;
 
-  Token tokTag;
-  TypeExpression::Tag tag;
+  Token tokTag { Token::KwStruct, Position(0, 0), Position(0, 0), "" };
+  TypeExpression::Tag tag = TypeExpression::Struct;
   Node::SPtr pUnderlyingType = nullptr;
 
   if (!isRoot)
@@ -63,7 +70,6 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     if (next(Token::KwStruct))
     {
       tokTag = match(Token::KwStruct);
-      tag = TypeExpression::Struct;
     }
     else if (next(Token::KwEnum))
     {
@@ -93,74 +99,42 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
   std::vector<Field::SPtr> fields;
   std::vector<LetStatement::SPtr>
     declsPre, declsPost, *decls = &declsPre;
-  bool
-    declsSection = false,
-    fieldsSection = false;
 
   size_t commaCount = 0;
   while (auto pExpr = expressionOrField())
   {
-    auto pDecl = std::dynamic_pointer_cast<LetStatement>(pExpr);
-    auto pField = std::dynamic_pointer_cast<Field>(pExpr);
-    if (pDecl == nullptr && pField == nullptr)
+    if (pExpr->is<LetStatement>())
     {
-      throw error(pExpr,
-        fmt::format("{}s can only contain declarations (let statements), fields and a comptime block", tag));
-    }
-    if (pDecl != nullptr)
-    {
-      // is this a decl after a field?
-      declsSection = true && fieldsSection;
-      decls->push_back(pDecl);
+      decls->push_back(pExpr->as<LetStatement>());
       match(Token::Semicolon, ErrorStrategy::DefaultErrorMessage);
     }
-    else // pField != nullptr
+    else if (pExpr->is<Field>())
     {
-      fieldsSection = true;
+      auto pField = pExpr->as<Field>();
       decls = &declsPost;
 
-      // is this a field after a decl after a field?
-      // i.e. are the fields separated by decls
-      if (declsSection)
+      if (!fields.empty() && !declsPost.empty())
       {
-        auto fieldsString = "";
-        if (tag == TypeExpression::Struct)
-        {
-          fieldsString = "struct field";
-        }
-        else if (tag == TypeExpression::Enum)
-        {
-          fieldsString = "enum variant";
-        }
-        else // tag == TypeExpression::Union
-        {
-          fieldsString = "union variant";
-        }
-        // TODO add note
-        throw error(pExpr, fmt::format("{}s must be grouped together", fieldsString));
+        throw error(pField, fmt::format("{:field}s must be grouped together", tag));
       }
 
       if (tag == TypeExpression::Enum)
       {
-        if (pField->type() != nullptr)
+        if (pField->hasType())
         {
-          throw error(pExpr, "enum variants cannot have type annotations")
+          throw error(pField, "enum variants cannot have type annotations")
             .note("all enum variants share the same underlying type");
         }
       }
-      else // tag == TypeExpression::Struct || tag == TypeExpression::Union
+      else // struct or union
       {
-        auto const fieldsStr = (tag == TypeExpression::Struct)
-          ? "struct fields"
-          : "union variants";
-
-        if (pField->type() == nullptr)
+        if (!pField->hasType())
         {
-          throw error(pExpr, fmt::format("{} must have type annotations", fieldsStr));
+          throw error(pField, fmt::format("{:field}s must have type annotations", tag));
         }
-        if (pField->value() != nullptr)
+        if (pField->hasValue())
         {
-          throw error(pExpr, fmt::format("{} cannot have default values", fieldsStr));
+          throw error(pField, fmt::format("{:field}s cannot have default values", tag));
         }
       }
 
@@ -172,6 +146,11 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
       }
       fields.push_back(pField);
       commaCount += static_cast<size_t>(skip(Token::Comma));
+    }
+    else
+    {
+      throw error(pExpr,
+        fmt::format("{}s can only contain declarations (let statements), fields and a comptime block", tag));
     }
   }
 
@@ -221,22 +200,22 @@ FunctionExpression::SPtr Parser::functionExpression()
   auto pReturnType = expression();
   assert(popState() == FunctionReturnType);
 
+  // TODO expression<>(errorMessage)
   auto pBody = expression();
   auto pBlock = std::dynamic_pointer_cast<BlockExpression>(pBody);
 
   if (pBody != nullptr)
   {
-    if (pBlock == nullptr)
+    if (!pBody->is<BlockExpression>())
     {
       throw error(pBody, "block expected");
     }
-    if (pBlock->isLabeled())
+    if (pBody->as<BlockExpression>()->isLabeled())
     {
       throw error(pBlock, "function blocks cannot be labeled");
     }
   }
-
-  return FunctionExpression::make_shared(tokFn, std::move(parameters), pReturnType, pBlock);
+  return FunctionExpression::make_shared(tokFn, std::move(parameters), pReturnType, pBody->as<BlockExpression>());
 }
 
 LetStatement::SPtr Parser::letStatement()
@@ -315,7 +294,6 @@ Part::SPtr Parser::part()
     return nullptr;
   }
 
-  // setRollbackPoint();
   Token const tokSymbol = match(Token::Symbol);
 
   // TODO implement workaround when a = b expression will be implemented and this code will break
@@ -330,18 +308,11 @@ Part::SPtr Parser::part()
   Node::SPtr pValue = nullptr;
   if (next(Token::Operator))
   {
-    Token const tokEq = match(Token::Operator, "assignement operator '=' expected");
-    if (tokEq.text() != "=")
-    {
-      // rollback();
-      // return nullptr;
-      throw error(tokEq, "assignement operator '=' expected");
-    }
+    Token const tokEq = match(Operator::Eq, ErrorStrategy::DefaultErrorMessage);
     pValue = expression();
     throwErrorIfNullOrNotExpression(pValue, tokEq, "expression expected");
   }
 
-  // commit();
   return Part::make_shared(tokSymbol, pType, pValue);
 }
 
@@ -365,6 +336,92 @@ BlockExpression::SPtr Parser::blockExpression()
 
   return BlockExpression::make_shared(
     tokLBrace.start(), tokRBrace.start(), std::string_view(), std::move(statements));
+}
+
+ast::IfExpression::SPtr Parser::ifExpression()
+{
+  if (!next(Token::KwIf) && !next(Token::KwElse))
+  {
+    return nullptr;
+  }
+
+  std::vector<IfExpression::Clause> clauses;
+  bool hasIfClause = false;
+  while (next(Token::KwIf) || next(Token::KwElse))
+  {
+    Token tokStart;
+    Token tokBeforeCondition;
+    IfExpression::Clause::Tag tag;
+
+    if (next(Token::KwIf))
+    {
+      if (hasIfClause)
+      {
+        // this is the beginning of another if expression
+        break;
+      }
+      tokStart = match(Token::KwIf);
+      tokBeforeCondition = tokStart;
+      tag = IfExpression::Clause::If;
+      hasIfClause = true;
+    }
+    else // next(Token::KwElse)
+    {
+      tokStart = match(Token::KwElse);
+      if (next(Token::KwIf))
+      {
+        tokBeforeCondition = match(Token::KwIf);
+        tag = IfExpression::Clause::ElseIf;
+      }
+      else
+      {
+        tag = IfExpression::Clause::Else;
+      }
+    }
+
+    Node::SPtr pClauseCondition = nullptr;
+    if (tag != IfExpression::Clause::Else)
+    {
+      pClauseCondition = expression();
+      throwErrorIfNullOrNotExpression(pClauseCondition, tokBeforeCondition, "expression expected");
+    }
+
+    Node::SPtr pClauseCapture = nullptr;
+    if (skip(Runes::Bar))
+    {
+      pClauseCapture = expression();
+      // TODO throwErrorIfNotDestructureExpression
+      throwErrorIfNotExpression(pClauseCapture, "expression expected");
+
+      match(Runes::Bar, "'|' expected");
+    }
+
+    auto pClauseBody = expression();
+    if (!pClauseBody->is<BlockExpression>())
+    {
+      throw error(pClauseBody, "block expected");
+    }
+    if (pClauseBody->as<BlockExpression>()->isLabeled())
+    {
+      // TODO add note: move the label here <first clause>
+      throw error(pClauseBody, "label the whole if expression");
+    }
+    clauses.push_back({tag, tokStart, pClauseCondition, pClauseCapture, pClauseBody->as<BlockExpression>()});
+
+    if (tag == IfExpression::Clause::Else)
+    {
+      // this is the end of this if expression
+      break;
+    }
+  }
+
+  if (!hasIfClause)
+  {
+    auto const& clause = clauses.front();
+    throw error(clause.tokStart, fmt::format("'{}' missing preceding 'if'", clause.tag));
+  }
+
+  return IfExpression::make_shared(std::move(clauses));
 }
 
 Node::SPtr Parser::expression()
@@ -413,6 +470,10 @@ Node::SPtr Parser::expression()
   {
     pRes = pTemp;
   }
+  else if (auto pTemp = ifExpression(); pTemp != nullptr)
+  {
+    pRes = pTemp;
+  }
   else
   {
     pRes = tokenExpression();
@@ -420,8 +481,9 @@ Node::SPtr Parser::expression()
 
   // TODO add if, loop check
   auto pBlock = std::dynamic_pointer_cast<BlockExpression>(pRes);
+  auto pIf = std::dynamic_pointer_cast<IfExpression>(pRes);
 
-  if (pBlock == nullptr && isLabeled)
+  if (pBlock == nullptr && pIf == nullptr && isLabeled)
   {
     throw error(toklabel, "only block, ifs and loops can be labeled");
   }
@@ -501,6 +563,47 @@ Token Parser::match(Token::Tag tag, ErrorStrategy strategy)
 }
 
 bool Parser::skip(Token::Tag tag)
+{
+  if (next(tag))
+  {
+    match(tag);
+    return true;
+  }
+  return false;
+}
+
+bool Parser::next(Operator::Tag tag)
+{
+  if (!next(Token::Operator))
+  {
+    return false;
+  }
+  Token const tokOp = match(Token::Operator);
+  d_currentTokenIdx -= 1; // we just want to peek
+  return tokOp.text() == fmt::to_string(tag);
+}
+
+Token Parser::match(Operator::Tag tag, std::string const& errorMessage)
+{
+  Token const tokOp = match(Token::Operator, errorMessage);
+  if (tokOp.text() != fmt::to_string(tag))
+  {
+    throw error(tokOp, errorMessage);
+  }
+  return tokOp;
+}
+
+Token Parser::match(Operator::Tag tag, ErrorStrategy strategy)
+{
+  auto const errorMessage =
+    (strategy == ErrorStrategy::Unreachable)
+      ? "reached unreachable code in Parser::match()"
+      : fmt::format("operator '{}' expected", tag);
+
+  return match(tag, errorMessage);
+}
+
+bool Parser::skip(Operator::Tag tag)
 {
   if (next(tag))
   {

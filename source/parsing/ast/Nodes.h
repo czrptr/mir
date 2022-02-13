@@ -6,6 +6,7 @@
 #include <parsing/ast/FunctionExpression.h>
 #include <parsing/ast/LetStatement.h>
 #include <parsing/ast/BlockExpression.h>
+#include <parsing/ast/IfExpression.h>
 
 #undef SPTR
 #undef WPTR
