@@ -1,6 +1,7 @@
 #include "parsing/Parser.h"
 
 // TODO better error messages
+// TODO is<> and as<> for Node instead of std::dynamic_pointer_cast<>
 
 using namespace ast;
 
@@ -193,6 +194,7 @@ FunctionExpression::SPtr Parser::functionExpression()
 
   match(Token::LParen, ErrorStrategy::DefaultErrorMessage);
 
+  size_t commaCount = 0;
   std::vector<FunctionExpression::Parameter> parameters;
   while(next(Token::Symbol))
   {
@@ -203,20 +205,38 @@ FunctionExpression::SPtr Parser::functionExpression()
     auto pType = expression();
     throwErrorIfNullOrNotExpression(pType, tokColon, "type expression expected");
 
+    // force commas between parameters
+    if (commaCount != parameters.size())
+    {
+      auto const errPos = parameters.back().type->end();
+      throw Error(d_tokenizer.sourcePath(), errPos, errPos, "',' expected");
+    }
     parameters.push_back({tokName, pType});
-    skip(Token::Comma);
+    commaCount += static_cast<size_t>(skip(Token::Comma));
   }
 
   match(Token::RParen, ErrorStrategy::DefaultErrorMessage);
+
+  pushState(FunctionReturnType);
   auto pReturnType = expression();
+  assert(popState() == FunctionReturnType);
 
-  // TODO treat
-  //   case: fn (...) label: {}
-  //   case: fn (...) <expression> label: {}
+  auto pBody = expression();
+  auto pBlock = std::dynamic_pointer_cast<BlockExpression>(pBody);
 
-  auto pBody = blockExpression();
+  if (pBody != nullptr)
+  {
+    if (pBlock == nullptr)
+    {
+      throw error(pBody, "block expected");
+    }
+    if (pBlock->isLabeled())
+    {
+      throw error(pBlock, "function blocks cannot be labeled");
+    }
+  }
 
-  return FunctionExpression::make_shared(tokFn, std::move(parameters), pReturnType, pBody);
+  return FunctionExpression::make_shared(tokFn, std::move(parameters), pReturnType, pBlock);
 }
 
 LetStatement::SPtr Parser::letStatement()
@@ -405,7 +425,7 @@ Node::SPtr Parser::expression()
   {
     throw error(toklabel, "only block, ifs and loops can be labeled");
   }
-  if (pBlock != nullptr)
+  if (pBlock != nullptr && isLabeled)
   {
     pBlock->setLabel(toklabel.text());
   }
@@ -549,4 +569,24 @@ void Parser::throwErrorIfNullOrNotExpression(Node::SPtr pNode, Token fallbackTok
   {
     throw error(pNode, message);
   }
+}
+
+Parser::State Parser::currentState() const
+{
+  return d_stateStack.top();
+}
+
+Parser::State Parser::popState()
+{
+  auto const state = d_stateStack.top();
+  if (d_stateStack.size() > 1)
+  {
+    d_stateStack.pop();
+  }
+  return state;
+}
+
+void Parser::pushState(State state)
+{
+  d_stateStack.push(state);
 }

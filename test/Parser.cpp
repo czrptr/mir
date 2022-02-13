@@ -360,6 +360,67 @@ TEST_CASE("blocks (complex)")
 
 /* ================== FunctionExpression ================== */
 
+TEST_CASE("function parameters must be separated by a comma")
+{
+  auto prs = parser("fn (a: a a: a) a");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:8: error: ',' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("function parameters can have a trailing comma")
+{
+  auto prs = parser("fn (a: a,) a");
+  auto f = prs.expression();
+
+  REQUIRE_AST_EQ(f, fn({{"a", symbol("a")}}, symbol("a")));
+}
+
+TEST_CASE("function block cannot be labeled")
+{
+  auto prs = parser("fn () a a: {}");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      // TODO better error location
+      expectedMsg = "<file>:0:11: error: function blocks cannot be labeled";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("only blocks accepted after function return types")
+{
+  auto prs = parser("fn () a a");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      // TODO better error location
+      expectedMsg = "<file>:0:8: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
 TEST_CASE("function type")
 {
   auto prs = parser("fn () void");
@@ -398,7 +459,7 @@ TEST_CASE("function (complex)")
     block({let(false, false, "a", symbol("b"))})));
 }
 
-// TODO "fn() blk: {}" and "fn() Type {}" not being parsed as "fn() (Type{})""
+// TODO "fn() Type {}" not being parsed as "fn() (Type{})""
 
 /* ================== Structs ================== */
 

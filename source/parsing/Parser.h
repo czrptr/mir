@@ -5,9 +5,7 @@
 #include <parsing/Tokenizer.h>
 #include <parsing/ast/Nodes.h>
 
-#include <map>
-
-// TODO implement state stack
+#include <stack>
 
 struct Parser final
 {
@@ -18,10 +16,17 @@ private:
     DefaultErrorMessage,
   };
 
+  enum State
+  {
+    FunctionReturnType,
+    NotFunctionReturnType,
+  };
+
 private:
   Tokenizer d_tokenizer;
   std::vector<Token> d_tokens;
   std::vector<size_t> d_rollbacks;
+  std::stack<State> d_stateStack;
   size_t d_currentTokenIdx;
 
 public:
@@ -30,7 +35,9 @@ public:
   Parser(T&& tokenizer)
     : d_tokenizer(std::forward<T>(tokenizer))
     , d_currentTokenIdx(0)
-  {}
+  {
+    d_stateStack.push(NotFunctionReturnType);
+  }
 
 public:
   ast::TokenExpression::SPtr tokenExpression();
@@ -64,4 +71,8 @@ private:
   [[nodiscard]] Error error(ast::Node::SPtr pNode, std::string const& message);
   void throwErrorIfNotExpression(ast::Node::SPtr pNode, std::string const& message);
   void throwErrorIfNullOrNotExpression(ast::Node::SPtr pNode, Token fallbackToken, std::string const& message);
+
+  State currentState() const;
+  State popState();
+  void pushState(State state);
 };
