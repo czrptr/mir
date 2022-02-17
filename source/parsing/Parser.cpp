@@ -89,9 +89,7 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     // TODO error for struct and variant: "{}s don't have underlying types"
     if (tag == TypeExpression::Enum && !next(Token::LBrace))
     {
-      pUnderlyingType = expression();
-      // TODO error pos need to be after tokTag, not on it
-      throwErrorIfNullOrNotExpression(pUnderlyingType, tokTag, "type expression expected");
+      pUnderlyingType = expression("type expression or enum body (block) expected", tokTag.end().nextColumn());
     }
     match(Token::LBrace, ErrorStrategy::DefaultErrorMessage);
   }
@@ -177,12 +175,11 @@ FunctionExpression::SPtr Parser::functionExpression()
   std::vector<FunctionExpression::Parameter> parameters;
   while(next(Token::Symbol))
   {
-    Token tokName = match(Token::Symbol);
+    Token const tokName = match(Token::Symbol);
 
-    Token tokColon = match(Token::Colon, ErrorStrategy::DefaultErrorMessage);
+    Token const tokColon = match(Token::Colon, ErrorStrategy::DefaultErrorMessage);
 
-    auto pType = expression();
-    throwErrorIfNullOrNotExpression(pType, tokColon, "type expression expected");
+    auto pType = expression("type expression expected", tokColon.end());
 
     // force commas between parameters
     if (commaCount != parameters.size())
@@ -197,25 +194,15 @@ FunctionExpression::SPtr Parser::functionExpression()
   match(Token::RParen, ErrorStrategy::DefaultErrorMessage);
 
   pushState(FunctionReturnType);
-  auto pReturnType = expression();
+  auto pReturnType = expression("type expression expected");
   assert(popState() == FunctionReturnType);
 
-  // TODO expression<>(errorMessage)
-  auto pBody = expression();
-  auto pBlock = std::dynamic_pointer_cast<BlockExpression>(pBody);
-
-  if (pBody != nullptr)
+  auto pBody = expression<BlockExpression>(Optional, "block expected");
+  if (pBody != nullptr && pBody->isLabeled())
   {
-    if (!pBody->is<BlockExpression>())
-    {
-      throw error(pBody, "block expected");
-    }
-    if (pBody->as<BlockExpression>()->isLabeled())
-    {
-      throw error(pBlock, "function blocks cannot be labeled");
-    }
+    throw error(pBody, "function blocks cannot be labeled");
   }
-  return FunctionExpression::make_shared(tokFn, std::move(parameters), pReturnType, pBody->as<BlockExpression>());
+  return FunctionExpression::make_shared(tokFn, std::move(parameters), pReturnType, pBody);
 }
 
 LetStatement::SPtr Parser::letStatement()
@@ -301,16 +288,14 @@ Part::SPtr Parser::part()
   Node::SPtr pType = nullptr;
   if (skip(Token::Colon))
   {
-    pType = expression();
-    throwErrorIfNotExpression(pType, "type expression expected");
+    pType = expression(Optional, "type expression expected");
   }
 
   Node::SPtr pValue = nullptr;
   if (next(Token::Operator))
   {
     Token const tokEq = match(Operator::Eq, ErrorStrategy::DefaultErrorMessage);
-    pValue = expression();
-    throwErrorIfNullOrNotExpression(pValue, tokEq, "expression expected");
+    pValue = expression("expression expected", tokEq.end());
   }
 
   return Part::make_shared(tokSymbol, pType, pValue);
@@ -382,31 +367,23 @@ ast::IfExpression::SPtr Parser::ifExpression()
     Node::SPtr pClauseCondition = nullptr;
     if (tag != IfExpression::Clause::Else)
     {
-      pClauseCondition = expression();
-      throwErrorIfNullOrNotExpression(pClauseCondition, tokBeforeCondition, "expression expected");
+      pClauseCondition = expression("expression expected", tokBeforeCondition.end().nextColumn());
     }
 
     Node::SPtr pClauseCapture = nullptr;
     if (skip(Runes::Bar))
     {
-      pClauseCapture = expression();
-      // TODO throwErrorIfNotDestructureExpression
-      throwErrorIfNotExpression(pClauseCapture, "expression expected");
-
+      pClauseCapture = expression(Optional, "expression expected");
       match(Runes::Bar, "'|' expected");
     }
 
-    auto pClauseBody = expression();
-    if (!pClauseBody->is<BlockExpression>())
-    {
-      throw error(pClauseBody, "block expected");
-    }
-    if (pClauseBody->as<BlockExpression>()->isLabeled())
+    auto pClauseBody = expression<BlockExpression>("block expected");
+    if (pClauseBody->isLabeled())
     {
       // TODO add note: move the label here <first clause>
       throw error(pClauseBody, "label the whole if expression");
     }
-    clauses.push_back({tag, tokStart, pClauseCondition, pClauseCapture, pClauseBody->as<BlockExpression>()});
+    clauses.push_back({tag, tokStart, pClauseCondition, pClauseCapture, pClauseBody});
 
     if (tag == IfExpression::Clause::Else)
     {
@@ -638,40 +615,19 @@ void Parser::commit()
   }
 }
 
-Error Parser::error(Token token, std::string const& message)
+Error Parser::error(Token token, std::string const& message) const
 {
   return Error(d_tokenizer.sourcePath(), token.start(), token.end(), message);
 }
 
-Error Parser::error(Node::SPtr pNode, std::string const& message)
+Error Parser::error(Node::SPtr pNode, std::string const& message) const
 {
   return Error(d_tokenizer.sourcePath(), pNode->start(), pNode->end(), message);
 }
 
-void Parser::throwErrorIfNotExpression(Node::SPtr pNode, std::string const& message)
+Error Parser::error(Position pos, std::string const& message) const
 {
-  // TODO check for node type and add notes
-  //   ex: ranges are not expressions, let statements are not expressions, etc
-
-  if (pNode != nullptr && !pNode->isExpression())
-  {
-    throw error(pNode, message);
-  }
-}
-
-void Parser::throwErrorIfNullOrNotExpression(Node::SPtr pNode, Token fallbackToken, std::string const& message)
-{
-  // TODO check for node type and add notes
-  //   ex: ranges are not expressions, let statements are not expressions, etc
-
-  if (pNode == nullptr)
-  {
-    throw Error(d_tokenizer.sourcePath(), fallbackToken.end(), fallbackToken.end(), message);
-  }
-  if (!pNode->isExpression())
-  {
-    throw error(pNode, message);
-  }
+  return Error(d_tokenizer.sourcePath(), pos, pos, message);
 }
 
 Parser::State Parser::currentState() const

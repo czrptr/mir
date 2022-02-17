@@ -66,7 +66,12 @@ public:
   template<typename NodeT>
   bool is() const
   {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wnonnull-compare"
+
     return dynamic_cast<NodeT const*>(this) != nullptr;
+
+    #pragma GCC diagnostic pop
   }
 
   template<typename NodeT>
@@ -74,10 +79,12 @@ public:
   {
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wnonnull-compare"
+
     if (this == nullptr)
     {
       return nullptr;
     }
+
     #pragma GCC diagnostic pop
 
     auto pRes = std::dynamic_pointer_cast<NodeT>(shared_from_this());

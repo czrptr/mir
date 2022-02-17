@@ -17,7 +17,11 @@ Parser parser(std::string const& text)
 
 TEST_SUITE_BEGIN("Parser");
 
-// TODO test non expressions, ex a = 0..2; enum (let b = 0) { ... }
+/* TODO test non expressions, ex:
+  a: 0..2 = 0..2;
+  enum (let b = 0) { ... }
+  struct let a = 0
+*/
 
 /* ================== TokenExpression ================== */
 
@@ -385,6 +389,57 @@ TEST_CASE("function parameters can have a trailing comma")
   REQUIRE_AST_EQ(f, fn({{"a", symbol("a")}}, symbol("a")));
 }
 
+TEST_CASE("function parameters must have types (colon separator)")
+{
+  auto prs = parser("fn (a) a");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:5: error: ':' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("function parameters must have types")
+{
+  auto prs = parser("fn (a:) a");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:6: error: type expression expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("function return type must be an expression")
+{
+  auto prs = parser("fn () let a = 0");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:6: error: type expression expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
 TEST_CASE("function block cannot be labeled")
 {
   auto prs = parser("fn () a a: {}");
@@ -601,6 +656,23 @@ TEST_CASE("enum variants must be separated by a comma (case 1)")
     std::string const
       msg = fmt::to_string(err),
       expectedMsg = "<file>:0:8: error: ',' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("enum expects an underyling type if not block")
+{
+  auto prs = parser("enum |");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:5: error: type expression or enum body (block) expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
