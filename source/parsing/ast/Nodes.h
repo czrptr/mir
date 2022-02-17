@@ -5,6 +5,7 @@
 #include <parsing/ast/TypeExpression.h>
 #include <parsing/ast/FunctionExpression.h>
 #include <parsing/ast/LetStatement.h>
+#include <parsing/ast/LabeledNode.h>
 #include <parsing/ast/BlockExpression.h>
 #include <parsing/ast/IfExpression.h>
 

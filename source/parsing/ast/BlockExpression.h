@@ -1,18 +1,17 @@
 #pragma once
 
-#include <parsing/ast/Node.h>
+#include <parsing/ast/LabeledNode.h>
 
 namespace ast
 {
 
-struct BlockExpression final : public Node
+struct BlockExpression final : public LabeledNode
 {
   PTR(BlockExpression)
 
 private:
   Position d_start;
   Position d_end;
-  std::string_view d_label;
   std::vector<Node::SPtr> d_statements;
 
 protected:
@@ -25,13 +24,11 @@ public:
   BlockExpression(
     Position start,
     Position end,
-    std::string_view label,
     std::vector<Node::SPtr>&& statements,
     Node::SPtr pParent = nullptr)
-    : Node(pParent)
+    : LabeledNode(pParent)
     , d_start(start)
     , d_end(end)
-    , d_label(label)
     , d_statements(std::move(statements))
   {}
 
@@ -41,16 +38,11 @@ public:
   // TODO check for break statements
   virtual bool isExpression() const override { return true; }
 
-  bool isLabeled() const { return !d_label.empty(); }
-  std::string_view label() const { return d_label; }
-  void setLabel(std::string_view label) { d_label = label; }
-
   std::vector<Node::SPtr> const& statements() const { return d_statements; }
 
   static BlockExpression::SPtr make_shared(
     Position start,
     Position end,
-    std::string_view label,
     std::vector<Node::SPtr>&& statements,
     Node::SPtr pParent = nullptr);
 };

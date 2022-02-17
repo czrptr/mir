@@ -1,7 +1,6 @@
 #include "parsing/Parser.h"
 
 // TODO better error messages
-// TODO? error on "[else] if ()", "switch ()", "loop ()", "enum ()"
 
 using namespace ast;
 
@@ -108,7 +107,7 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     }
     else if (pExpr->is<Field>())
     {
-      auto pField = pExpr->as<Field>();
+      auto const pField = pExpr->as<Field>();
       decls = &declsPost;
 
       if (!fields.empty() && !declsPost.empty())
@@ -139,8 +138,7 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
       // force commas between fields
       if (commaCount != fields.size())
       {
-        auto const errPos = fields.back()->end();
-        throw Error(d_tokenizer.sourcePath(), errPos, errPos, "',' expected");
+        throw error(fields.back()->end(), "',' expected");
       }
       fields.push_back(pField);
       commaCount += static_cast<size_t>(skip(Token::Comma));
@@ -152,7 +150,7 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     }
   }
 
-  Position end = (!isRoot)
+  Position const end = (!isRoot)
     ? match(Token::RBrace, ErrorStrategy::DefaultErrorMessage).end()
     : lastMatchedToken().end();
 
@@ -162,12 +160,11 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
 
 FunctionExpression::SPtr Parser::functionExpression()
 {
-  Token tokFn;
   if (!next(Token::KwFn))
   {
     return nullptr;
   }
-  tokFn = match(Token::KwFn);
+  Token const tokFn = match(Token::KwFn);
 
   match(Token::LParen, ErrorStrategy::DefaultErrorMessage);
 
@@ -176,10 +173,8 @@ FunctionExpression::SPtr Parser::functionExpression()
   while(next(Token::Symbol))
   {
     Token const tokName = match(Token::Symbol);
-
     Token const tokColon = match(Token::Colon, ErrorStrategy::DefaultErrorMessage);
-
-    auto pType = expression("type expression expected", tokColon.end());
+    auto const pType = expression("type expression expected", tokColon.end());
 
     // force commas between parameters
     if (commaCount != parameters.size())
@@ -194,10 +189,10 @@ FunctionExpression::SPtr Parser::functionExpression()
   match(Token::RParen, ErrorStrategy::DefaultErrorMessage);
 
   pushState(FunctionReturnType);
-  auto pReturnType = expression("type expression expected");
+  auto const pReturnType = expression("type expression expected");
   assert(popState() == FunctionReturnType);
 
-  auto pBody = expression<BlockExpression>(Optional, "block expected");
+  auto const pBody = expression<BlockExpression>(Optional, "block expected");
   if (pBody != nullptr && pBody->isLabeled())
   {
     throw error(pBody, "function blocks cannot be labeled");
@@ -259,8 +254,7 @@ LetStatement::SPtr Parser::letStatement()
     // force commas between parts
     if (commaCount != parts.size())
     {
-      auto const errPos = parts.back()->end();
-      throw Error(d_tokenizer.sourcePath(), errPos, errPos, "',' expected");
+      throw error(parts.back()->end(), "',' expected");
     }
     parts.push_back(pPart);
     commaCount += static_cast<size_t>(skip(Token::Comma));
@@ -280,7 +274,6 @@ Part::SPtr Parser::part()
   {
     return nullptr;
   }
-
   Token const tokSymbol = match(Token::Symbol);
 
   // TODO implement workaround when a = b expression will be implemented and this code will break
@@ -303,24 +296,23 @@ Part::SPtr Parser::part()
 
 BlockExpression::SPtr Parser::blockExpression()
 {
-  Token tokLBrace;
   if (!next(Token::LBrace))
   {
     return nullptr;
   }
-  tokLBrace = match(Token::LBrace);
+  Token const tokLBrace = match(Token::LBrace);
 
   std::vector<Node::SPtr> statements;
   while (auto pStmt = expression())
   {
     statements.push_back(pStmt);
+    // FIXME this matches 0 or more, make it match 1 and then error on more then one
     while (skip(Token::Semicolon));
   }
-
   Token const tokRBrace = match(Token::RBrace, ErrorStrategy::DefaultErrorMessage);
 
   return BlockExpression::make_shared(
-    tokLBrace.start(), tokRBrace.start(), std::string_view(), std::move(statements));
+    tokLBrace.start(), tokRBrace.start(), std::move(statements));
 }
 
 ast::IfExpression::SPtr Parser::ifExpression()
@@ -415,7 +407,7 @@ Node::SPtr Parser::expression()
     toklabel = match(Token::Symbol);
     if (next(Token::Colon))
     {
-      Token tokColon = match(Token::Colon);
+      Token const tokColon = match(Token::Colon);
       if (toklabel.end() != tokColon.start())
       {
         // marking labels must be symbols suffixed with ':'
@@ -456,17 +448,13 @@ Node::SPtr Parser::expression()
     pRes = tokenExpression();
   }
 
-  // TODO add if, loop check
-  auto pBlock = std::dynamic_pointer_cast<BlockExpression>(pRes);
-  auto pIf = std::dynamic_pointer_cast<IfExpression>(pRes);
-
-  if (pBlock == nullptr && pIf == nullptr && isLabeled)
+  if (isLabeled)
   {
-    throw error(toklabel, "only block, ifs and loops can be labeled");
-  }
-  if (pBlock != nullptr && isLabeled)
-  {
-    pBlock->setLabel(toklabel.text());
+    if (!pRes->is<LabeledNode>())
+    {
+      throw error(toklabel, "only block, ifs and loops can be labeled");
+    }
+    pRes->as<LabeledNode>()->setLabel(toklabel.text());
   }
   return pRes;
 }

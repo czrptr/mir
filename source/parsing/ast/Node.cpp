@@ -3,9 +3,6 @@
 #include <fmt/core.h>
 #include <fmt/color.h>
 
-// royal_blue -> dodger_blue,
-// TODO emphasize node value, ex 'a', true, "AAAAH"
-
 std::string hUnderline(std::string const& str)
 {
   static constexpr auto style = fmt::emphasis::bold | fmt::fg(fmt::color::medium_spring_green);

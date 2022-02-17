@@ -132,12 +132,14 @@ LetStatement::SPtr let(
 
 BlockExpression::SPtr block(list<Node::SPtr> statements)
 {
-  return BlockExpression::make_shared(Position::invalid(), Position::invalid(), std::string_view(), statements);
+  return BlockExpression::make_shared(Position::invalid(), Position::invalid(), statements);
 }
 
 BlockExpression::SPtr block(std::string const& label, list<Node::SPtr> statements)
 {
-  return BlockExpression::make_shared(Position::invalid(), Position::invalid(), Intern::string(label), statements);
+  auto res = BlockExpression::make_shared(Position::invalid(), Position::invalid(), statements);
+  res->setLabel(Intern::string(label));
+  return res;
 }
 
 FunctionExpression::SPtr fn(

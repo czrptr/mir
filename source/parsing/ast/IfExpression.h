@@ -1,12 +1,12 @@
 #pragma once
 
-#include <parsing/ast/Node.h>
+#include <parsing/ast/LabeledNode.h>
 #include <parsing/ast/BlockExpression.h>
 
 namespace ast
 {
 
-struct IfExpression final : public Node
+struct IfExpression final : public LabeledNode
 {
   PTR(IfExpression)
 
@@ -40,7 +40,7 @@ public:
   IfExpression(
     std::vector<Clause>&& clauses,
     Node::SPtr pParent = nullptr)
-    : Node(pParent)
+    : LabeledNode(pParent)
     , d_clauses(std::move(clauses))
   {
     assert(d_clauses.size() > 0);

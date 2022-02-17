@@ -15,12 +15,11 @@ void BlockExpression::toStringData(
 BlockExpression::SPtr BlockExpression::make_shared(
   Position start,
   Position end,
-  std::string_view label,
   std::vector<Node::SPtr>&& statements,
   Node::SPtr pParent)
 {
   auto pRes = std::make_shared<BlockExpression>(
-    start, end, label, std::move(statements), pParent);
+    start, end, std::move(statements), pParent);
 
   for (auto pStatement : pRes->d_statements)
   {
