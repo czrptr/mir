@@ -117,7 +117,7 @@ struct fmt::formatter<Error::Part> : fmt::formatter<fmt::string_view>
   template<typename FormatContext>
   auto format(Error::Part const& part, FormatContext& ctx)
   {
-    if (part.start() == Position::invalid() && part.end() == Position::invalid())
+    if (!part.start().isValid() && !part.end().isValid())
     {
       return fmt::format_to(
         ctx.out(),
