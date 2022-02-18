@@ -163,14 +163,25 @@ FunctionExpression::SPtr fn(
 
 IfExpression::SPtr _if(
   Node::SPtr condition,
-  Node::SPtr capture = nullptr,
-  BlockExpression::SPtr block = nullptr)
+  Node::SPtr capture,
+  BlockExpression::SPtr block)
 {
   std::vector<IfExpression::Clause> clauses;
   Token tokIf(Token::KwIf, Position::invalid(), Position::invalid(), Intern::string("if"));
   clauses.push_back({IfExpression::Clause::If, tokIf, condition, capture, block});
 
   return IfExpression::make_shared(std::move(clauses));
+}
+
+IfExpression::SPtr _if(
+  std::string const& label,
+  Node::SPtr condition,
+  Node::SPtr capture,
+  BlockExpression::SPtr block)
+{
+  auto const pRes = _if(condition, capture, block);
+  pRes->setLabel(Intern::string(label));
+  return pRes;
 }
 
 IfExpression::SPtr _if(
@@ -186,21 +197,33 @@ IfExpression::SPtr _if(
   temp.push_back({IfExpression::Clause::If, tokIf, condition, capture, block});
   temp.insert(temp.end(), clauses);
 
-  return IfExpression::make_shared(std::move(clauses));
+  return IfExpression::make_shared(std::move(temp));
+}
+
+IfExpression::SPtr _if(
+  std::string const& label,
+  Node::SPtr condition,
+  Node::SPtr capture,
+  BlockExpression::SPtr block,
+  list<IfExpression::Clause> clauses)
+{
+  auto const pRes = _if(condition, capture, block, clauses);
+  pRes->setLabel(Intern::string(label));
+  return pRes;
 }
 
 IfExpression::Clause _elseIf(
   Node::SPtr condition,
-  Node::SPtr capture = nullptr,
-  BlockExpression::SPtr block = nullptr)
+  Node::SPtr capture,
+  BlockExpression::SPtr block)
 {
   Token tokElse(Token::KwElse, Position::invalid(), Position::invalid(), Intern::string("else"));
   return {IfExpression::Clause::ElseIf, tokElse, condition, capture, block};
 }
 
 IfExpression::Clause _else(
-  Node::SPtr capture = nullptr,
-  BlockExpression::SPtr block = nullptr)
+  Node::SPtr capture,
+  BlockExpression::SPtr block)
 {
   Token tokElse(Token::KwElse, Position::invalid(), Position::invalid(), Intern::string("else"));
   return {IfExpression::Clause::Else, tokElse, nullptr, capture, block};
@@ -366,6 +389,9 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
 
   if (nodesAre(IfExpression))
   {
+    if (n1->label() != n2->label())
+      return false;
+
     if (n1->clauses().size() != n2->clauses().size())
       return false;
 

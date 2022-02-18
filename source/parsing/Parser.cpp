@@ -186,10 +186,10 @@ FunctionExpression::SPtr Parser::functionExpression()
     commaCount += static_cast<size_t>(skip(Token::Comma));
   }
 
-  match(Token::RParen, ErrorStrategy::DefaultErrorMessage);
+  Token const tokRParen = match(Token::RParen, ErrorStrategy::DefaultErrorMessage);
 
   pushState(FunctionReturnType);
-  auto const pReturnType = expression("type expression expected");
+  auto const pReturnType = expression("type expression expected", tokRParen.end());
   assert(popState() == FunctionReturnType);
 
   auto const pBody = expression<BlockExpression>(Optional, "block expected");
@@ -359,23 +359,52 @@ ast::IfExpression::SPtr Parser::ifExpression()
     Node::SPtr pClauseCondition = nullptr;
     if (tag != IfExpression::Clause::Else)
     {
-      pClauseCondition = expression("expression expected", tokBeforeCondition.end().nextColumn());
+      pClauseCondition = expression(fmt::format("{} clauses must have conditions", tag), tokBeforeCondition.end().nextColumn());
+    }
+    else
+    {
+      setRollbackPoint();
+      pClauseCondition = expression(Optional, "expression expected");
+      if (pClauseCondition != nullptr && !pClauseCondition->is<BlockExpression>())
+      {
+        throw error(pClauseCondition, "else clauses don't have conditions");
+      }
+      rollback();
     }
 
     Node::SPtr pClauseCapture = nullptr;
-    if (skip(Runes::Bar))
+    Token tokClosingCapture;
+    if (next(Runes::Bar))
     {
-      pClauseCapture = expression(Optional, "expression expected");
-      match(Runes::Bar, "'|' expected");
+      Token const tokBar = match(Runes::Bar);
+      pClauseCapture = expression(Destructuring, "destructuring expression expected", tokBar.end());
+      tokClosingCapture = match(Runes::Bar, "'|' expected", pClauseCapture->end());
     }
 
-    auto pClauseBody = expression<BlockExpression>("block expected");
+    Position fallback;
+    if (pClauseCapture != nullptr)
+    {
+      // nexColumn for a space "| {"
+      fallback = tokClosingCapture.end().nextColumn();
+    }
+    else if (pClauseCondition != nullptr)
+    {
+      fallback = pClauseCondition->end().nextColumn();
+    }
+    else // no condition so this is 'else'
+    {
+      fallback = tokStart.end().nextColumn();
+    }
+
+    auto pClauseBody = expression<BlockExpression>("block expected", fallback);
+    clauses.push_back({tag, tokStart, pClauseCondition, pClauseCapture, pClauseBody});
+
     if (pClauseBody->isLabeled())
     {
-      // TODO add note: move the label here <first clause>
-      throw error(pClauseBody, "label the whole if expression");
+      // TODO LabelNode keep whole token not only string_view; better error position
+      throw error(pClauseBody, "individual clause blocks cannot be labeled")
+        .note(clauses.front().tokStart.start(), fmt::format("place the label '{}:' here", pClauseBody->label()));
     }
-    clauses.push_back({tag, tokStart, pClauseCondition, pClauseCapture, pClauseBody});
 
     if (tag == IfExpression::Clause::Else)
     {
@@ -387,7 +416,7 @@ ast::IfExpression::SPtr Parser::ifExpression()
   if (!hasIfClause)
   {
     auto const& clause = clauses.front();
-    throw error(clause.tokStart, fmt::format("'{}' missing preceding 'if'", clause.tag));
+    throw error(clause.tokStart, fmt::format("{} clause must have a preceding if clause", clause.tag));
   }
 
   return IfExpression::make_shared(std::move(clauses));
@@ -401,9 +430,9 @@ Node::SPtr Parser::expression()
   bool isLabeled = false;
   Token toklabel;
 
-  setRollbackPoint();
   if (next(Token::Symbol))
   {
+    setRollbackPoint();
     toklabel = match(Token::Symbol);
     if (next(Token::Colon))
     {
@@ -496,7 +525,7 @@ bool Parser::next(Token::Tag tag)
   return d_tokens[d_currentTokenIdx].tag() == tag;
 }
 
-Token Parser::match(Token::Tag tag, std::string const& errorMessage)
+Token Parser::match(Token::Tag tag, std::string const& errorMessage, Position position)
 {
   if (d_currentTokenIdx == d_tokens.size())
   {
@@ -511,20 +540,24 @@ Token Parser::match(Token::Tag tag, std::string const& errorMessage)
   Token const currentToken = d_tokens[d_currentTokenIdx];
   if (currentToken.tag() != tag)
   {
+    if (position.isValid())
+    {
+      throw error(position, errorMessage);
+    }
     throw error(currentToken, errorMessage);
   }
   d_currentTokenIdx++;
   return currentToken;
 }
 
-Token Parser::match(Token::Tag tag, ErrorStrategy strategy)
+Token Parser::match(Token::Tag tag, ErrorStrategy strategy, Position position)
 {
   auto const errorMessage =
     (strategy == ErrorStrategy::Unreachable)
       ? "reached unreachable code in Parser::match()"
       : fmt::format("{} expected", tag);
 
-  return match(tag, errorMessage);
+  return match(tag, errorMessage, position);
 }
 
 bool Parser::skip(Token::Tag tag)
@@ -548,24 +581,28 @@ bool Parser::next(Operator::Tag tag)
   return tokOp.text() == fmt::to_string(tag);
 }
 
-Token Parser::match(Operator::Tag tag, std::string const& errorMessage)
+Token Parser::match(Operator::Tag tag, std::string const& errorMessage, Position position)
 {
-  Token const tokOp = match(Token::Operator, errorMessage);
+  Token const tokOp = match(Token::Operator, errorMessage, position);
   if (tokOp.text() != fmt::to_string(tag))
   {
+    if (position.isValid())
+    {
+      throw error(position, errorMessage);
+    }
     throw error(tokOp, errorMessage);
   }
   return tokOp;
 }
 
-Token Parser::match(Operator::Tag tag, ErrorStrategy strategy)
+Token Parser::match(Operator::Tag tag, ErrorStrategy strategy, Position position)
 {
   auto const errorMessage =
     (strategy == ErrorStrategy::Unreachable)
       ? "reached unreachable code in Parser::match()"
       : fmt::format("operator '{}' expected", tag);
 
-  return match(tag, errorMessage);
+  return match(tag, errorMessage, position);
 }
 
 bool Parser::skip(Operator::Tag tag)

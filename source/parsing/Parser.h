@@ -72,13 +72,14 @@ private:
     std::string const& errorMessage,
     Position fallback = Position::invalid())
   {
-    static constexpr auto StatementAndDestructuring = CanBeStatement | Destructuring;
-    assert((args & StatementAndDestructuring) != StatementAndDestructuring);
-
     bool const
       optional = args & Optional,
-      canBeStatement = args & CanBeStatement;
-      // TODO destrcuturing = args & Destructuring;
+      canBeStatement = args & CanBeStatement,
+      destrcuturing = args & Destructuring; // TODO
+
+    if (canBeStatement) assert(!destrcuturing);
+    if (destrcuturing) assert(!canBeStatement);
+    if (!optional) assert(fallback.isValid());
 
     auto pRes = expression();
 
@@ -116,14 +117,14 @@ private:
 
 private:
   bool next(Token::Tag tag);
-  Token match(Token::Tag tag, std::string const& errorMessage);
-  Token match(Token::Tag tag, ErrorStrategy strategy = ErrorStrategy::Unreachable);
+  Token match(Token::Tag tag, std::string const& errorMessage, Position position = Position::invalid());
+  Token match(Token::Tag tag, ErrorStrategy strategy = ErrorStrategy::Unreachable, Position position = Position::invalid());
   bool skip(Token::Tag tag);
 
   bool next(Operator::Tag tag);
   // TODO template and construct Token or Operator
-  Token match(Operator::Tag tag, std::string const& errorMessage);
-  Token match(Operator::Tag tag, ErrorStrategy strategy = ErrorStrategy::Unreachable);
+  Token match(Operator::Tag tag, std::string const& errorMessage, Position position = Position::invalid());
+  Token match(Operator::Tag tag, ErrorStrategy strategy = ErrorStrategy::Unreachable, Position position = Position::invalid());
   bool skip(Operator::Tag tag);
 
   Token lastMatchedToken();

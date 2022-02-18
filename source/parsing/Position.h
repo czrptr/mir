@@ -18,7 +18,7 @@ struct Position final
 
   // Methods
   constexpr Position nextColumn() const noexcept { return Position(line, column + 1); }
-  constexpr bool isInvalid() const noexcept { return *this == invalid(); }
+  constexpr bool isValid() const noexcept { return *this != invalid(); }
 
   // Operators
   constexpr std::strong_ordering operator<=>(Position const&) const noexcept = default;

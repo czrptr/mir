@@ -21,6 +21,12 @@ TEST_SUITE_BEGIN("Parser");
   a: 0..2 = 0..2;
   enum (let b = 0) { ... }
   struct let a = 0
+
+  if cond |capture?| // will operator parsing ever backfire?
+
+  if cond |. capture the operator and split it
+
+  destructuring check on let statements
 */
 
 /* ================== TokenExpression ================== */
@@ -951,6 +957,438 @@ TEST_CASE("unions (complex)")
 
 /* ================== IfExpressions ================== */
 
-// TODO
+TEST_CASE("if clauses must have conditions")
+{
+  auto prs = parser("if |a| {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:3: error: if clauses must have conditions";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("else if clauses must have conditions")
+{
+  auto prs = parser("else if |a| {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:8: error: else if clauses must have conditions";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("else clause must have a preceding if clause")
+{
+  auto prs = parser("else {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:0: error: else clause must have a preceding if clause";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("else if clause must have a preceding if clause")
+{
+  auto prs = parser("else if a {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:0: error: else if clause must have a preceding if clause";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("else clauses don't have conditions")
+{
+  auto prs = parser("else a {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:5: error: else clauses don't have conditions";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("if clauses unfinished capture (part 1)")
+{
+  auto prs = parser("if a |a {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:7: error: '|' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("if clauses unfinished capture (part 2)")
+{
+  auto prs = parser("if a |");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:6: error: destructuring expression expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("else if clauses unfinished capture (part 1)")
+{
+  auto prs = parser("if a {} else if a |a {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:20: error: '|' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("else if clauses unfinished capture (part 2)")
+{
+  auto prs = parser("if a {} else if a |");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:19: error: destructuring expression expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("else clauses unfinished capture (part 1)")
+{
+  auto prs = parser("if a {} else |a {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:15: error: '|' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("else clauses unfinished capture (part 2)")
+{
+  auto prs = parser("if a {} else |");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:14: error: destructuring expression expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("if clauses must have blocks (part 1)")
+{
+  auto prs = parser("if a");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:5: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("if clauses must have blocks (part 2)")
+{
+  auto prs = parser("if a |a|");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:9: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("else if clauses must have blocks (part 1)")
+{
+  auto prs = parser("if a else if b");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:15: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("else if clauses must have blocks (part 2)")
+{
+  auto prs = parser("if a else if b |b|");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:19: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("else clauses must have blocks (part 1)")
+{
+  auto prs = parser("if a else");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:10: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("else clauses must have blocks (part 2)")
+{
+  auto prs = parser("if a else |b|");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:14: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("whole if must be labeled (part 1)")
+{
+  auto prs = parser("if a blk: {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg =
+      "<file>:0:10: error: individual clause blocks cannot be labeled\n"
+      "<file>:0:0: note: place the label 'blk:' here";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("whole if must be labeled (part 1)")
+{
+  auto prs = parser("if a {} else if a blk: {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg =
+      "<file>:0:23: error: individual clause blocks cannot be labeled\n"
+      "<file>:0:0: note: place the label 'blk:' here";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("whole if must be labeled (part 3)")
+{
+  auto prs = parser("if a {} else blk: {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg =
+      "<file>:0:18: error: individual clause blocks cannot be labeled\n"
+      "<file>:0:0: note: place the label 'blk:' here";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("if")
+{
+  auto prs = parser("if a {}");
+  auto i = prs.expression();
+
+  REQUIRE_AST_EQ(i, _if(symbol("a"), nullptr, block({})));
+}
+
+TEST_CASE("labeled if")
+{
+  auto prs = parser("blk: if a {}");
+  auto i = prs.expression();
+
+  REQUIRE_AST_EQ(i, _if("blk", symbol("a"), nullptr, block({})));
+}
+
+TEST_CASE("if with capture")
+{
+  auto prs = parser("if a |a| {}");
+  auto i = prs.expression();
+
+  REQUIRE_AST_EQ(i, _if(symbol("a"), symbol("a"), block({})));
+}
+
+TEST_CASE("labeled if with capture")
+{
+  auto prs = parser("blk: if a |a| {}");
+  auto i = prs.expression();
+
+  REQUIRE_AST_EQ(i, _if("blk", symbol("a"), symbol("a"), block({})));
+}
+
+TEST_CASE("else if")
+{
+  auto prs = parser("if a {} else if b {}");
+  auto i = prs.expression();
+
+  // fmt::print("\n{}\n", i->toString());
+
+  REQUIRE_AST_EQ(i, _if(symbol("a"), nullptr, block({}), {
+    _elseIf(symbol("b"), nullptr, block({}))
+  }));
+}
+
+TEST_CASE("else if with capture")
+{
+  auto prs = parser("if a {} else if b |b| {}");
+  auto i = prs.expression();
+
+  REQUIRE_AST_EQ(i, _if(symbol("a"), nullptr, block({}), {
+    _elseIf(symbol("b"), symbol("b"), block({}))
+  }));
+}
+
+TEST_CASE("else")
+{
+  auto prs = parser("if a {} else {}");
+  auto i = prs.expression();
+
+  REQUIRE_AST_EQ(i, _if(symbol("a"), nullptr, block({}), {
+    _else(nullptr, block({}))
+  }));
+}
+
+TEST_CASE("else with capture")
+{
+  auto prs = parser("if a {} else |b| {}");
+  auto i = prs.expression();
+
+  REQUIRE_AST_EQ(i, _if(symbol("a"), nullptr, block({}), {
+    _else(symbol("b"), block({}))
+  }));
+}
+
+TEST_CASE("if (complex)")
+{
+  auto prs = parser(
+    "blk: if a |a| {} else if b {} "
+    "else if c |c| {} else |d| {}");
+  auto i = prs.expression();
+
+  REQUIRE_AST_EQ(i, _if("blk", symbol("a"), symbol("a"), block({}), {
+    _elseIf(symbol("b"), nullptr, block({})),
+    _elseIf(symbol("c"), symbol("c"), block({})),
+    _else(symbol("d"), block({}))
+  }));
+}
 
 TEST_SUITE_END();
