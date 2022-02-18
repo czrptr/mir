@@ -103,7 +103,7 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     if (pExpr->is<LetStatement>())
     {
       decls->push_back(pExpr->as<LetStatement>());
-      match(Token::Semicolon, ErrorStrategy::DefaultErrorMessage);
+      matchStatementEnder();
     }
     else if (pExpr->is<Field>())
     {
@@ -307,9 +307,15 @@ BlockExpression::SPtr Parser::blockExpression()
   std::vector<Node::SPtr> statements;
   while (auto pStmt = expression())
   {
+    // errors on unassigned function results is done in sema
+
+    // TODO error if the statement isn't a
+    //   let, assignment, function call, block, if, loop or switch
+
     statements.push_back(pStmt);
-    // FIXME this matches 0 or more, make it match 1 and then error on more then one
-    while (skip(Token::Semicolon));
+    if (!pStmt->is<BlockExpression>()
+      && !pStmt->is<IfExpression>())
+    matchStatementEnder();
   }
   Token const tokRBrace = match(Token::RBrace, ErrorStrategy::DefaultErrorMessage);
 
@@ -624,6 +630,16 @@ bool Parser::skip(Operator::Tag tag)
     return true;
   }
   return false;
+}
+
+void Parser::matchStatementEnder()
+{
+  match(Token::Semicolon, ErrorStrategy::DefaultErrorMessage);
+  if (next(Token::Semicolon))
+  {
+    Token const tokSemicolon = match(Token::Semicolon);
+    throw error(tokSemicolon, "remove superfluous ';'");
+  }
 }
 
 Token Parser::lastMatchedToken()

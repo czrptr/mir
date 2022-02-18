@@ -128,6 +128,8 @@ private:
   Token match(Operator::Tag tag, ErrorStrategy strategy = ErrorStrategy::Unreachable, Position position = Position::invalid());
   bool skip(Operator::Tag tag);
 
+  void matchStatementEnder();
+
   Token lastMatchedToken();
 
   void setRollbackPoint();

@@ -332,6 +332,24 @@ TEST_CASE("only blocks, if and loops can be labeled")
   }
 }
 
+TEST_CASE("superfluous statement enders are illigal (part 1)")
+{
+  auto prs = parser("{ a;;; }");
+
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:4: error: remove superfluous ';'";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
 TEST_CASE("blocks")
 {
   auto prs = parser("{} {{}}");
@@ -614,6 +632,24 @@ TEST_CASE("struct fields cannot have default values")
     std::string const
       msg = fmt::to_string(err),
       expectedMsg = "<file>:0:9: error: struct fields cannot have default values";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("superfluous statement enders are illigal (part 2)")
+{
+  auto prs = parser("struct { let a = a;;; }");
+
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:19: error: remove superfluous ';'";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
