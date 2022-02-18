@@ -24,7 +24,7 @@ public:
     Token tokStart;
     Node::SPtr condition;
     Node::SPtr capture;
-    BlockExpression::SPtr block;
+    BlockExpression::SPtr body;
   };
 
 private:

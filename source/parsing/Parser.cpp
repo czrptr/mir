@@ -188,9 +188,11 @@ FunctionExpression::SPtr Parser::functionExpression()
 
   Token const tokRParen = match(Token::RParen, ErrorStrategy::DefaultErrorMessage);
 
-  pushState(FunctionReturnType);
+  pushState(State::FunctionReturnType);
   auto const pReturnType = expression("type expression expected", tokRParen.end());
-  assert(popState() == FunctionReturnType);
+
+  auto const state = popState();
+  assert(state == State::FunctionReturnType);
 
   auto const pBody = expression<BlockExpression>(Optional, "block expected");
   if (pBody != nullptr && pBody->isLabeled())
@@ -322,6 +324,7 @@ ast::IfExpression::SPtr Parser::ifExpression()
     return nullptr;
   }
 
+
   std::vector<IfExpression::Clause> clauses;
   bool hasIfClause = false;
   while (next(Token::KwIf) || next(Token::KwElse))
@@ -341,6 +344,7 @@ ast::IfExpression::SPtr Parser::ifExpression()
       tokBeforeCondition = tokStart;
       tag = IfExpression::Clause::If;
       hasIfClause = true;
+      pushState(State::IfExpression);
     }
     else // next(Token::KwElse)
     {
@@ -412,10 +416,18 @@ ast::IfExpression::SPtr Parser::ifExpression()
     }
   }
 
-  if (!hasIfClause)
+  if (currentState() != State::IfExpression && !hasIfClause)
   {
+    // fixes: if cond else {} being parsed as if cond (else {})
+    // i.e. the else {} is parsed as the if's block
     auto const& clause = clauses.front();
     throw error(clause.tokStart, fmt::format("{} clause must have a preceding if clause", clause.tag));
+  }
+
+  if (hasIfClause)
+  {
+    auto const state = popState();
+    assert(state == State::IfExpression);
   }
 
   return IfExpression::make_shared(std::move(clauses));

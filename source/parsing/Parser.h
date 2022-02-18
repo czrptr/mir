@@ -23,10 +23,11 @@ private:
     Destructuring = 1 << 2,
   };
 
-  enum State
+  enum class State
   {
+    Base,
     FunctionReturnType,
-    NotFunctionReturnType,
+    IfExpression,
   };
 
 private:
@@ -43,7 +44,7 @@ public:
     : d_tokenizer(std::forward<T>(tokenizer))
     , d_currentTokenIdx(0)
   {
-    d_stateStack.push(NotFunctionReturnType);
+    d_stateStack.push(State::Base);
   }
 
 public:

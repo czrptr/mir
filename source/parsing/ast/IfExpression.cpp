@@ -22,7 +22,7 @@ public:
   {}
 
   virtual Position start() const override { return d_caluse.tokStart.start(); }
-  virtual Position end() const override { return d_caluse.block->end(); }
+  virtual Position end() const override { return d_caluse.body->end(); }
 
   virtual bool isExpression() const override { return false; }
 };
@@ -41,7 +41,7 @@ void ClauseNode::toStringData(
     {
       subNodes->push_back(d_caluse.capture);
     }
-    subNodes->push_back(d_caluse.block);
+    subNodes->push_back(d_caluse.body);
 
    *nodeName = "ElseIf";
   }
@@ -51,6 +51,7 @@ void ClauseNode::toStringData(
     {
       subNodes->push_back(d_caluse.capture);
     }
+    subNodes->push_back(d_caluse.body);
 
    *nodeName = "Else";
   }
@@ -65,7 +66,7 @@ Position IfExpression::start() const
 
 Position IfExpression::end() const
 {
-  return clauses().back().block->end();
+  return clauses().back().body->end();
 }
 
 void IfExpression::toStringData(
@@ -82,6 +83,7 @@ void IfExpression::toStringData(
   {
     subNodes->push_back(ifClause.capture);
   }
+  subNodes->push_back(ifClause.body);
 
   for (size_t i = 1; i < clauses().size(); i += 1)
   {

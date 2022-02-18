@@ -30,7 +30,7 @@ pub let main = fn (args: ArgsType) void {
     str = "Hello, world!";
 };
 
-let a = if 0 { } else |err| {};
+let a = if 0 |a| {} else if 2 |b| {} else |err| {};
 
 )SOURCE";
 

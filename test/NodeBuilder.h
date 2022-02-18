@@ -402,7 +402,7 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
       if (!equal(c1.capture, c2.capture))
         return false;
 
-      return equal(c1.block, c2.block);
+      return equal(c1.body, c2.body);
     }
   }
   return false;

@@ -1246,6 +1246,23 @@ TEST_CASE("else clauses must have blocks (part 2)")
   }
 }
 
+TEST_CASE("missing block inside internal clause")
+{
+  auto prs = parser("if a {} else if b else {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:18: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
 TEST_CASE("whole if must be labeled (part 1)")
 {
   auto prs = parser("if a blk: {}");
