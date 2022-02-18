@@ -10,52 +10,49 @@ using namespace ast;
 template<typename T>
 using list = std::initializer_list<T>;
 
+Token t(Token::Tag tag, std::string const& text)
+{
+  return Token(tag, Position::invalid(), Position::invalid(), Intern::string(text));
+}
+
 SymbolExpression::SPtr symbol(std::string const& name)
 {
-  Token tok(Token::Symbol, Position::invalid(), Position::invalid(), Intern::string(name));
-  return std::make_shared<SymbolExpression>(tok);
+  return std::make_shared<SymbolExpression>(t(Token::Symbol, name));
 }
 
 BuiltinExpression::SPtr builtin(std::string const& name)
 {
-  Token tok(Token::Symbol, Position::invalid(), Position::invalid(), Intern::string('@' + name));
-  return std::make_shared<BuiltinExpression>(tok);
+  return std::make_shared<BuiltinExpression>(t(Token::Symbol, '@' + name));
 }
 
 StringExpression::SPtr string(std::string const& text)
 {
-  Token tok(Token::StringLiteral, Position::invalid(), Position::invalid(), Intern::string('"' + text + '"'));
-  return std::make_shared<StringExpression>(tok);
+  return std::make_shared<StringExpression>(t(Token::StringLiteral, '"' + text + '"'));
 }
 
 NumberExpression::SPtr number(std::string const& value)
 {
-  Token tok(Token::NumberLiteral, Position::invalid(), Position::invalid(), Intern::string(value));
-  return std::make_shared<NumberExpression>(tok);
+  return std::make_shared<NumberExpression>(t(Token::NumberLiteral, value));
 }
 
 BoolExpression::SPtr boolean(bool value)
 {
-  Token tok(Token::Symbol, Position::invalid(), Position::invalid(), Intern::string(fmt::to_string(value)));
-  return std::make_shared<BoolExpression>(tok, value);
+  return std::make_shared<BoolExpression>(t(Token::Symbol, fmt::to_string(value)), value);
 }
 
 NullExpression::SPtr null()
 {
-  Token tok(Token::Symbol, Position::invalid(), Position::invalid(), Intern::string("null"));
-  return std::make_shared<NullExpression>(tok);
+  return std::make_shared<NullExpression>(t(Token::Symbol, "null"));
 }
 
 UndefinedExpression::SPtr undefined()
 {
-  Token tok(Token::Symbol, Position::invalid(), Position::invalid(), Intern::string("undefined"));
-  return std::make_shared<UndefinedExpression>(tok);
+  return std::make_shared<UndefinedExpression>(t(Token::Symbol, "undefined"));
 }
 
 UnreachableExpression::SPtr unreachable()
 {
-  Token tok(Token::Symbol, Position::invalid(), Position::invalid(), Intern::string("unreachable"));
-  return std::make_shared<UnreachableExpression>(tok);
+  return std::make_shared<UnreachableExpression>(t(Token::Symbol, "unreachable"));
 }
 
 TypeExpression::SPtr _struct(
@@ -89,15 +86,13 @@ TypeExpression::SPtr _union(
 Part::SPtr part(
   std::string const& name, Node::SPtr type, Node::SPtr value)
 {
-  Token tok(Token::Symbol, Position::invalid(), Position::invalid(), Intern::string(name));
-  return Part::make_shared(tok, type, value);
+  return Part::make_shared(t(Token::Symbol, name), type, value);
 }
 
 Part::SPtr part(
   std::string const& name, Node::SPtr value)
 {
-  Token tok(Token::Symbol, Position::invalid(), Position::invalid(), Intern::string(name));
-  return Part::make_shared(tok, nullptr, value);
+  return Part::make_shared(t(Token::Symbol, name), nullptr, value);
 }
 
 TypeExpression::Field::SPtr field(
@@ -138,7 +133,7 @@ BlockExpression::SPtr block(list<Node::SPtr> statements)
 BlockExpression::SPtr block(std::string const& label, list<Node::SPtr> statements)
 {
   auto res = BlockExpression::make_shared(Position::invalid(), Position::invalid(), statements);
-  res->setLabel(Intern::string(label));
+  res->setLabel(t(Token::Symbol, label));
   return res;
 }
 
@@ -180,7 +175,7 @@ IfExpression::SPtr _if(
   BlockExpression::SPtr block)
 {
   auto const pRes = _if(condition, capture, block);
-  pRes->setLabel(Intern::string(label));
+  pRes->setLabel(t(Token::Symbol, label));
   return pRes;
 }
 
@@ -193,8 +188,7 @@ IfExpression::SPtr _if(
   std::vector<IfExpression::Clause> temp;
   temp.reserve(1 + clauses.size());
 
-  Token tokIf(Token::KwIf, Position::invalid(), Position::invalid(), Intern::string("if"));
-  temp.push_back({IfExpression::Clause::If, tokIf, condition, capture, block});
+  temp.push_back({IfExpression::Clause::If, t(Token::KwIf, "if"), condition, capture, block});
   temp.insert(temp.end(), clauses);
 
   return IfExpression::make_shared(std::move(temp));
@@ -208,7 +202,7 @@ IfExpression::SPtr _if(
   list<IfExpression::Clause> clauses)
 {
   auto const pRes = _if(condition, capture, block, clauses);
-  pRes->setLabel(Intern::string(label));
+  pRes->setLabel(t(Token::Symbol, label));
   return pRes;
 }
 
@@ -217,16 +211,14 @@ IfExpression::Clause _elseIf(
   Node::SPtr capture,
   BlockExpression::SPtr block)
 {
-  Token tokElse(Token::KwElse, Position::invalid(), Position::invalid(), Intern::string("else"));
-  return {IfExpression::Clause::ElseIf, tokElse, condition, capture, block};
+  return {IfExpression::Clause::ElseIf, t(Token::KwElse, "else"), condition, capture, block};
 }
 
 IfExpression::Clause _else(
   Node::SPtr capture,
   BlockExpression::SPtr block)
 {
-  Token tokElse(Token::KwElse, Position::invalid(), Position::invalid(), Intern::string("else"));
-  return {IfExpression::Clause::Else, tokElse, nullptr, capture, block};
+  return {IfExpression::Clause::Else, t(Token::KwElse, "else"), nullptr, capture, block};
 }
 
 template<typename T>
@@ -303,7 +295,7 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
 
   if (nodesAre(BlockExpression))
   {
-    if (n1->label() != n2->label())
+    if (n1->labelName() != n2->labelName())
       return false;
 
     if (n1->statements().size() != n2->statements().size())
@@ -389,7 +381,7 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
 
   if (nodesAre(IfExpression))
   {
-    if (n1->label() != n2->label())
+    if (n1->labelName() != n2->labelName())
       return false;
 
     if (n1->clauses().size() != n2->clauses().size())

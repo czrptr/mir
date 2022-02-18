@@ -195,7 +195,7 @@ FunctionExpression::SPtr Parser::functionExpression()
   auto const pBody = expression<BlockExpression>(Optional, "block expected");
   if (pBody != nullptr && pBody->isLabeled())
   {
-    throw error(pBody, "function blocks cannot be labeled");
+    throw error(pBody->label().start(), "function blocks cannot be labeled");
   }
   return FunctionExpression::make_shared(tokFn, std::move(parameters), pReturnType, pBody);
 }
@@ -401,9 +401,8 @@ ast::IfExpression::SPtr Parser::ifExpression()
 
     if (pClauseBody->isLabeled())
     {
-      // TODO LabelNode keep whole token not only string_view; better error position
-      throw error(pClauseBody, "individual clause blocks cannot be labeled")
-        .note(clauses.front().tokStart.start(), fmt::format("place the label '{}:' here", pClauseBody->label()));
+      throw error(pClauseBody->label().start(), "individual clause blocks cannot be labeled")
+        .note(clauses.front().tokStart.start(), fmt::format("place the label '{}:' here", pClauseBody->labelName()));
     }
 
     if (tag == IfExpression::Clause::Else)
@@ -483,7 +482,7 @@ Node::SPtr Parser::expression()
     {
       throw error(toklabel, "only block, ifs and loops can be labeled");
     }
-    pRes->as<LabeledNode>()->setLabel(toklabel.text());
+    pRes->as<LabeledNode>()->setLabel(toklabel);
   }
   return pRes;
 }

@@ -458,7 +458,7 @@ TEST_CASE("function block cannot be labeled")
     std::string const
       msg = fmt::to_string(err),
       // TODO better error location
-      expectedMsg = "<file>:0:11: error: function blocks cannot be labeled";
+      expectedMsg = "<file>:0:8: error: function blocks cannot be labeled";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1258,14 +1258,14 @@ TEST_CASE("whole if must be labeled (part 1)")
     std::string const
     msg = fmt::to_string(err),
     expectedMsg =
-      "<file>:0:10: error: individual clause blocks cannot be labeled\n"
+      "<file>:0:5: error: individual clause blocks cannot be labeled\n"
       "<file>:0:0: note: place the label 'blk:' here";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
 }
 
-TEST_CASE("whole if must be labeled (part 1)")
+TEST_CASE("whole if must be labeled (part 2)")
 {
   auto prs = parser("if a {} else if a blk: {}");
   try
@@ -1277,7 +1277,7 @@ TEST_CASE("whole if must be labeled (part 1)")
     std::string const
     msg = fmt::to_string(err),
     expectedMsg =
-      "<file>:0:23: error: individual clause blocks cannot be labeled\n"
+      "<file>:0:18: error: individual clause blocks cannot be labeled\n"
       "<file>:0:0: note: place the label 'blk:' here";
 
     REQUIRE_EQ(msg, expectedMsg);
@@ -1296,7 +1296,7 @@ TEST_CASE("whole if must be labeled (part 3)")
     std::string const
     msg = fmt::to_string(err),
     expectedMsg =
-      "<file>:0:18: error: individual clause blocks cannot be labeled\n"
+      "<file>:0:13: error: individual clause blocks cannot be labeled\n"
       "<file>:0:0: note: place the label 'blk:' here";
 
     REQUIRE_EQ(msg, expectedMsg);

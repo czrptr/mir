@@ -9,7 +9,7 @@ void BlockExpression::toStringData(
 {
   *subNodes = statements();
   *nodeName = "BlockExpression";
-  *additionalInfo = isLabeled() ? label() : "";
+  *additionalInfo = isLabeled() ? labelName() : "";
 }
 
 BlockExpression::SPtr BlockExpression::make_shared(
