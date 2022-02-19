@@ -29,6 +29,7 @@ public:
     RBracket,
     LBrace,
     RBrace,
+    ThickArrow,
     // keywords
     KwPub,
     KwLet,
@@ -128,6 +129,7 @@ struct fmt::formatter<Token::Tag>
       case Token::Tag::RBracket: name = "RBracket"; break;
       case Token::Tag::LBrace: name = "LBrace"; break;
       case Token::Tag::RBrace: name = "RBrace"; break;
+      case Token::Tag::ThickArrow: name = "ThickArrow"; break;
       case Token::Tag::KwPub: name = "KwPub"; break;
       case Token::Tag::KwLet: name = "KwLet"; break;
       case Token::Tag::KwMut: name = "KwMut"; break;
@@ -162,6 +164,7 @@ struct fmt::formatter<Token::Tag>
       case Token::Tag::RBracket: name = "']'"; break;
       case Token::Tag::LBrace: name = "'{'"; break;
       case Token::Tag::RBrace: name = "'}'"; break;
+      case Token::Tag::ThickArrow: name = "'=>'"; break;
       case Token::Tag::KwPub: name = "keyword 'pub'"; break;
       case Token::Tag::KwLet: name = "keyword 'let'"; break;
       case Token::Tag::KwMut: name = "keyword 'mut'"; break;

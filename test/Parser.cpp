@@ -1443,7 +1443,7 @@ TEST_CASE("if (complex)")
   }));
 }
 
-/* ================== LoopExpressions ================== */
+/* ================== LoopExpressions ================== */ //
 
 TEST_CASE("loops must have conditions")
 {
@@ -1671,6 +1671,161 @@ TEST_CASE("loop (complex)")
     loop("blk",
       symbol("a"), symbol("a"), block({}),
       symbol("b"), block({})));
+}
+
+/* ================== SwitchExpression ================== */
+
+TEST_CASE("switches must have values")
+{
+  auto prs = parser("switch {}");
+
+  // TODO for now the block parses as the switch value
+  //   BlockExpression::isExpression() needs to be
+  //   implemented properly to fix this
+
+  // try
+  // {
+  //   prs.expression();
+  // }
+  // catch (Error const& err)
+  // {
+  //   std::string const
+  //   msg = fmt::to_string(err),
+  //   expectedMsg = "<file>:0:6: error: expression expected";
+
+  //   REQUIRE_EQ(msg, expectedMsg);
+  // }
+}
+
+TEST_CASE("switches must have blocks")
+{
+  auto prs = parser("switch a");
+
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:9: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("switch block cannot be labeled")
+{
+  auto prs = parser("switch a blk: {}");
+
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:9: error: switch blocks cannot be labeled";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("switch arrow expected")
+{
+  auto prs = parser("switch a { a a }");
+
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:13: error: '=>' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("switch case result expected")
+{
+  auto prs = parser("switch a { a =>");
+
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:16: error: expression expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("switch block must end")
+{
+  auto prs = parser("switch a { a => a");
+
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:18: error: '}' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("switch cases must be separated by a comma")
+{
+  auto prs = parser("switch a { a => a a => a }");
+
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:17: error: ',' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("switch cases can have a trailing comma")
+{
+  auto prs = parser("switch a { a => a, }");
+  auto s = prs.expression();
+
+  REQUIRE_AST_EQ(s,
+    _switch(symbol("a"), {
+      { symbol("a"), nullptr, symbol("a")}
+    }));
+}
+
+TEST_CASE("switch (complex)")
+{
+  auto prs = parser("switch a { a => a, b |c| => {} }");
+  auto s = prs.expression();
+
+  REQUIRE_AST_EQ(s,
+    _switch(symbol("a"), {
+      {symbol("a"), nullptr, symbol("a")},
+      {symbol("b"), symbol("c"), block({})},
+    }));
 }
 
 TEST_SUITE_END();

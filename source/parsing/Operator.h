@@ -159,6 +159,7 @@ public:
   size_t precedence() const;
   Associativity associativity() const;
   bool chainable() const;
+  // TODO Prefix, Infix, PostFix
 
   static size_t precedence(Operator::Tag tag);
   static Associativity associativity(Operator::Tag tag);

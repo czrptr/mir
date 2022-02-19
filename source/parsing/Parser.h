@@ -62,12 +62,18 @@ public:
 
   ast::LoopExpression::SPtr loopExpression();
 
+  ast::SwitchExpression::SPtr switchExpression();
+
   ast::Node::SPtr expression();
 
 private:
   ast::Part::SPtr part();
 
   ast::Node::SPtr expressionOrField(); // use only in typeExpression()
+
+  std::tuple<Token, bool> label();
+
+  std::tuple<ast::Node::SPtr, Token> capture();
 
   template<typename NodeT = ast::Node>
   std::shared_ptr<NodeT> expression(

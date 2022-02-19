@@ -9,6 +9,7 @@
 #include <parsing/ast/BlockExpression.h>
 #include <parsing/ast/IfExpression.h>
 #include <parsing/ast/LoopExpression.h>
+#include <parsing/ast/SwitchExpression.h>
 
 #undef SPTR
 #undef WPTR

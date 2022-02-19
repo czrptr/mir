@@ -14,6 +14,11 @@
 std::string sourceText =
 R"SOURCE(
 
+let c = switch number {
+  0 => false,
+  1 => true,
+};
+
 let b = loop cond |value| {} else |err| {};
 
 a: a,

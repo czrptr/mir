@@ -6,6 +6,10 @@
 namespace ast
 {
 
+// TODO add support for infinite loops `loop {}`
+//   they cannot have captures or else blocks
+//   they must have a break inside
+
 struct LoopExpression final : public LabeledNode
 {
   PTR(LoopExpression)

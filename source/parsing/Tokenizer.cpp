@@ -605,6 +605,11 @@ Token Tokenizer::tokenEnd()
     }
   }
 
+  if (d_currentToken.d_text == "=>")
+  {
+    d_currentToken.d_tag = Token::ThickArrow;
+  }
+
   // TODO errors for a and= b, a not= b, etc...
   if (d_currentToken.d_tag == Token::Operator)
   {

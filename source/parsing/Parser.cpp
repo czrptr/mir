@@ -315,7 +315,8 @@ BlockExpression::SPtr Parser::blockExpression()
     statements.push_back(pStmt);
     if (!pStmt->is<BlockExpression>()
       && !pStmt->is<IfExpression>()
-      && !pStmt->is<LoopExpression>())
+      && !pStmt->is<LoopExpression>()
+      && !pStmt->is<SwitchExpression>())
     matchStatementEnder();
   }
   Token const tokRBrace = match(Token::RBrace, ErrorStrategy::DefaultErrorMessage);
@@ -324,13 +325,12 @@ BlockExpression::SPtr Parser::blockExpression()
     tokLBrace.start(), tokRBrace.end(), std::move(statements));
 }
 
-ast::IfExpression::SPtr Parser::ifExpression()
+IfExpression::SPtr Parser::ifExpression()
 {
   if (!next(Token::KwIf) && !next(Token::KwElse))
   {
     return nullptr;
   }
-
 
   std::vector<IfExpression::Clause> clauses;
   bool hasIfClause = false;
@@ -375,14 +375,7 @@ ast::IfExpression::SPtr Parser::ifExpression()
       pClauseCondition = expression(fmt::format("{} clauses must have conditions", tag), tokBeforeCondition.end().nextColumn());
     }
 
-    Node::SPtr pClauseCapture = nullptr;
-    Token tokClosingCapture;
-    if (next(Runes::Bar))
-    {
-      Token const tokBar = match(Runes::Bar);
-      pClauseCapture = expression(Destructuring, "destructuring expression expected", tokBar.end());
-      tokClosingCapture = match(Runes::Bar, "'|' expected", pClauseCapture->end());
-    }
+    auto const [pClauseCapture, tokClosingCapture] = capture();
 
     Position fallback;
     if (pClauseCapture != nullptr)
@@ -434,7 +427,7 @@ ast::IfExpression::SPtr Parser::ifExpression()
   return IfExpression::make_shared(std::move(clauses));
 }
 
-ast::LoopExpression::SPtr Parser::loopExpression()
+LoopExpression::SPtr Parser::loopExpression()
 {
   if (!next(Token::KwLoop))
   {
@@ -445,14 +438,7 @@ ast::LoopExpression::SPtr Parser::loopExpression()
   // TODO add note: loops must have conditions
   auto const pCondition = expression("expression expected", tokLoop.end().nextColumn());
 
-  Node::SPtr pCapture = nullptr;
-  Token tokClosingCapture;
-  if (next(Runes::Bar))
-  {
-    Token const tokBar = match(Runes::Bar);
-    pCapture = expression(Destructuring, "destructuring expression expected", tokBar.end());
-    tokClosingCapture = match(Runes::Bar, "'|' expected", pCapture->end());
-  }
+  auto const [pCapture, tokClosingCapture] = capture();
 
   Position fallback = (pCapture != nullptr)
     ? tokClosingCapture.end().nextColumn()
@@ -477,12 +463,8 @@ ast::LoopExpression::SPtr Parser::loopExpression()
   {
     tokElse = match(Token::KwElse);
 
-    if (next(Runes::Bar))
-    {
-      Token const tokBar = match(Runes::Bar);
-      pElseCapture = expression(Destructuring, "destructuring expression expected", tokBar.end());
-      tokClosingCapture = match(Runes::Bar, "'|' expected", pElseCapture->end());
-    }
+    auto const [pElseCaptureAux, tokClosingCapture] = capture();
+    pElseCapture = pElseCaptureAux;
 
     Position fallback = (pElseCapture != nullptr)
       ? tokClosingCapture.end().nextColumn()
@@ -500,34 +482,68 @@ ast::LoopExpression::SPtr Parser::loopExpression()
     tokLoop, pCondition, pCapture, pBody, tokElse, pElseCapture, pElseBody);
 }
 
+SwitchExpression::SPtr Parser::switchExpression()
+{
+  if (!next(Token::KwSwitch))
+  {
+    return nullptr;
+  }
+  Token const tokSwitch = match(Token::KwSwitch);
+
+  auto const pValue = expression("expression expected", tokSwitch.end().nextColumn());
+
+  auto const [tokLabel, isLabeled] = label();
+  if (isLabeled)
+  {
+    throw error(tokLabel, "switch blocks cannot be labeled");
+  }
+
+  Token const tokLBrace = match(Token::LBrace, "block expected", pValue->end().nextColumn());
+
+  std::vector<SwitchExpression::Case> cases;
+  size_t commaCount = 0;
+  while (true)
+  {
+    auto const pCaseValue = expression();
+    if (pCaseValue == nullptr)
+    {
+      break;
+    }
+    auto const [pCapture, tokClosingCapture] = capture();
+
+    Position const fallback = (pCapture != nullptr)
+      ? tokClosingCapture.end().nextColumn()
+      : pCaseValue->end().nextColumn();
+
+    Token const tokArrow = match(Token::ThickArrow, ErrorStrategy::DefaultErrorMessage, fallback);
+
+    auto const pResult = expression("expression expected", tokArrow.end().nextColumn());
+
+    // force commas between fields
+    if (commaCount != cases.size())
+    {
+      throw error(cases.back().result->end(), "',' expected");
+    }
+    cases.push_back({pCaseValue, pCapture, pResult});
+    commaCount += static_cast<size_t>(skip(Token::Comma));
+  }
+
+  if (cases.empty())
+  {
+    throw error(tokLBrace.end(), "switch must be exhaustive");
+  }
+
+  Token const tokRBrace = match(Token::RBrace, ErrorStrategy::DefaultErrorMessage, cases.back().result->end().nextColumn());
+
+  return SwitchExpression::make_shared(tokSwitch, pValue, std::move(cases), tokRBrace.end());
+}
+
 Node::SPtr Parser::expression()
 {
   // TODO parse comptime here
   // add marked comptime field to Node?
 
-  bool isLabeled = false;
-  Token toklabel;
-
-  if (next(Token::Symbol))
-  {
-    setRollbackPoint();
-    toklabel = match(Token::Symbol);
-    if (next(Token::Colon))
-    {
-      Token const tokColon = match(Token::Colon);
-      if (toklabel.end() != tokColon.start())
-      {
-        // marking labels must be symbols suffixed with ':'
-        throw error(tokColon, fmt::format("did you mean '{}:'", toklabel.text()));
-      }
-      isLabeled = true;
-      commit();
-    }
-    else
-    {
-      rollback();
-    }
-  }
+  auto const [tokLabel, isLabeled] = label();
 
   Node::SPtr pRes = nullptr;
   if (auto pTemp = typeExpression(); pTemp != nullptr)
@@ -554,6 +570,10 @@ Node::SPtr Parser::expression()
   {
     pRes = pTemp;
   }
+  else if (auto pTemp = switchExpression(); pTemp != nullptr)
+  {
+    pRes = pTemp;
+  }
   else
   {
     pRes = tokenExpression();
@@ -563,9 +583,10 @@ Node::SPtr Parser::expression()
   {
     if (!pRes->is<LabeledNode>())
     {
-      throw error(toklabel, "only block, ifs and loops can be labeled");
+      // TODO? error for labeled nothing (pRes == nullptr)?
+      throw error(tokLabel, "only block, ifs and loops can be labeled");
     }
-    pRes->as<LabeledNode>()->setLabel(toklabel);
+    pRes->as<LabeledNode>()->setLabel(tokLabel);
   }
   return pRes;
 }
@@ -585,6 +606,48 @@ Node::SPtr Parser::expressionOrField()
     return pRes;
   }
   return expression();
+}
+
+std::tuple<Token, bool> Parser::label()
+{
+  std::tuple<Token, bool> const fail = {Token(), false};
+
+  if (!next(Token::Symbol))
+  {
+    return fail;
+  }
+
+  setRollbackPoint();
+  Token const toklabel = match(Token::Symbol);
+
+  if (!next(Token::Colon))
+  {
+    rollback();
+    return fail;
+  }
+
+  Token const tokColon = match(Token::Colon);
+  if (toklabel.end() != tokColon.start())
+  {
+    // marking labels must be symbols suffixed with ':'
+    throw error(tokColon, fmt::format("did you mean '{}:'", toklabel.text()));
+  }
+
+  commit();
+  return {toklabel, true};
+}
+
+std::tuple<Node::SPtr, Token> Parser::capture()
+{
+  Node::SPtr pCapture = nullptr;
+  Token tokClosingBar;
+  if (next(Runes::Bar))
+  {
+    Token const tokBar = match(Runes::Bar);
+    pCapture = expression(Destructuring, "destructuring expression expected", tokBar.end());
+    tokClosingBar = match(Runes::Bar, "'|' expected", pCapture->end());
+  }
+  return {pCapture, tokClosingBar};
 }
 
 /* ===================== Helpers ===================== */

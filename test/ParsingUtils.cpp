@@ -243,6 +243,14 @@ LoopExpression::SPtr loop(
   return pRes;
 }
 
+SwitchExpression::SPtr _switch(
+  Node::SPtr value,
+  list<SwitchExpression::Case> cases)
+{
+  return SwitchExpression::make_shared(
+    t(Token::KwSwitch, "switch"), value, cases, Position::invalid());
+}
+
 /* ================== Equality ================== */
 
 template<typename T>
@@ -448,6 +456,32 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
       return false;
 
     return equal(n1->elseBody(), n2->elseBody());
+  }
+
+  if (nodesAre(SwitchExpression))
+  {
+    if (!equal(n1->value(), n2->value()))
+      return false;
+
+    if (n1->cases().size() != n2->cases().size())
+      return false;
+
+    for (size_t i = 0; i < n1->cases().size(); i += 1)
+    {
+      auto const&
+        c1 = n1->cases()[i],
+        c2 = n2->cases()[i];
+
+      if (!equal(c1.value, c2.value))
+        return false;
+
+      if (!equal(c1.capture, c2.capture))
+        return false;
+
+      if (!equal(c1.result, c2.result))
+        return false;
+    }
+    return true;
   }
   return false;
 }

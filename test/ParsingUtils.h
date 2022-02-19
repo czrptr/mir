@@ -155,4 +155,8 @@ LoopExpression::SPtr loop(
   Node::SPtr elseCapture = nullptr,
   BlockExpression::SPtr elseBody = nullptr);
 
+SwitchExpression::SPtr _switch(
+  Node::SPtr value,
+  list<SwitchExpression::Case> cases);
+
 bool equal(Node::SPtr node1, Node::SPtr node2);

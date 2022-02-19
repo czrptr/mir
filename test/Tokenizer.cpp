@@ -243,7 +243,7 @@ TEST_CASE("string literals must end")
 
 TEST_CASE("runes")
 {
-  Tokenizer tk(",:;()[]{}", "<file>");
+  Tokenizer tk(",:;()[]{}=>", "<file>");
   REQUIRE_EQ(tk.next(), t(Token::Comma, 0, 0, 0, 1, ","));
   REQUIRE_EQ(tk.next(), t(Token::Colon, 0, 1, 0, 2, ":"));
   REQUIRE_EQ(tk.next(), t(Token::Semicolon, 0, 2, 0, 3, ";"));
@@ -253,6 +253,7 @@ TEST_CASE("runes")
   REQUIRE_EQ(tk.next(), t(Token::RBracket, 0, 6, 0, 7, "]"));
   REQUIRE_EQ(tk.next(), t(Token::LBrace, 0, 7, 0, 8, "{"));
   REQUIRE_EQ(tk.next(), t(Token::RBrace, 0, 8, 0, 9, "}"));
+  REQUIRE_EQ(tk.next(), t(Token::ThickArrow, 0, 9, 0, 11, "=>"));
 }
 
 TEST_CASE("keywords")
