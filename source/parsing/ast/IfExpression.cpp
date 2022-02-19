@@ -2,6 +2,9 @@
 
 using namespace ast;
 
+namespace
+{
+
 struct ClauseNode final : public Node
 {
   PTR(ClauseNode)
@@ -58,6 +61,8 @@ void ClauseNode::toStringData(
 
   *additionalInfo = "";
 }
+
+} // anonymous namespace
 
 Position IfExpression::start() const
 {

@@ -221,6 +221,31 @@ IfExpression::Clause _else(
   return {IfExpression::Clause::Else, t(Token::KwElse, "else"), nullptr, capture, block};
 }
 
+LoopExpression::SPtr loop(
+  Node::SPtr condition,
+  Node::SPtr capture,
+  BlockExpression::SPtr body,
+  Node::SPtr elseCapture = nullptr,
+  BlockExpression::SPtr elseBody = nullptr)
+{
+  return LoopExpression::make_shared(
+    t(Token::KwLoop, "loop"), condition, capture, body,
+    t(Token::KwElse, "else"), elseCapture, elseBody);
+}
+
+LoopExpression::SPtr loop(
+  std::string const& label,
+  Node::SPtr condition,
+  Node::SPtr capture,
+  BlockExpression::SPtr body,
+  Node::SPtr elseCapture = nullptr,
+  BlockExpression::SPtr elseBody = nullptr)
+{
+  auto pRes = loop(condition, capture, body, elseCapture, elseBody);
+  pRes->setLabel(t(Token::Symbol, label));
+  return pRes;
+}
+
 template<typename T>
 std::tuple<std::shared_ptr<T>, std::shared_ptr<T>, bool> nodesAreImpl(
   Node::SPtr node1, Node::SPtr node2)
@@ -404,6 +429,26 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
 
       return equal(c1.body, c2.body);
     }
+  }
+
+  if (nodesAre(LoopExpression))
+  {
+    if (n1->labelName() != n2->labelName())
+      return false;
+
+    if (!equal(n1->condition(), n2->condition()))
+      return false;
+
+    if (!equal(n1->capture(), n2->capture()))
+      return false;
+
+    if (!equal(n1->body(), n2->body()))
+      return false;
+
+    if (!equal(n1->elseCapture(), n2->elseCapture()))
+      return false;
+
+    return equal(n1->elseBody(), n2->elseBody());
   }
   return false;
 }

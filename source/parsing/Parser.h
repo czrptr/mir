@@ -60,6 +60,8 @@ public:
 
   ast::IfExpression::SPtr ifExpression();
 
+  ast::LoopExpression::SPtr loopExpression();
+
   ast::Node::SPtr expression();
 
 private:

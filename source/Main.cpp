@@ -14,6 +14,8 @@
 std::string sourceText =
 R"SOURCE(
 
+let b = loop cond |value| {} else |err| {};
+
 a: a,
 b: b,
 

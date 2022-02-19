@@ -314,13 +314,14 @@ BlockExpression::SPtr Parser::blockExpression()
 
     statements.push_back(pStmt);
     if (!pStmt->is<BlockExpression>()
-      && !pStmt->is<IfExpression>())
+      && !pStmt->is<IfExpression>()
+      && !pStmt->is<LoopExpression>())
     matchStatementEnder();
   }
   Token const tokRBrace = match(Token::RBrace, ErrorStrategy::DefaultErrorMessage);
 
   return BlockExpression::make_shared(
-    tokLBrace.start(), tokRBrace.start(), std::move(statements));
+    tokLBrace.start(), tokRBrace.end(), std::move(statements));
 }
 
 ast::IfExpression::SPtr Parser::ifExpression()
@@ -369,17 +370,9 @@ ast::IfExpression::SPtr Parser::ifExpression()
     Node::SPtr pClauseCondition = nullptr;
     if (tag != IfExpression::Clause::Else)
     {
+      // TODO the error should be "expression expected"
+      //   and the current error should be a note
       pClauseCondition = expression(fmt::format("{} clauses must have conditions", tag), tokBeforeCondition.end().nextColumn());
-    }
-    else
-    {
-      setRollbackPoint();
-      pClauseCondition = expression(Optional, "expression expected");
-      if (pClauseCondition != nullptr && !pClauseCondition->is<BlockExpression>())
-      {
-        throw error(pClauseCondition, "else clauses don't have conditions");
-      }
-      rollback();
     }
 
     Node::SPtr pClauseCapture = nullptr;
@@ -426,6 +419,8 @@ ast::IfExpression::SPtr Parser::ifExpression()
   {
     // fixes: if cond else {} being parsed as if cond (else {})
     // i.e. the else {} is parsed as the if's block
+
+    // TODO else clauses must have a preceding if or loop clause
     auto const& clause = clauses.front();
     throw error(clause.tokStart, fmt::format("{} clause must have a preceding if clause", clause.tag));
   }
@@ -437,6 +432,72 @@ ast::IfExpression::SPtr Parser::ifExpression()
   }
 
   return IfExpression::make_shared(std::move(clauses));
+}
+
+ast::LoopExpression::SPtr Parser::loopExpression()
+{
+  if (!next(Token::KwLoop))
+  {
+    return nullptr;
+  }
+  Token const tokLoop = match(Token::KwLoop);
+
+  // TODO add note: loops must have conditions
+  auto const pCondition = expression("expression expected", tokLoop.end().nextColumn());
+
+  Node::SPtr pCapture = nullptr;
+  Token tokClosingCapture;
+  if (next(Runes::Bar))
+  {
+    Token const tokBar = match(Runes::Bar);
+    pCapture = expression(Destructuring, "destructuring expression expected", tokBar.end());
+    tokClosingCapture = match(Runes::Bar, "'|' expected", pCapture->end());
+  }
+
+  Position fallback = (pCapture != nullptr)
+    ? tokClosingCapture.end().nextColumn()
+    : pCondition->end().nextColumn();
+
+  pushState(State::IfExpression);
+  // prevents loop a else to error with "else missing if"
+  auto pBody = expression<BlockExpression>("block expected", fallback);
+  if (pBody->isLabeled())
+  {
+    throw error(pBody->label().start(), "individual clause blocks cannot be labeled")
+      .note(tokLoop.start(), fmt::format("place the label '{}:' here", pBody->labelName()));
+  }
+  auto const state = popState();
+  assert(state == State::IfExpression);
+
+  Token tokElse;
+  Node::SPtr pElseCapture = nullptr;
+  BlockExpression::SPtr pElseBody = nullptr;
+
+  if (next(Token::KwElse))
+  {
+    tokElse = match(Token::KwElse);
+
+    if (next(Runes::Bar))
+    {
+      Token const tokBar = match(Runes::Bar);
+      pElseCapture = expression(Destructuring, "destructuring expression expected", tokBar.end());
+      tokClosingCapture = match(Runes::Bar, "'|' expected", pElseCapture->end());
+    }
+
+    Position fallback = (pElseCapture != nullptr)
+      ? tokClosingCapture.end().nextColumn()
+      : tokElse.end().nextColumn();
+
+    pElseBody = expression<BlockExpression>("block expected", fallback);
+    if (pElseBody->isLabeled())
+    {
+      throw error(pElseBody->label().start(), "individual clause blocks cannot be labeled")
+        .note(tokLoop.start(), fmt::format("place the label '{}:' here", pElseBody->labelName()));
+    }
+  }
+
+  return LoopExpression::make_shared(
+    tokLoop, pCondition, pCapture, pBody, tokElse, pElseCapture, pElseBody);
 }
 
 Node::SPtr Parser::expression()
@@ -486,6 +547,10 @@ Node::SPtr Parser::expression()
     pRes = pTemp;
   }
   else if (auto pTemp = ifExpression(); pTemp != nullptr)
+  {
+    pRes = pTemp;
+  }
+  else if (auto pTemp = loopExpression(); pTemp != nullptr)
   {
     pRes = pTemp;
   }

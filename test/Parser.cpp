@@ -1072,7 +1072,7 @@ TEST_CASE("else clauses don't have conditions")
   {
     std::string const
     msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:5: error: else clauses don't have conditions";
+    expectedMsg = "<file>:0:5: error: block expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1442,6 +1442,236 @@ TEST_CASE("if (complex)")
     _elseIf(symbol("c"), symbol("c"), block({})),
     _else(symbol("d"), block({}))
   }));
+}
+
+/* ================== LoopExpressions ================== */
+
+TEST_CASE("loops must have conditions")
+{
+  auto prs = parser("loop |a| {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:5: error: expression expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("loops must have conditions")
+{
+  auto prs = parser("loop |a| {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:5: error: expression expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("loop unfinished capture (part 1)")
+{
+  auto prs = parser("loop a |a");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:9: error: '|' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("loop unfinished capture (part 2)")
+{
+  auto prs = parser("loop a |");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:8: error: destructuring expression expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("loops must have blocks (part 1)")
+{
+  auto prs = parser("loop a");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:7: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("loops must have blocks (part 2)")
+{
+  auto prs = parser("loop a else {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:7: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("loop else clause unfinished capture (part 1)")
+{
+  auto prs = parser("loop a {} else |a");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:17: error: '|' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("loop else clause unfinished capture (part 2)")
+{
+  auto prs = parser("loop a {} else |");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:16: error: destructuring expression expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("loop else clauses must have blocks")
+{
+  auto prs = parser("loop a {} else");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:15: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("loop else clauses don't have conditions")
+{
+  auto prs = parser("loop a {} else a");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg = "<file>:0:15: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+
+TEST_CASE("whole loop must be labeled (part 1)")
+{
+  auto prs = parser("loop a blk: {} else {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg =
+      "<file>:0:7: error: individual clause blocks cannot be labeled\n"
+      "<file>:0:0: note: place the label 'blk:' here";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("whole loop must be labeled (part 2)")
+{
+  auto prs = parser("loop a {} else blk: {}");
+  try
+  {
+    prs.expression();
+  }
+  catch (Error const& err)
+  {
+    std::string const
+    msg = fmt::to_string(err),
+    expectedMsg =
+      "<file>:0:15: error: individual clause blocks cannot be labeled\n"
+      "<file>:0:0: note: place the label 'blk:' here";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("loop")
+{
+  auto prs = parser("loop a |a| {}");
+  auto l = prs.expression();
+
+  REQUIRE_AST_EQ(l, loop(symbol("a"), symbol("a"), block({})));
+}
+
+TEST_CASE("loop (complex)")
+{
+  auto prs = parser("blk: loop a |a| {} else |b| {}");
+  auto l = prs.expression();
+
+  REQUIRE_AST_EQ(l,
+    loop("blk",
+      symbol("a"), symbol("a"), block({}),
+      symbol("b"), block({})));
 }
 
 TEST_SUITE_END();
