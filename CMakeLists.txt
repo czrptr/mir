@@ -63,6 +63,7 @@ target_link_libraries(mir fmt)
 
 set(TEST_SOURCES
   ${CMAKE_SOURCE_DIR}/test/Main.cpp
+  ${CMAKE_SOURCE_DIR}/test/ParsingUtils.cpp
   ${CMAKE_SOURCE_DIR}/test/Tokenizer.cpp
   ${CMAKE_SOURCE_DIR}/test/Parser.cpp
   $<TARGET_OBJECTS:impl>)

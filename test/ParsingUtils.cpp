@@ -1,14 +1,11 @@
-#pragma once
+#include "ParsingUtils.h"
 
-#include <parsing/Intern.h>
-#include <parsing/ast/Nodes.h>
-#include <initializer_list>
-#include <tuple>
+/* ================== Constructors ================== */
 
-using namespace ast;
-
-template<typename T>
-using list = std::initializer_list<T>;
+Token t(Token::Tag tag, size_t startLine, size_t startColumn, size_t endLine, size_t endColumn, std::string const& text)
+{
+  return Token(tag, {startLine, startColumn}, {endLine, endColumn}, Intern::string(text));
+}
 
 Token t(Token::Tag tag, std::string const& text)
 {
@@ -138,7 +135,7 @@ BlockExpression::SPtr block(std::string const& label, list<Node::SPtr> statement
 }
 
 FunctionExpression::SPtr fn(
-  list<std::tuple<std::string, Node::SPtr>> parameters, Node::SPtr returnType, BlockExpression::SPtr body = nullptr)
+  list<std::tuple<std::string, Node::SPtr>> parameters, Node::SPtr returnType, BlockExpression::SPtr body)
 {
   std::vector<FunctionExpression::Parameter> params;
   params.reserve(parameters.size());
@@ -225,8 +222,8 @@ LoopExpression::SPtr loop(
   Node::SPtr condition,
   Node::SPtr capture,
   BlockExpression::SPtr body,
-  Node::SPtr elseCapture = nullptr,
-  BlockExpression::SPtr elseBody = nullptr)
+  Node::SPtr elseCapture,
+  BlockExpression::SPtr elseBody)
 {
   return LoopExpression::make_shared(
     t(Token::KwLoop, "loop"), condition, capture, body,
@@ -238,13 +235,15 @@ LoopExpression::SPtr loop(
   Node::SPtr condition,
   Node::SPtr capture,
   BlockExpression::SPtr body,
-  Node::SPtr elseCapture = nullptr,
-  BlockExpression::SPtr elseBody = nullptr)
+  Node::SPtr elseCapture,
+  BlockExpression::SPtr elseBody)
 {
   auto pRes = loop(condition, capture, body, elseCapture, elseBody);
   pRes->setLabel(t(Token::Symbol, label));
   return pRes;
 }
+
+/* ================== Equality ================== */
 
 template<typename T>
 std::tuple<std::shared_ptr<T>, std::shared_ptr<T>, bool> nodesAreImpl(
@@ -452,5 +451,3 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
   }
   return false;
 }
-
-#undef nodesAre

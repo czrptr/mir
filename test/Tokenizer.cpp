@@ -1,20 +1,8 @@
 #include <doctest.h>
-#include <fmt/core.h>
-#include <parsing/Intern.h>
+#include <ParsingUtils.h>
 #include <parsing/Tokenizer.h>
-#include <parsing/Token.h>
 
 // TODO test Intern
-
-namespace
-{
-
-Token t(Token::Tag tag, size_t startLine, size_t startColumn, size_t endLine, size_t endColumn, std::string const& text)
-{
-  return Token(tag, {startLine, startColumn}, {endLine, endColumn}, Intern::string(text));
-}
-
-} // namespace
 
 TEST_SUITE_BEGIN("Tokenizer");
 
