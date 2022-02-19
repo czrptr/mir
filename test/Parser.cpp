@@ -313,6 +313,24 @@ TEST_CASE("block labels")
   }
 }
 
+TEST_CASE("blocks must end")
+{
+  auto prs = parser("{");
+
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:1: error: '}' expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
 TEST_CASE("only blocks, if and loops can be labeled")
 {
   auto prs = parser("labelName: let a = 0;");
