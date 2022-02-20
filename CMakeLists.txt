@@ -28,6 +28,14 @@ include_directories(${VENDOR_FMT}/include)
 
 set(VENDOR_DOCTEST ${CMAKE_SOURCE_DIR}/vendor/doctest/)
 
+# FORT
+
+set(VENDOR_FORT ${CMAKE_SOURCE_DIR}/vendor/fort/)
+
+add_subdirectory(${VENDOR_FORT})
+
+include_directories(${VENDOR_FORT}/include)
+
 # MIR
 
 set(MIR_SOURCES
@@ -56,9 +64,9 @@ add_executable(mir
 
 include_directories(${CMAKE_SOURCE_DIR}/source)
 
-add_dependencies(mir fmt)
+add_dependencies(mir fmt fort)
 
-target_link_libraries(mir fmt)
+target_link_libraries(mir fmt fort)
 
 # TEST
 

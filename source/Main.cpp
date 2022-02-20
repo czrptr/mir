@@ -6,6 +6,7 @@
 
 #include <fmt/core.h>
 #include <fmt/color.h>
+#include <fort.hpp>
 
 #include <fstream>
 

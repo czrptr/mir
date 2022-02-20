@@ -4,6 +4,7 @@
 #include <parsing/Error.h>
 
 #include <fmt/color.h>
+#include <fort.hpp>
 
 #include <map>
 #include <limits>
