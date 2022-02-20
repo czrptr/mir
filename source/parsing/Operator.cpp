@@ -3,6 +3,8 @@
 #include <Utils.h>
 #include <parsing/Error.h>
 
+#include <fmt/color.h>
+
 #include <map>
 #include <limits>
 #include <cassert>
@@ -13,9 +15,10 @@ Operator::Operator(Token token)
   , d_text(token.text())
 {}
 
-size_t Operator::precedence() const
+
+Operator::Fix Operator::fix() const
 {
-  return precedence(d_tag);
+  return fix(d_tag);
 }
 
 bool Operator::chainable() const
@@ -26,6 +29,11 @@ bool Operator::chainable() const
 Operator::Associativity Operator::associativity() const
 {
   return associativity(d_tag);
+}
+
+size_t Operator::precedence() const
+{
+  return precedence(d_tag);
 }
 
 size_t Operator::precedence(Operator::Tag tag)
@@ -64,81 +72,77 @@ size_t Operator::precedence(Operator::Tag tag)
   assert(false); // unreachable
 }
 
-Operator::Associativity Operator::associativity(Operator::Tag tag)
+Operator::Fix Operator::fix(Operator::Tag tag)
 {
-  // use LeftToRight as None because parsing LeftToRight doesn't
-  // require a recursive call
-  constexpr auto NoneBecauseUnchainable = Associativity::LeftToRight;
-
   switch (tag)
   {
-  case Operator::Tag::Dot: return Associativity::LeftToRight;
-  case Operator::Tag::Opt: return Associativity::LeftToRight;
-  case Operator::Tag::PtrDeref: return Associativity::LeftToRight;
-  case Operator::Tag::Not_ErrorUnion: return Associativity::RightToLeft; // !!
-  case Operator::Tag::Try: return Associativity::RightToLeft; // !!
-  case Operator::Tag::Not: return Associativity::RightToLeft;
-  case Operator::Tag::UnaryMinus: return Associativity::RightToLeft;
-  case Operator::Tag::UnaryMinusMod: return NoneBecauseUnchainable;
-  case Operator::Tag::UnaryPlus: return Associativity::RightToLeft;
-  case Operator::Tag::BitNot: return Associativity::RightToLeft;
-  case Operator::Tag::PtrTo: return NoneBecauseUnchainable;
-  case Operator::Tag::Mul: return Associativity::LeftToRight;
-  case Operator::Tag::MulMod: return Associativity::LeftToRight;
-  case Operator::Tag::MulBar: return Associativity::LeftToRight;
-  case Operator::Tag::Div: return Associativity::LeftToRight;
-  case Operator::Tag::Mod: return Associativity::LeftToRight;
-  case Operator::Tag::OrOr_ErrorSet: return Associativity::LeftToRight;
-  case Operator::Tag::Add: return Associativity::LeftToRight;
-  case Operator::Tag::AddMod: return Associativity::LeftToRight;
-  case Operator::Tag::AddBar: return Associativity::LeftToRight;
-  case Operator::Tag::Sub: return Associativity::LeftToRight;
-  case Operator::Tag::SubMod: return Associativity::LeftToRight;
-  case Operator::Tag::SubBar: return Associativity::LeftToRight;
-  case Operator::Tag::BitShr: return Associativity::LeftToRight;
-  case Operator::Tag::BitRor: return Associativity::LeftToRight;
-  case Operator::Tag::BitShl: return Associativity::LeftToRight;
-  case Operator::Tag::BitRol: return Associativity::LeftToRight;
-  case Operator::Tag::BitShlBar: return Associativity::LeftToRight;
-  case Operator::Tag::BitAnd: return Associativity::LeftToRight;
-  case Operator::Tag::BitOr: return Associativity::LeftToRight;
-  case Operator::Tag::BitXor: return Associativity::LeftToRight;
-  case Operator::Tag::Orelse: return Associativity::RightToLeft; // !!
-  case Operator::Tag::Catch: return Associativity::RightToLeft;  // !!
-  case Operator::Tag::EqEq: return NoneBecauseUnchainable;
-  case Operator::Tag::NotEq: return NoneBecauseUnchainable;
-  case Operator::Tag::Ge: return NoneBecauseUnchainable;
-  case Operator::Tag::Le: return NoneBecauseUnchainable;
-  case Operator::Tag::GeEq: return NoneBecauseUnchainable;
-  case Operator::Tag::LeEq: return NoneBecauseUnchainable;
-  case Operator::Tag::And: return Associativity::LeftToRight;
-  case Operator::Tag::Or: return Associativity::LeftToRight;
-  case Operator::Tag::DotDot: return NoneBecauseUnchainable;
-  case Operator::Tag::Eq: return NoneBecauseUnchainable;
-  case Operator::Tag::MulEq: return NoneBecauseUnchainable;
-  case Operator::Tag::MulModEq: return NoneBecauseUnchainable;
-  case Operator::Tag::MulBarEq: return NoneBecauseUnchainable;
-  case Operator::Tag::MulDivEq: return NoneBecauseUnchainable;
-  case Operator::Tag::ModEq: return NoneBecauseUnchainable;
-  case Operator::Tag::AddEq: return NoneBecauseUnchainable;
-  case Operator::Tag::AddModEq: return NoneBecauseUnchainable;
-  case Operator::Tag::AddBarEq: return NoneBecauseUnchainable;
-  case Operator::Tag::SubEq: return NoneBecauseUnchainable;
-  case Operator::Tag::SubModEq: return NoneBecauseUnchainable;
-  case Operator::Tag::SubBarEq: return NoneBecauseUnchainable;
-  case Operator::Tag::BitShrEq: return NoneBecauseUnchainable;
-  case Operator::Tag::BitRorEq: return NoneBecauseUnchainable;
-  case Operator::Tag::BitShlEq: return NoneBecauseUnchainable;
-  case Operator::Tag::BitRolEq: return NoneBecauseUnchainable;
-  case Operator::Tag::BitShlBarEq: return NoneBecauseUnchainable;
-  case Operator::Tag::BitAndEq: return NoneBecauseUnchainable;
-  case Operator::Tag::BitOrEq: return NoneBecauseUnchainable;
-  case Operator::Tag::BitXorEq: return NoneBecauseUnchainable;
-  case Operator::Tag::Return: return NoneBecauseUnchainable;
-  case Operator::Tag::Break: return NoneBecauseUnchainable;
-  case Operator::Tag::Continue: return NoneBecauseUnchainable;
-  case Operator::Tag::Defer: return NoneBecauseUnchainable;
-  }
+  case Operator::Tag::Dot: return Fix::Infix;
+  case Operator::Tag::Opt: return Fix::Postfix;
+  case Operator::Tag::PtrDeref: return Fix::Postfix;
+  case Operator::Tag::Not_ErrorUnion: return Fix::Infix;
+  case Operator::Tag::Try: return Fix::Prefix;
+  case Operator::Tag::Not: return Fix::Prefix;
+  case Operator::Tag::UnaryMinus: return Fix::Prefix;
+  case Operator::Tag::UnaryMinusMod: return Fix::Prefix;
+  case Operator::Tag::UnaryPlus: return Fix::Prefix;
+  case Operator::Tag::BitNot: return Fix::Prefix;
+  case Operator::Tag::PtrTo: return Fix::Prefix;
+  case Operator::Tag::Mul: return Fix::Infix;
+  case Operator::Tag::MulMod: return Fix::Infix;
+  case Operator::Tag::MulBar: return Fix::Infix;
+  case Operator::Tag::Div: return Fix::Infix;
+  case Operator::Tag::Mod: return Fix::Infix;
+  case Operator::Tag::OrOr_ErrorSet: return Fix::Infix;
+  case Operator::Tag::Add: return Fix::Infix;
+  case Operator::Tag::AddMod: return Fix::Infix;
+  case Operator::Tag::AddBar: return Fix::Infix;
+  case Operator::Tag::Sub: return Fix::Infix;
+  case Operator::Tag::SubMod: return Fix::Infix;
+  case Operator::Tag::SubBar: return Fix::Infix;
+  case Operator::Tag::BitShr: return Fix::Infix;
+  case Operator::Tag::BitRor: return Fix::Infix;
+  case Operator::Tag::BitShl: return Fix::Infix;
+  case Operator::Tag::BitShlBar: return Fix::Infix;
+  case Operator::Tag::BitRol: return Fix::Infix;
+  case Operator::Tag::BitAnd: return Fix::Infix;
+  case Operator::Tag::BitOr: return Fix::Infix;
+  case Operator::Tag::BitXor: return Fix::Infix;
+  case Operator::Tag::Orelse: return Fix::Infix;
+  case Operator::Tag::Catch: return Fix::Infix;
+  case Operator::Tag::EqEq: return Fix::Infix;
+  case Operator::Tag::NotEq: return Fix::Infix;
+  case Operator::Tag::Ge: return Fix::Infix;
+  case Operator::Tag::Le: return Fix::Infix;
+  case Operator::Tag::GeEq: return Fix::Infix;
+  case Operator::Tag::LeEq: return Fix::Infix;
+  case Operator::Tag::And: return Fix::Infix;
+  case Operator::Tag::Or: return Fix::Infix;
+  case Operator::Tag::DotDot: return Fix::Infix;
+  case Operator::Tag::Eq: return Fix::Infix;
+  case Operator::Tag::MulEq: return Fix::Infix;
+  case Operator::Tag::MulModEq: return Fix::Infix;
+  case Operator::Tag::MulBarEq: return Fix::Infix;
+  case Operator::Tag::MulDivEq: return Fix::Infix;
+  case Operator::Tag::ModEq: return Fix::Infix;
+  case Operator::Tag::AddEq: return Fix::Infix;
+  case Operator::Tag::AddModEq: return Fix::Infix;
+  case Operator::Tag::AddBarEq: return Fix::Infix;
+  case Operator::Tag::SubEq: return Fix::Infix;
+  case Operator::Tag::SubModEq: return Fix::Infix;
+  case Operator::Tag::SubBarEq: return Fix::Infix;
+  case Operator::Tag::BitShrEq: return Fix::Infix;
+  case Operator::Tag::BitRorEq: return Fix::Infix;
+  case Operator::Tag::BitShlEq: return Fix::Infix;
+  case Operator::Tag::BitShlBarEq: return Fix::Infix;
+  case Operator::Tag::BitRolEq: return Fix::Infix;
+  case Operator::Tag::BitAndEq: return Fix::Infix;
+  case Operator::Tag::BitOrEq: return Fix::Infix;
+  case Operator::Tag::BitXorEq: return Fix::Infix;
+  case Operator::Tag::Return: return Fix::Prefix;
+  case Operator::Tag::Break: return Fix::Prefix;
+  case Operator::Tag::Continue: return Fix::Prefix;
+  case Operator::Tag::Defer: return Fix::Prefix;
+}
   assert(false); // unreachable
 }
 
@@ -172,19 +176,19 @@ bool Operator::chainable(Operator::Tag tag)
   case Operator::Tag::BitShr: return true;
   case Operator::Tag::BitRor: return true;
   case Operator::Tag::BitShl: return true;
-  case Operator::Tag::BitRol: return true;
   case Operator::Tag::BitShlBar: return true;
+  case Operator::Tag::BitRol: return true;
   case Operator::Tag::BitAnd: return true;
   case Operator::Tag::BitOr: return true;
   case Operator::Tag::BitXor: return true;
   case Operator::Tag::Orelse: return true;
   case Operator::Tag::Catch: return true;
-  case Operator::Tag::EqEq: return false;
-  case Operator::Tag::NotEq: return false;
-  case Operator::Tag::Ge: return false;
-  case Operator::Tag::Le: return false;
-  case Operator::Tag::GeEq: return false;
-  case Operator::Tag::LeEq: return false;
+  case Operator::Tag::EqEq: return true;
+  case Operator::Tag::NotEq: return true;
+  case Operator::Tag::Ge: return true;
+  case Operator::Tag::Le: return true;
+  case Operator::Tag::GeEq: return true;
+  case Operator::Tag::LeEq: return true;
   case Operator::Tag::And: return true;
   case Operator::Tag::Or: return true;
   case Operator::Tag::DotDot: return false;
@@ -203,8 +207,8 @@ bool Operator::chainable(Operator::Tag tag)
   case Operator::Tag::BitShrEq: return false;
   case Operator::Tag::BitRorEq: return false;
   case Operator::Tag::BitShlEq: return false;
-  case Operator::Tag::BitRolEq: return false;
   case Operator::Tag::BitShlBarEq: return false;
+  case Operator::Tag::BitRolEq: return false;
   case Operator::Tag::BitAndEq: return false;
   case Operator::Tag::BitOrEq: return false;
   case Operator::Tag::BitXorEq: return false;
@@ -214,6 +218,27 @@ bool Operator::chainable(Operator::Tag tag)
   case Operator::Tag::Defer: return false;
   }
   assert(false); // unreachable
+}
+
+Operator::Associativity Operator::associativity(Operator::Tag tag)
+{
+  if (fix(tag) == Fix::Prefix)
+  {
+    return Associativity::RightToLeft;
+  }
+
+  if (fix(tag) == Fix::Postfix)
+  {
+    return Associativity::LeftToRight;
+  }
+
+  switch (tag)
+  {
+  case Operator::Tag::Not_ErrorUnion: return Associativity::RightToLeft;
+  case Operator::Tag::Orelse: return Associativity::RightToLeft;
+  case Operator::Tag::Catch: return Associativity::RightToLeft;
+  default: return Associativity::LeftToRight;
+  }
 }
 
 std::string Operator::validate(std::string_view text)
@@ -259,4 +284,295 @@ std::string Operator::validate(std::string_view text)
     res += fmt::format(" or '{}'", alts.back());
   }
   return fmt::format("unknown operator '{}', did you mean {}?", text, res);
+}
+
+
+static std::string tableText(Operator::Tag tag)
+{
+  switch (tag)
+  {
+    case Operator::Tag::Dot: return "a.b";
+    case Operator::Tag::Opt: return "a?";
+    case Operator::Tag::PtrDeref: return "a^";
+    case Operator::Tag::Not_ErrorUnion: return "a!b";
+    case Operator::Tag::Try: return "try a";
+    case Operator::Tag::Not: return "not a";
+    case Operator::Tag::UnaryMinus: return "-a";
+    case Operator::Tag::UnaryMinusMod: return "-%a";
+    case Operator::Tag::UnaryPlus: return "+a";
+    case Operator::Tag::BitNot: return "!a";
+    case Operator::Tag::PtrTo: return "^a";
+    case Operator::Tag::Mul: return "a * b";
+    case Operator::Tag::MulMod: return "a *% b";
+    case Operator::Tag::MulBar: return "a *| b";
+    case Operator::Tag::Div: return "a / b";
+    case Operator::Tag::Mod: return "a % b";
+    case Operator::Tag::OrOr_ErrorSet: return "a || b";
+    case Operator::Tag::Add: return "a + b";
+    case Operator::Tag::AddMod: return "a +% b";
+    case Operator::Tag::AddBar: return "a +| b";
+    case Operator::Tag::Sub: return "a - b";
+    case Operator::Tag::SubMod: return "a -% b";
+    case Operator::Tag::SubBar: return "a -| b";
+    case Operator::Tag::BitShr: return "a >> b";
+    case Operator::Tag::BitRor: return "a >% b";
+    case Operator::Tag::BitShl: return "a << b";
+    case Operator::Tag::BitShlBar: return "a <| b";
+    case Operator::Tag::BitRol: return "a <% b";
+    case Operator::Tag::BitAnd: return "a & b";
+    case Operator::Tag::BitOr: return "a | b";
+    case Operator::Tag::BitXor: return "a ~ b";
+    case Operator::Tag::Orelse: return "a orelse b";
+    case Operator::Tag::Catch: return "a catch b";
+    case Operator::Tag::EqEq: return "a == b";
+    case Operator::Tag::NotEq: return "a != b";
+    case Operator::Tag::Ge: return "a > b";
+    case Operator::Tag::Le: return "a < b";
+    case Operator::Tag::GeEq: return "a >= b";
+    case Operator::Tag::LeEq: return "a <= b";
+    case Operator::Tag::And: return "a and b";
+    case Operator::Tag::Or: return "a or b";
+    case Operator::Tag::DotDot: return "a..b";
+    case Operator::Tag::Eq: return "a = b";
+    case Operator::Tag::MulEq: return "a *= b";
+    case Operator::Tag::MulModEq: return "a *%= b";
+    case Operator::Tag::MulBarEq: return "a *|= b";
+    case Operator::Tag::MulDivEq: return "a /= b";
+    case Operator::Tag::ModEq: return "a %= b";
+    case Operator::Tag::AddEq: return "a += b";
+    case Operator::Tag::AddModEq: return "a +%= b";
+    case Operator::Tag::AddBarEq: return "a +|= b";
+    case Operator::Tag::SubEq: return "a -= b";
+    case Operator::Tag::SubModEq: return "a -%= b";
+    case Operator::Tag::SubBarEq: return "a -|= b";
+    case Operator::Tag::BitShrEq: return "a >>= b";
+    case Operator::Tag::BitRorEq: return "a >%= b";
+    case Operator::Tag::BitShlEq: return "a <<= b";
+    case Operator::Tag::BitShlBarEq: return "a <|= b";
+    case Operator::Tag::BitRolEq: return "a <%= b";
+    case Operator::Tag::BitAndEq: return "a &= b";
+    case Operator::Tag::BitOrEq: return "a |= b";
+    case Operator::Tag::BitXorEq: return "a ~= b";
+    case Operator::Tag::Return: return "return";
+    case Operator::Tag::Break: return "break";
+    case Operator::Tag::Continue: return "continue";
+    case Operator::Tag::Defer: return "defer a";
+  }
+  assert(false); // unreachable
+}
+
+static std::string description(Operator::Tag tag)
+{
+  switch (tag)
+  {
+    case Operator::Tag::Dot: return "Member access";
+    case Operator::Tag::Opt: return "Optional chaining";
+    case Operator::Tag::PtrDeref: return "Pointer dereference";
+    case Operator::Tag::Not_ErrorUnion: return "Error union";
+    case Operator::Tag::Try: return "Try";
+    case Operator::Tag::Not: return "Boolean not";
+    case Operator::Tag::UnaryMinus: return "Negation";
+    case Operator::Tag::UnaryMinusMod: return "Wrapping negation";
+    case Operator::Tag::UnaryPlus: return "Unary plus";
+    case Operator::Tag::BitNot: return "Bitwise not";
+    case Operator::Tag::PtrTo: return "Pointer to (const)";
+    case Operator::Tag::Mul: return "Multiplication";
+    case Operator::Tag::MulMod: return "Wrapping multiplication";
+    case Operator::Tag::MulBar: return "Saturating multiplication";
+    case Operator::Tag::Div: return "Division";
+    case Operator::Tag::Mod: return "Modulo / Remainder division";
+    case Operator::Tag::OrOr_ErrorSet: return "Error set union";
+    case Operator::Tag::Add: return "Addition";
+    case Operator::Tag::AddMod: return "Wrapping addition";
+    case Operator::Tag::AddBar: return "Saturating addition";
+    case Operator::Tag::Sub: return "Subtraction";
+    case Operator::Tag::SubMod: return "Wrapping subtraction";
+    case Operator::Tag::SubBar: return "Saturating subtraction";
+    case Operator::Tag::BitShr: return "Bit shift right";
+    case Operator::Tag::BitRor: return "Bit rotate right";
+    case Operator::Tag::BitShl: return "Bit shift left";
+    case Operator::Tag::BitShlBar: return "Saturating bit shift left";
+    case Operator::Tag::BitRol: return "Bit rotate left";
+    case Operator::Tag::BitAnd: return "Bitwise and";
+    case Operator::Tag::BitOr: return "Bitwise or";
+    case Operator::Tag::BitXor: return "Bitwise xor";
+    case Operator::Tag::Orelse: return "Orelse";
+    case Operator::Tag::Catch: return "Catch";
+    case Operator::Tag::EqEq: return "Equality";
+    case Operator::Tag::NotEq: return "Negated equality";
+    case Operator::Tag::Ge: return "Greater then";
+    case Operator::Tag::Le: return "Lesser then";
+    case Operator::Tag::GeEq: return "Greater then or equal to";
+    case Operator::Tag::LeEq: return "Lesser then or equal to";
+    case Operator::Tag::And: return "Boolean and";
+    case Operator::Tag::Or: return "Boolean or";
+    case Operator::Tag::DotDot: return "Range";
+    case Operator::Tag::Eq: return "Assigment";
+    case Operator::Tag::MulEq: return "a = a * b";
+    case Operator::Tag::MulModEq: return "a = a *% b";
+    case Operator::Tag::MulBarEq: return "a = a *| b";
+    case Operator::Tag::MulDivEq: return "a = a / b";
+    case Operator::Tag::ModEq: return "a = a % b";
+    case Operator::Tag::AddEq: return "a = a + b";
+    case Operator::Tag::AddModEq: return "a = a +% b";
+    case Operator::Tag::AddBarEq: return "a = a +| b";
+    case Operator::Tag::SubEq: return "a = a - b";
+    case Operator::Tag::SubModEq: return "a = a -% b";
+    case Operator::Tag::SubBarEq: return "a = a -| b";
+    case Operator::Tag::BitShrEq: return "a = a >> b";
+    case Operator::Tag::BitRorEq: return "a = a >% b";
+    case Operator::Tag::BitShlEq: return "a = a << b";
+    case Operator::Tag::BitShlBarEq: return "a = a <| b";
+    case Operator::Tag::BitRolEq: return "a = a <% b";
+    case Operator::Tag::BitAndEq: return "a = a & b";
+    case Operator::Tag::BitOrEq: return "a = a | b";
+    case Operator::Tag::BitXorEq: return "a = a ~ b";
+    case Operator::Tag::Return: return "Return";
+    case Operator::Tag::Break: return "Break";
+    case Operator::Tag::Continue: return "Continue";
+    case Operator::Tag::Defer: return "Defer execution";
+  }
+  assert(false); // unreachable
+}
+
+std::string Operator::tableWithInfo()
+{
+  // │ ─ ┌ ┐ └ ┘ ┬ ┴ ├ ┤ ┼
+  // ║ ═ ╔ ╗ ╚ ╝ ╦ ╩ ╠ ╣ ╬
+
+  struct Line
+  {
+    Tag tag;
+    size_t pred;
+    std::string text;
+    std::string desc;
+    bool chain;
+    Associativity assoc;
+  };
+
+  auto const
+    first = static_cast<size_t>(Operator::Dot),
+    last = static_cast<size_t>(Operator::Defer);
+
+  std::vector<Line> lines;
+  lines.reserve(last);
+
+  for (size_t i = first; i <= last; i += 1)
+  {
+    auto const tag = static_cast<Operator::Tag>(i);
+    Line const l = {
+      tag, precedence(tag), tableText(tag), description(tag), chainable(tag), associativity(tag)};
+
+    lines.push_back(l);
+  }
+
+  auto const indexOf = [&](Operator::Tag tag)
+  {
+    return std::find_if(lines.begin(), lines.end(), [=](Line const& l)
+    {
+      return l.tag == tag;
+    });
+  };
+
+  lines.insert(indexOf(Operator::Not_ErrorUnion),
+    {Operator::Dot, 0, "a()", "Funcion call", true, Associativity::LeftToRight});
+
+  lines.insert(indexOf(Operator::Not_ErrorUnion),
+    {Operator::Dot, 0, "a[]", "Array access / Span", true, Associativity::LeftToRight});
+
+  lines.insert(indexOf(Operator::Try),
+    {Operator::Dot, 2, "a{}", "Type literal", false, Associativity::LeftToRight});
+
+  lines.insert(indexOf(Operator::Mul),
+    {Operator::Dot, 4, "^mut a", "Pointer to mutable", false, Associativity::RightToLeft});
+
+  lines.insert(indexOf(Operator::EqEq),
+    {Operator::Dot, 8, "a catch |err| b", "Catch with capture", true, Associativity::RightToLeft});
+
+  lines.insert(indexOf(Operator::Eq),
+    {Operator::Dot, 12, "a..", "Range (to the end)", false, Associativity::LeftToRight});
+
+  lines.insert(indexOf(Operator::Break),
+    {Operator::Dot, 14, "return a", "Return a value", false, Associativity::RightToLeft});
+
+  lines.insert(indexOf(Operator::Continue),
+    {Operator::Dot, 14, "break :label", "Break to (outer) label", false, Associativity::RightToLeft});
+
+  lines.insert(indexOf(Operator::Continue),
+    {Operator::Dot, 14, "break a", "Block return", false, Associativity::RightToLeft});
+
+  lines.insert(indexOf(Operator::Continue),
+    {Operator::Dot, 14, "break :label a", "Block return", false, Associativity::RightToLeft});
+
+  lines.insert(indexOf(Operator::Defer),
+    {Operator::Dot, 14, "continue :label", "Continue to (outer) label", false, Associativity::RightToLeft});
+
+  size_t
+    maxTextLength = 0,
+    maxDescriptionLength = 0;
+
+  for (auto const& l : lines)
+  {
+    maxTextLength = std::max(maxTextLength, l.text.length());
+    maxDescriptionLength = std::max(maxDescriptionLength, l.desc.length());
+  }
+
+  std::string const tableSeparator = fmt::format(
+    "├────────────┼{0:─<{1}}┼{0:─<{2}}┼───────────┼───────────────┤\n",
+    "", maxTextLength + 2, maxDescriptionLength + 2);
+
+  std::string const assocSeparator = fmt::format(
+    "│            ├{0:─<{1}}┼{0:─<{2}}┼───────────┼───────────────┤\n",
+    "", maxTextLength + 2, maxDescriptionLength + 2);
+
+  std::string tableBody;
+  auto pred = std::numeric_limits<size_t>::max();
+  auto assoc = Associativity::RightToLeft;
+  for (auto const& l : lines)
+  {
+    std::string lineText;
+    std::string assocText = l.chain ? fmt::format(" {} │", l.assoc) : fmt::format("{: ^15}│", "-");
+    std::string chainText = fmt::format(" {}       │", (l.chain ? "Yes" : "No "));
+
+    if (l.pred != pred)
+    {
+      pred = l.pred;
+      tableBody += tableSeparator;
+      lineText += fmt::format("│{: ^12}│", pred + 1);
+    }
+    else
+    {
+      if (l.assoc != assoc)
+      {
+        tableBody += assocSeparator;
+      }
+      else
+      {
+        assocText = fmt::format("{: <{}}│", "", 15);
+        chainText = "           │";
+      }
+      lineText += fmt::format("│{: ^12}│", "");
+    }
+    assoc = l.assoc;
+
+    lineText += fmt::format(" {: <{}}│", l.text, maxTextLength + 1);
+    lineText += fmt::format(" {: <{}}│", l.desc, maxDescriptionLength + 1);
+    lineText += chainText;
+    lineText += assocText;
+
+    tableBody += lineText + "\n";
+  }
+
+  std::string const tableHeader = fmt::format(
+    "┌────────────┬{0:─<{1}}┬{0:─<{2}}┬───────────┬───────────────┐\n"
+    "│ Precedence │ {3: <{4}}│ {5: <{6}}│ Chainable │ Associativity │\n",
+    "", maxTextLength + 2, maxDescriptionLength + 2,
+    "Operator", maxTextLength + 1,
+    "Description", maxDescriptionLength + 1);
+
+  std::string const tableFooter = fmt::format(
+    "└────────────┴{0:─<{1}}┴{0:─<{2}}┴───────────┴───────────────┘",
+    "", maxTextLength + 2, maxDescriptionLength + 2);
+
+  return tableHeader + tableBody + tableFooter;
 }

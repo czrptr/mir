@@ -46,21 +46,21 @@ int main()
   sourceText = sourceText.substr(1, sourceText.length() - 2);
 	try
   {
-    Tokenizer tokenizer(sourceText, "<file>");
-		auto tok = tokenizer.next();
-		while(tok.tag() != Token::Eof)
-		{
-			fmt::print("{:s}\n", tok);
-			tok = tokenizer.next();
-		}
-    fmt::print("{:s}\n\n", tok);
+    // Tokenizer tokenizer(sourceText, "<file>");
+		// auto tok = tokenizer.next();
+		// while(tok.tag() != Token::Eof)
+		// {
+		// 	fmt::print("{:s}\n", tok);
+		// 	tok = tokenizer.next();
+		// }
+    // fmt::print("{:s}\n\n", tok);
 
     Parser parser(Tokenizer(sourceText, "<file>"));
 
     auto expr = parser.typeExpression(true);
     if (expr != nullptr)
     {
-      fmt::print("{}\n", expr->toString());
+      // fmt::print("{}\n", expr->toString());
     }
     else
     {
@@ -71,6 +71,8 @@ int main()
 	{
 		fmt::print("\n{}", err);
 	}
+
+  fmt::print("\n{}\n", Operator::tableWithInfo());
 }
 
 /* TODO

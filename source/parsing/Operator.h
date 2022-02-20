@@ -42,7 +42,7 @@ public:
     UnaryMinusMod, // -%a
     UnaryPlus,     // +a
     BitNot,        // !a
-    PtrTo,         // ^a
+    PtrTo,         // ^[mut] a
 
     /* ============ Precedence 5 ============ */
 
@@ -67,8 +67,8 @@ public:
     BitShr,    // a >> b
     BitRor,    // a >% b
     BitShl,    // a << b
-    BitRol,    // a <% b
     BitShlBar, // a <| b
+    BitRol,    // a <% b
 
     /* ============ Precedence 8 ============ */
 
@@ -116,8 +116,8 @@ public:
     BitShrEq,    // a >>= b
     BitRorEq,    // a >%= b
     BitShlEq,    // a <<= b
-    BitRolEq,    // a <%= b
     BitShlBarEq, // a <|= b
+    BitRolEq,    // a <%= b
     BitAndEq,    // a &= b
     BitOrEq,     // a |= b
     BitXorEq,    // a ~= b
@@ -134,6 +134,13 @@ public:
   {
     LeftToRight,
     RightToLeft,
+  };
+
+  enum class Fix
+  {
+    Prefix,
+    Infix,
+    Postfix,
   };
 
 private:
@@ -156,22 +163,25 @@ public:
   Position end() const noexcept { return d_end; }
   std::string_view text() const noexcept { return d_text; }
 
-  size_t precedence() const;
-  Associativity associativity() const;
+  Fix fix() const;
   bool chainable() const;
-  // TODO Prefix, Infix, PostFix
+  Associativity associativity() const;
+  size_t precedence() const;
 
-  static size_t precedence(Operator::Tag tag);
-  static Associativity associativity(Operator::Tag tag);
+  static Fix fix(Operator::Tag tag);
   static bool chainable(Operator::Tag tag);
+  static Associativity associativity(Operator::Tag tag);
+  static size_t precedence(Operator::Tag tag);
 
   static std::string validate(std::string_view text);
+
+  static std::string tableWithInfo();
 };
 
 template<>
 struct fmt::formatter<Operator::Tag>
 {
-  bool debug { false };
+  bool debug = false;
   fmt::formatter<fmt::string_view> underlying_formatter;
 
   constexpr auto parse(fmt::format_parse_context& ctx)
@@ -229,8 +239,8 @@ struct fmt::formatter<Operator::Tag>
       case Operator::Tag::BitShr: name = "BitShr"; break;
       case Operator::Tag::BitRor: name = "BitRor"; break;
       case Operator::Tag::BitShl: name = "BitShl"; break;
-      case Operator::Tag::BitRol: name = "BitRol"; break;
       case Operator::Tag::BitShlBar: name = "BitShlBar"; break;
+      case Operator::Tag::BitRol: name = "BitRol"; break;
       case Operator::Tag::BitAnd: name = "BitAnd"; break;
       case Operator::Tag::BitOr: name = "BitOr"; break;
       case Operator::Tag::BitXor: name = "BitXor"; break;
@@ -260,8 +270,8 @@ struct fmt::formatter<Operator::Tag>
       case Operator::Tag::BitShrEq: name = "BitShrEq"; break;
       case Operator::Tag::BitRorEq: name = "BitRorEq"; break;
       case Operator::Tag::BitShlEq: name = "BitShlEq"; break;
-      case Operator::Tag::BitRolEq: name = "BitRolEq"; break;
       case Operator::Tag::BitShlBarEq: name = "BitShlBarEq"; break;
+      case Operator::Tag::BitRolEq: name = "BitRolEq"; break;
       case Operator::Tag::BitAndEq: name = "BitAndEq"; break;
       case Operator::Tag::BitOrEq: name = "BitOrEq"; break;
       case Operator::Tag::BitXorEq: name = "BitXorEq"; break;
@@ -301,8 +311,8 @@ struct fmt::formatter<Operator::Tag>
       case Operator::Tag::BitShr: name = ">>"; break;
       case Operator::Tag::BitRor: name = ">%"; break;
       case Operator::Tag::BitShl: name = "<<"; break;
-      case Operator::Tag::BitRol: name = "<%"; break;
       case Operator::Tag::BitShlBar: name = "<|"; break;
+      case Operator::Tag::BitRol: name = "<%"; break;
       case Operator::Tag::BitAnd: name = "&"; break;
       case Operator::Tag::BitOr: name = "|"; break;
       case Operator::Tag::BitXor: name = "~"; break;
@@ -332,8 +342,8 @@ struct fmt::formatter<Operator::Tag>
       case Operator::Tag::BitShrEq: name = ">>="; break;
       case Operator::Tag::BitRorEq: name = ">%="; break;
       case Operator::Tag::BitShlEq: name = "<<="; break;
-      case Operator::Tag::BitRolEq: name = "<%="; break;
       case Operator::Tag::BitShlBarEq: name = "<|="; break;
+      case Operator::Tag::BitRolEq: name = "<%="; break;
       case Operator::Tag::BitAndEq: name = "&="; break;
       case Operator::Tag::BitOrEq: name = "|="; break;
       case Operator::Tag::BitXorEq: name = "~="; break;
@@ -347,26 +357,108 @@ struct fmt::formatter<Operator::Tag>
 };
 
 template<>
-struct fmt::formatter<Operator::Associativity> : fmt::formatter<fmt::string_view>
+struct fmt::formatter<Operator::Associativity>
 {
+  bool debug = false;
+  fmt::formatter<fmt::string_view> underlying_formatter;
+
+  constexpr auto parse(fmt::format_parse_context& ctx)
+  {
+    auto
+      it = ctx.begin(),
+      end = ctx.end();
+
+    if (it != end)
+    {
+      if (*it == 'd')
+      {
+        debug = true;
+        it += 1;
+        ctx.advance_to(it);
+        return underlying_formatter.parse(ctx);
+      }
+      return underlying_formatter.parse(ctx);
+    }
+    return underlying_formatter.parse(ctx);
+  }
+
   template<typename FormatContext>
   auto format(Operator::Associativity assoc, FormatContext& ctx)
   {
     std::string_view name = "OPERATOR_ASSOCIATIVITY_INVALID";
+    if (debug)
+    {
+      switch (assoc)
+      {
+      case Operator::Associativity::LeftToRight: name = "LeftToRight"; break;
+      case Operator::Associativity::RightToLeft: name = "RightToLeft"; break;
+      }
+      return underlying_formatter.format(name, ctx);
+    }
     switch (assoc)
     {
-    case Operator::Associativity::LeftToRight: name = "LeftToRight"; break;
-    case Operator::Associativity::RightToLeft: name = "RightToLeft"; break;
+    case Operator::Associativity::LeftToRight: name = "Left-to-right"; break;
+    case Operator::Associativity::RightToLeft: name = "Right-to-left"; break;
     }
-    return fmt::formatter<string_view>::format(name, ctx);
+    return underlying_formatter.format(name, ctx);
+  }
+};
+
+template<>
+struct fmt::formatter<Operator::Fix>
+{
+  bool debug = false;
+  fmt::formatter<fmt::string_view> underlying_formatter;
+
+  constexpr auto parse(fmt::format_parse_context& ctx)
+  {
+    auto
+      it = ctx.begin(),
+      end = ctx.end();
+
+    if (it != end)
+    {
+      if (*it == 'd')
+      {
+        debug = true;
+        it += 1;
+        ctx.advance_to(it);
+        return underlying_formatter.parse(ctx);
+      }
+      return underlying_formatter.parse(ctx);
+    }
+    return underlying_formatter.parse(ctx);
+  }
+
+  template<typename FormatContext>
+  auto format(Operator::Fix fix, FormatContext& ctx)
+  {
+    std::string_view name = "OPERATOR_Fix_INVALID";
+    if (debug)
+    {
+      switch (fix)
+      {
+        case Operator::Fix::Prefix: name = "Prefix"; break;
+        case Operator::Fix::Infix: name = "Infix"; break;
+        case Operator::Fix::Postfix: name = "Postfix"; break;
+      }
+      return underlying_formatter.format(name, ctx);
+    }
+    switch (fix)
+    {
+      case Operator::Fix::Prefix: name = "prefix"; break;
+      case Operator::Fix::Infix: name = "infix"; break;
+      case Operator::Fix::Postfix: name = "postfix"; break;
+    }
+    return underlying_formatter.format(name, ctx);
   }
 };
 
 template<>
 struct fmt::formatter<Operator>
 {
-  bool debug { false };
-  bool shortened { false };
+  bool debug = false;
+  bool shortened = false;
 
   constexpr auto parse(fmt::format_parse_context& ctx)
   {
