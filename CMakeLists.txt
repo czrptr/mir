@@ -83,7 +83,7 @@ add_executable(test ${TEST_SOURCES})
 
 add_dependencies(test fmt)
 
-target_link_libraries(test fmt)
+target_link_libraries(test fmt fort)
 
 target_include_directories(test PRIVATE
   ${VENDOR_DOCTEST}/include
