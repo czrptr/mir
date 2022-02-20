@@ -12,13 +12,15 @@ struct Operator final
 
 public:
 
-  // TODO infer, comptime?
+  // TODO
+  //  infer, comptime
+  //  add? a! (a orelse unreachable)
   enum Tag
   {
     /* === Precedence 0 ============ */
 
     Dot,           // a.b
-    Opt,           // a?
+    OptChain,        // a?
     PtrDeref,      // a^
     // FnCall      // a()
     // ArrayAccess // a[]
@@ -37,6 +39,12 @@ public:
 
     /* ============ Precedence 4 ============ */
 
+    Orelse, // a orelse b
+    Catch,  // a catch [|err|] b
+
+    /* ============ Precedence 5 ============ */
+
+    Opt,           // ?a
     Not,           // not a
     UnaryMinus,    // -a
     UnaryMinusMod, // -%a
@@ -44,7 +52,7 @@ public:
     BitNot,        // !a
     PtrTo,         // ^[mut] a
 
-    /* ============ Precedence 5 ============ */
+    /* ============ Precedence 6 ============ */
 
     Mul,           // a * b
     MulMod,        // a *% b
@@ -53,7 +61,7 @@ public:
     Mod,           // a % b
     OrOr_ErrorSet, // a || b
 
-    /* ============ Precedence 6 ============ */
+    /* ============ Precedence 7 ============ */
 
     Add,    // a + b
     AddMod, // a +% b
@@ -62,7 +70,7 @@ public:
     SubMod, // a -% b
     SubBar, // a -| b
 
-    /* ============ Precedence 7 ============ */
+    /* ============ Precedence 8 ============ */
 
     BitShr,    // a >> b
     BitRor,    // a >% b
@@ -70,16 +78,11 @@ public:
     BitShlBar, // a <| b
     BitRol,    // a <% b
 
-    /* ============ Precedence 8 ============ */
+    /* ============ Precedence 9 ============ */
 
     BitAnd, // a & b
     BitOr,  // a | b
     BitXor, // a ~ b
-
-    /* ============ Precedence 9 ============ */
-
-    Orelse, // a orelse b
-    Catch,  // a catch [|err|] b
 
     /* ============ Precedence 10 ============ */
 
@@ -217,10 +220,13 @@ struct fmt::formatter<Operator::Tag>
       switch (tag)
       {
       case Operator::Tag::Dot: name = "Dot"; break;
-      case Operator::Tag::Opt: name = "Opt"; break;
+      case Operator::Tag::OptChain: name = "OptChain"; break;
       case Operator::Tag::PtrDeref: name = "PtrDeref"; break;
       case Operator::Tag::Not_ErrorUnion: name = "Not_ErrorUnion"; break;
       case Operator::Tag::Try: name = "Try"; break;
+      case Operator::Tag::Orelse: name = "Orelse"; break;
+      case Operator::Tag::Catch: name = "Catch"; break;
+      case Operator::Tag::Opt: name = "Opt"; break;
       case Operator::Tag::Not: name = "Not"; break;
       case Operator::Tag::UnaryMinus: name = "UnaryMinus"; break;
       case Operator::Tag::UnaryMinusMod: name = "UnaryMinusMod"; break;
@@ -247,8 +253,6 @@ struct fmt::formatter<Operator::Tag>
       case Operator::Tag::BitAnd: name = "BitAnd"; break;
       case Operator::Tag::BitOr: name = "BitOr"; break;
       case Operator::Tag::BitXor: name = "BitXor"; break;
-      case Operator::Tag::Orelse: name = "Orelse"; break;
-      case Operator::Tag::Catch: name = "Catch"; break;
       case Operator::Tag::EqEq: name = "EqEq"; break;
       case Operator::Tag::NotEq: name = "NotEq"; break;
       case Operator::Tag::Ge: name = "Ge"; break;
@@ -289,10 +293,13 @@ struct fmt::formatter<Operator::Tag>
     switch (tag)
     {
       case Operator::Tag::Dot: name = "."; break;
-      case Operator::Tag::Opt: name = "?"; break;
+      case Operator::Tag::OptChain: name = "?"; break;
       case Operator::Tag::PtrDeref: name = "^"; break;
       case Operator::Tag::Not_ErrorUnion: name = "!"; break;
       case Operator::Tag::Try: name = "try"; break;
+      case Operator::Tag::Orelse: name = "orelse"; break;
+      case Operator::Tag::Catch: name = "catch"; break;
+      case Operator::Tag::Opt: name = "?"; break;
       case Operator::Tag::Not: name = "not"; break;
       case Operator::Tag::UnaryMinus: name = "-"; break;
       case Operator::Tag::UnaryMinusMod: name = "-%"; break;
@@ -319,8 +326,6 @@ struct fmt::formatter<Operator::Tag>
       case Operator::Tag::BitAnd: name = "&"; break;
       case Operator::Tag::BitOr: name = "|"; break;
       case Operator::Tag::BitXor: name = "~"; break;
-      case Operator::Tag::Orelse: name = "orelse"; break;
-      case Operator::Tag::Catch: name = "catch"; break;
       case Operator::Tag::EqEq: name = "=="; break;
       case Operator::Tag::NotEq: name = "!="; break;
       case Operator::Tag::Ge: name = ">"; break;

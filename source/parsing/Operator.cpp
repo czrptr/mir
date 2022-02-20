@@ -46,12 +46,12 @@ size_t Operator::precedence(Operator::Tag tag)
     PtrDeref, 0,
     Not_ErrorUnion, 1,
     Try, 3,
-    PtrTo, 4,
-    OrOr_ErrorSet, 5,
-    SubBar, 6,
-    BitRol, 7,
-    BitXor, 8,
-    Catch, 9,
+    Catch, 4,
+    PtrTo, 5,
+    OrOr_ErrorSet, 6,
+    SubBar, 7,
+    BitRol, 8,
+    BitXor, 9,
     LeEq, 10,
     And, 11,
     Or, 12,
@@ -78,10 +78,13 @@ Operator::Fix Operator::fix(Operator::Tag tag)
   switch (tag)
   {
   case Operator::Tag::Dot: return Fix::Infix;
-  case Operator::Tag::Opt: return Fix::Postfix;
+  case Operator::Tag::OptChain: return Fix::Postfix;
   case Operator::Tag::PtrDeref: return Fix::Postfix;
   case Operator::Tag::Not_ErrorUnion: return Fix::Infix;
   case Operator::Tag::Try: return Fix::Prefix;
+  case Operator::Tag::Orelse: return Fix::Infix;
+  case Operator::Tag::Catch: return Fix::Infix;
+  case Operator::Tag::Opt: return Fix::Prefix;
   case Operator::Tag::Not: return Fix::Prefix;
   case Operator::Tag::UnaryMinus: return Fix::Prefix;
   case Operator::Tag::UnaryMinusMod: return Fix::Prefix;
@@ -108,8 +111,6 @@ Operator::Fix Operator::fix(Operator::Tag tag)
   case Operator::Tag::BitAnd: return Fix::Infix;
   case Operator::Tag::BitOr: return Fix::Infix;
   case Operator::Tag::BitXor: return Fix::Infix;
-  case Operator::Tag::Orelse: return Fix::Infix;
-  case Operator::Tag::Catch: return Fix::Infix;
   case Operator::Tag::EqEq: return Fix::Infix;
   case Operator::Tag::NotEq: return Fix::Infix;
   case Operator::Tag::Ge: return Fix::Infix;
@@ -152,10 +153,13 @@ bool Operator::chainable(Operator::Tag tag)
   switch (tag)
   {
   case Operator::Tag::Dot: return true;
-  case Operator::Tag::Opt: return true;
+  case Operator::Tag::OptChain: return true;
   case Operator::Tag::PtrDeref: return true;
   case Operator::Tag::Not_ErrorUnion: return true;
   case Operator::Tag::Try: return true;
+  case Operator::Tag::Orelse: return true;
+  case Operator::Tag::Catch: return true;
+  case Operator::Tag::Opt: return true;
   case Operator::Tag::Not: return false;
   case Operator::Tag::UnaryMinus: return false;
   case Operator::Tag::UnaryMinusMod: return false;
@@ -182,8 +186,6 @@ bool Operator::chainable(Operator::Tag tag)
   case Operator::Tag::BitAnd: return true;
   case Operator::Tag::BitOr: return true;
   case Operator::Tag::BitXor: return true;
-  case Operator::Tag::Orelse: return true;
-  case Operator::Tag::Catch: return true;
   case Operator::Tag::EqEq: return true;
   case Operator::Tag::NotEq: return true;
   case Operator::Tag::Ge: return true;
@@ -292,10 +294,13 @@ static std::string tableText(Operator::Tag tag)
   switch (tag)
   {
     case Operator::Tag::Dot: return "a.b";
-    case Operator::Tag::Opt: return "a?";
+    case Operator::Tag::OptChain: return "a?";
     case Operator::Tag::PtrDeref: return "a^";
     case Operator::Tag::Not_ErrorUnion: return "a!b";
     case Operator::Tag::Try: return "try a";
+    case Operator::Tag::Orelse: return "a orelse b";
+    case Operator::Tag::Catch: return "a catch b";
+    case Operator::Tag::Opt: return "?a";
     case Operator::Tag::Not: return "not a";
     case Operator::Tag::UnaryMinus: return "-a";
     case Operator::Tag::UnaryMinusMod: return "-%a";
@@ -322,8 +327,6 @@ static std::string tableText(Operator::Tag tag)
     case Operator::Tag::BitAnd: return "a & b";
     case Operator::Tag::BitOr: return "a | b";
     case Operator::Tag::BitXor: return "a ~ b";
-    case Operator::Tag::Orelse: return "a orelse b";
-    case Operator::Tag::Catch: return "a catch b";
     case Operator::Tag::EqEq: return "a == b";
     case Operator::Tag::NotEq: return "a != b";
     case Operator::Tag::Ge: return "a > b";
@@ -363,13 +366,17 @@ static std::string tableText(Operator::Tag tag)
 
 static std::string description(Operator::Tag tag)
 {
+  // TODO better descriptions
   switch (tag)
   {
     case Operator::Tag::Dot: return "Member access";
-    case Operator::Tag::Opt: return "Optional chaining";
+    case Operator::Tag::OptChain: return "Optional chaining";
     case Operator::Tag::PtrDeref: return "Pointer dereference";
     case Operator::Tag::Not_ErrorUnion: return "Error union";
-    case Operator::Tag::Try: return "Try";
+    case Operator::Tag::Try: return "a catch |err| return err";
+    case Operator::Tag::Orelse: return "Orelse";
+    case Operator::Tag::Catch: return "Catch";
+    case Operator::Tag::Opt: return "Optional type";
     case Operator::Tag::Not: return "Boolean not";
     case Operator::Tag::UnaryMinus: return "Negation";
     case Operator::Tag::UnaryMinusMod: return "Wrapping negation";
@@ -396,8 +403,6 @@ static std::string description(Operator::Tag tag)
     case Operator::Tag::BitAnd: return "Bitwise and";
     case Operator::Tag::BitOr: return "Bitwise or";
     case Operator::Tag::BitXor: return "Bitwise xor";
-    case Operator::Tag::Orelse: return "Orelse";
-    case Operator::Tag::Catch: return "Catch";
     case Operator::Tag::EqEq: return "Equality";
     case Operator::Tag::NotEq: return "Negated equality";
     case Operator::Tag::Ge: return "Greater then";
@@ -499,19 +504,25 @@ std::string Operator::tableWithInfo(bool color, bool ascii)
     {Operator::Dot, 0, "a()", "Funcion call", true, Associativity::LeftToRight});
 
   lines.insert(indexOf(Operator::Not_ErrorUnion),
-    {Operator::Dot, 0, "a[]", "Array access / Span", true, Associativity::LeftToRight});
+    {Operator::Dot, 0, "a[]", "Array access / Span access", true, Associativity::LeftToRight});
 
   lines.insert(indexOf(Operator::Try),
     {Operator::Dot, 2, "a{}", "Type initialization", false, Associativity::LeftToRight});
 
-  lines.insert(indexOf(Operator::Mul),
-    {Operator::Dot, 4, "^mut a", "Pointer to mutable", false, Associativity::RightToLeft});
+  lines.insert(indexOf(Operator::Opt),
+    {Operator::Dot, 4, "a catch |err| b", "Catch with capture", true, Associativity::RightToLeft});
 
-  lines.insert(indexOf(Operator::EqEq),
-    {Operator::Dot, 9, "a catch |err| b", "Catch with capture", true, Associativity::RightToLeft});
+  lines.insert(indexOf(Operator::Not),
+    {Operator::Dot, 5, "[a]b", "Array type", true, Associativity::RightToLeft});
+
+  lines.insert(indexOf(Operator::Not),
+    {Operator::Dot, 5, "[]a", "Span type", true, Associativity::RightToLeft});
+
+  lines.insert(indexOf(Operator::Mul),
+    {Operator::Dot, 5, "^mut a", "Pointer to mutable", false, Associativity::RightToLeft});
 
   lines.insert(indexOf(Operator::Eq),
-    {Operator::Dot, 13, "a..", "Range (to the end)", false, Associativity::LeftToRight});
+    {Operator::Dot, 13, "a..", "Range (to end)", false, Associativity::LeftToRight});
 
   lines.insert(indexOf(Operator::Break),
     {Operator::Dot, 15, "return a", "Return a value", false, Associativity::RightToLeft});
