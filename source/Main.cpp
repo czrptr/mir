@@ -6,7 +6,6 @@
 
 #include <fmt/core.h>
 #include <fmt/color.h>
-#include <fort.hpp>
 
 #include <fstream>
 
@@ -73,7 +72,7 @@ int main()
 		fmt::print("\n{}", err);
 	}
 
-  fmt::print("\n{}\n", Operator::tableWithInfo());
+  fmt::print("{}", Operator::tableWithInfo());
 }
 
 /* TODO

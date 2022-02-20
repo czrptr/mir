@@ -75,10 +75,13 @@ public:
     BitAnd, // a & b
     BitOr,  // a | b
     BitXor, // a ~ b
-    Orelse, // a orelse b             // TODO move
-    Catch,  // a catch [|err|] b      //   these
 
     /* ============ Precedence 9 ============ */
+
+    Orelse, // a orelse b
+    Catch,  // a catch [|err|] b
+
+    /* ============ Precedence 10 ============ */
 
     EqEq,  // a == b
     NotEq, // a != b
@@ -87,19 +90,19 @@ public:
     GeEq,  // a >= b
     LeEq,  // a <= b
 
-    /* ============ Precedence 10 ============ */
+    /* ============ Precedence 11 ============ */
 
     And, // a and b
 
-    /* ============ Precedence 11 ============ */
+    /* ============ Precedence 12 ============ */
 
     Or, // a or b
 
-    /* ============ Precedence 12 ============ */
+    /* ============ Precedence 13 ============ */
 
     DotDot, // a..[b]
 
-    /* ============ Precedence 13 ============ */
+    /* ============ Precedence 14 ============ */
 
     Eq,          // a = b
     MulEq,       // a *= b
@@ -122,7 +125,7 @@ public:
     BitOrEq,     // a |= b
     BitXorEq,    // a ~= b
 
-    /* ============ Precedence 14 ============ */
+    /* ============ Precedence 15 ============ */
 
     Return,   // return [a]
     Break,    // break [:lbl] [a]

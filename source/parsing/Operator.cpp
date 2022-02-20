@@ -16,7 +16,6 @@ Operator::Operator(Token token)
   , d_text(token.text())
 {}
 
-
 Operator::Fix Operator::fix() const
 {
   return fix(d_tag);
@@ -50,14 +49,15 @@ size_t Operator::precedence(Operator::Tag tag)
     PtrTo, 4,
     OrOr_ErrorSet, 5,
     SubBar, 6,
-    BitShlBar, 7,
-    Catch, 8,
-    LeEq, 9,
-    And, 10,
-    Or, 11,
-    DotDot, 12,
-    BitXorEq, 13,
-    Defer, 14
+    BitRol, 7,
+    BitXor, 8,
+    Catch, 9,
+    LeEq, 10,
+    And, 11,
+    Or, 12,
+    DotDot, 13,
+    BitXorEq, 14,
+    Defer, 15
   };
   // ensure table is well formed
   static_assert(sizeof(thresholds) % 2 == 0);
@@ -287,7 +287,6 @@ std::string Operator::validate(std::string_view text)
   return fmt::format("unknown operator '{}', did you mean {}?", text, res);
 }
 
-
 static std::string tableText(Operator::Tag tag)
 {
   switch (tag)
@@ -438,10 +437,7 @@ static std::string description(Operator::Tag tag)
 
 std::string Operator::tableWithInfo()
 {
-  // │ ─ ┌ ┐ └ ┘ ┬ ┴ ├ ┤ ┼
-  // ║ ═ ╔ ╗ ╚ ╝ ╦ ╩ ╠ ╣ ╬
-
-  struct Line
+ struct Line
   {
     Tag tag;
     size_t pred;
@@ -450,6 +446,24 @@ std::string Operator::tableWithInfo()
     bool chain;
     Associativity assoc;
   };
+
+  fort::utf8_table table;
+  table.set_border_style(FT_SOLID_STYLE);
+
+  // Header
+  table << "Precedence" << "Operator" << "Description" << "Chainable" << "Associativity";
+
+  // Formatting
+  table.column(0).set_cell_text_align(fort::text_align::center);
+  table.column(0).set_cell_text_style(fort::text_style::bold);
+  table.column(0).set_cell_content_fg_color(fort::color::light_whyte);
+  table.column(3).set_cell_text_align(fort::text_align::center);
+  table.column(4).set_cell_text_align(fort::text_align::center);
+
+  table.row(0).set_cell_text_style(fort::text_style::bold);
+  table.row(0).set_cell_content_fg_color(fort::color::light_yellow);
+  table.row(0).set_cell_row_type(fort::row_type::header);
+  table.cell(0, 0).set_cell_content_fg_color(fort::color::light_yellow);
 
   auto const
     first = static_cast<size_t>(Operator::Dot),
@@ -482,98 +496,63 @@ std::string Operator::tableWithInfo()
     {Operator::Dot, 0, "a[]", "Array access / Span", true, Associativity::LeftToRight});
 
   lines.insert(indexOf(Operator::Try),
-    {Operator::Dot, 2, "a{}", "Type literal", false, Associativity::LeftToRight});
+    {Operator::Dot, 2, "a{}", "Type initialization", false, Associativity::LeftToRight});
 
   lines.insert(indexOf(Operator::Mul),
     {Operator::Dot, 4, "^mut a", "Pointer to mutable", false, Associativity::RightToLeft});
 
   lines.insert(indexOf(Operator::EqEq),
-    {Operator::Dot, 8, "a catch |err| b", "Catch with capture", true, Associativity::RightToLeft});
+    {Operator::Dot, 9, "a catch |err| b", "Catch with capture", true, Associativity::RightToLeft});
 
   lines.insert(indexOf(Operator::Eq),
-    {Operator::Dot, 12, "a..", "Range (to the end)", false, Associativity::LeftToRight});
+    {Operator::Dot, 13, "a..", "Range (to the end)", false, Associativity::LeftToRight});
 
   lines.insert(indexOf(Operator::Break),
-    {Operator::Dot, 14, "return a", "Return a value", false, Associativity::RightToLeft});
+    {Operator::Dot, 15, "return a", "Return a value", false, Associativity::RightToLeft});
 
   lines.insert(indexOf(Operator::Continue),
-    {Operator::Dot, 14, "break :label", "Break to (outer) label", false, Associativity::RightToLeft});
+    {Operator::Dot, 15, "break :label", "Break to (outer) label", false, Associativity::RightToLeft});
 
   lines.insert(indexOf(Operator::Continue),
-    {Operator::Dot, 14, "break a", "Block return", false, Associativity::RightToLeft});
+    {Operator::Dot, 15, "break a", "Block return", false, Associativity::RightToLeft});
 
   lines.insert(indexOf(Operator::Continue),
-    {Operator::Dot, 14, "break :label a", "Block return", false, Associativity::RightToLeft});
+    {Operator::Dot, 15, "break :label a", "Block return (explicit)", false, Associativity::RightToLeft});
 
   lines.insert(indexOf(Operator::Defer),
-    {Operator::Dot, 14, "continue :label", "Continue to (outer) label", false, Associativity::RightToLeft});
+    {Operator::Dot, 15, "continue :label", "Continue to (outer) label", false, Associativity::RightToLeft});
 
-  size_t
-    maxTextLength = 0,
-    maxDescriptionLength = 0;
+  // Data
+  table << fort::endr << "0" << "\"atomic\"" << "Literals\nControl statements" << "No" << "-";
 
+  size_t prevPred = static_cast<size_t>(-1);
   for (auto const& l : lines)
   {
-    maxTextLength = std::max(maxTextLength, l.text.length());
-    maxDescriptionLength = std::max(maxDescriptionLength, l.desc.length());
-  }
-
-  std::string const tableSeparator = fmt::format(
-    "├────────────┼{0:─<{1}}┼{0:─<{2}}┼───────────┼───────────────┤\n",
-    "", maxTextLength + 2, maxDescriptionLength + 2);
-
-  std::string const assocSeparator = fmt::format(
-    "│            ├{0:─<{1}}┼{0:─<{2}}┼───────────┼───────────────┤\n",
-    "", maxTextLength + 2, maxDescriptionLength + 2);
-
-  std::string tableBody;
-  auto pred = std::numeric_limits<size_t>::max();
-  auto assoc = Associativity::RightToLeft;
-  for (auto const& l : lines)
-  {
-    std::string lineText;
-    std::string assocText = l.chain ? fmt::format(" {} │", l.assoc) : fmt::format("{: ^15}│", "-");
-    std::string chainText = fmt::format(" {}       │", (l.chain ? "Yes" : "No "));
-
-    if (l.pred != pred)
+    if (l.pred != prevPred)
     {
-      pred = l.pred;
-      tableBody += tableSeparator;
-      lineText += fmt::format("│{: ^12}│", pred + 1);
+      prevPred = l.pred;
+      table
+        << fort::endr << fort::separator
+        << (l.pred + 1) << l.text << l.desc << (l.chain ? "Yes" : "No") << (l.chain ? fmt::to_string(l.assoc) : "-");
     }
     else
     {
-      if (l.assoc != assoc)
-      {
-        tableBody += assocSeparator;
-      }
-      else
-      {
-        assocText = fmt::format("{: <{}}│", "", 15);
-        chainText = "           │";
-      }
-      lineText += fmt::format("│{: ^12}│", "");
+      table
+        << fort::endr
+        << "" << l.text << l.desc << "" << "";
     }
-    assoc = l.assoc;
-
-    lineText += fmt::format(" {: <{}}│", l.text, maxTextLength + 1);
-    lineText += fmt::format(" {: <{}}│", l.desc, maxDescriptionLength + 1);
-    lineText += chainText;
-    lineText += assocText;
-
-    tableBody += lineText + "\n";
   }
 
-  std::string const tableHeader = fmt::format(
-    "┌────────────┬{0:─<{1}}┬{0:─<{2}}┬───────────┬───────────────┐\n"
-    "│ Precedence │ {3: <{4}}│ {5: <{6}}│ Chainable │ Associativity │\n",
-    "", maxTextLength + 2, maxDescriptionLength + 2,
-    "Operator", maxTextLength + 1,
-    "Description", maxDescriptionLength + 1);
+  // Footer
+  table
+    << fort::endr << fort::separator
+    << "Precedence" << "Operator" << "Description" << "Chainable" << "Associativity";
 
-  std::string const tableFooter = fmt::format(
-    "└────────────┴{0:─<{1}}┴{0:─<{2}}┴───────────┴───────────────┘",
-    "", maxTextLength + 2, maxDescriptionLength + 2);
+  auto const idx = table.row_count() - 1;
+  table.row(idx).set_cell_text_style(fort::text_style::bold);
+  table.row(idx).set_cell_content_fg_color(fort::color::light_yellow);
+  table.row(idx).set_cell_row_type(fort::row_type::header);
+  table.cell(idx, 0).set_cell_content_fg_color(fort::color::light_yellow);
 
-  return tableHeader + tableBody + tableFooter;
+  return table.to_string();
 }
