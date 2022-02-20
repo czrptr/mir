@@ -39,6 +39,8 @@ include_directories(${VENDOR_FORT}/include)
 # MIR
 
 set(MIR_SOURCES
+  ${CMAKE_SOURCE_DIR}/source/command/AstDump.cpp
+  ${CMAKE_SOURCE_DIR}/source/command/OpTable.cpp
   ${CMAKE_SOURCE_DIR}/source/Utils.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/Intern.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/Tokenizer.cpp

@@ -178,7 +178,7 @@ public:
 
   static std::string validate(std::string_view text);
 
-  static std::string tableWithInfo();
+  static std::string tableWithInfo(bool color, bool ascii);
 };
 
 template<>

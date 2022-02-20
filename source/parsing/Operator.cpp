@@ -435,7 +435,7 @@ static std::string description(Operator::Tag tag)
   assert(false); // unreachable
 }
 
-std::string Operator::tableWithInfo()
+std::string Operator::tableWithInfo(bool color, bool ascii)
 {
  struct Line
   {
@@ -448,22 +448,28 @@ std::string Operator::tableWithInfo()
   };
 
   fort::utf8_table table;
-  table.set_border_style(FT_SOLID_STYLE);
+  table.set_border_style(ascii ? FT_BASIC_STYLE : FT_SOLID_STYLE);
 
   // Header
   table << "Precedence" << "Operator" << "Description" << "Chainable" << "Associativity";
 
   // Formatting
   table.column(0).set_cell_text_align(fort::text_align::center);
-  table.column(0).set_cell_text_style(fort::text_style::bold);
-  table.column(0).set_cell_content_fg_color(fort::color::light_whyte);
+  if (color)
+  {
+    table.column(0).set_cell_text_style(fort::text_style::bold);
+    table.column(0).set_cell_content_fg_color(fort::color::light_whyte);
+  }
   table.column(3).set_cell_text_align(fort::text_align::center);
   table.column(4).set_cell_text_align(fort::text_align::center);
 
-  table.row(0).set_cell_text_style(fort::text_style::bold);
-  table.row(0).set_cell_content_fg_color(fort::color::light_yellow);
   table.row(0).set_cell_row_type(fort::row_type::header);
-  table.cell(0, 0).set_cell_content_fg_color(fort::color::light_yellow);
+  if (color)
+  {
+    table.row(0).set_cell_text_style(fort::text_style::bold);
+    table.row(0).set_cell_content_fg_color(fort::color::light_yellow);
+    table.cell(0, 0).set_cell_content_fg_color(fort::color::light_yellow);
+  }
 
   auto const
     first = static_cast<size_t>(Operator::Dot),
@@ -549,10 +555,12 @@ std::string Operator::tableWithInfo()
     << "Precedence" << "Operator" << "Description" << "Chainable" << "Associativity";
 
   auto const idx = table.row_count() - 1;
-  table.row(idx).set_cell_text_style(fort::text_style::bold);
-  table.row(idx).set_cell_content_fg_color(fort::color::light_yellow);
-  table.row(idx).set_cell_row_type(fort::row_type::header);
-  table.cell(idx, 0).set_cell_content_fg_color(fort::color::light_yellow);
+  if (color)
+  {
+    table.row(idx).set_cell_text_style(fort::text_style::bold);
+    table.row(idx).set_cell_content_fg_color(fort::color::light_yellow);
+    table.cell(idx, 0).set_cell_content_fg_color(fort::color::light_yellow);
+  }
 
   return table.to_string();
 }

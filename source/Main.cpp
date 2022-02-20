@@ -1,90 +1,66 @@
-#include <parsing/Position.h>
-#include <parsing/Token.h>
-#include <parsing/Error.h>
-#include <parsing/Tokenizer.h>
-#include <parsing/Parser.h>
+#include <Asserts.h>
+#include <command/Commands.h>
+
+#include <string_view>
+#include <vector>
 
 #include <fmt/core.h>
-#include <fmt/color.h>
 
-#include <fstream>
-
-#include <Asserts.h>
-
-std::string sourceText =
-R"SOURCE(
-
-let c = switch number {
-  0 => false,
-  1 => true,
-};
-
-let b = loop cond |value| {} else |err| {};
-
-a: a,
-b: b,
-
-let MyEnum = enum u8 {
-  a = 0,
-  b = 2,
-};
-
-let nothingFn: NothingFn = fn () void {};
-
-pub let main = fn (args: ArgsType) void {
-  let
-    num = 0,
-    str = "Hello, world!";
-};
-
-let a = if 0 |a| {} else if 2 |b| {} else |err| {};
-
-)SOURCE";
-
-int main()
+namespace
 {
-  sourceText = sourceText.substr(1, sourceText.length() - 2);
-	try
+
+constexpr std::string_view helpString = R"TEXT(
+Usage: mir [command] [options]
+
+Commands:
+
+  ast-dump      Print the syntax tree
+  op-table      Print a table containing info about operators
+
+Options:
+
+  -h, --help    Print command-specific usage
+
+)TEXT";
+
+} // anonymous namespace
+
+int main(int argc, char** argv)
+{
+  auto const [pathToSelf, cmmd, args] = [&]
   {
-    // Tokenizer tokenizer(sourceText, "<file>");
-		// auto tok = tokenizer.next();
-		// while(tok.tag() != Token::Eof)
-		// {
-		// 	fmt::print("{:s}\n", tok);
-		// 	tok = tokenizer.next();
-		// }
-    // fmt::print("{:s}\n\n", tok);
+    std::vector<std::string_view> args;
+    std::string_view cmmd;
 
-    Parser parser(Tokenizer(sourceText, "<file>"));
+    size_t argCount = static_cast<size_t>(argc);
+    args.reserve(argCount);
 
-    auto expr = parser.typeExpression(true);
-    if (expr != nullptr)
+    if (argCount >= 2)
     {
-      // fmt::print("{}\n", expr->toString());
+      cmmd = argv[1];
     }
-    else
+    for (size_t i = 2; i < argCount; i += 1)
     {
-      fmt::print("didn't parse anything\n");
+      args.push_back(argv[i]);
     }
+    return std::make_tuple(std::string_view(argv[0]), cmmd, std::move(args));
+  }();
+
+  if (cmmd.empty())
+  {
+    fmt::print("{}", helpString);
+    return 0;
   }
-  catch (Error const& err)
-	{
-		fmt::print("\n{}", err);
-	}
 
-  fmt::print("{}", Operator::tableWithInfo());
+  if (cmmd == command::OpTable::name)
+  {
+    return command::OpTable::exec(pathToSelf, args);
+  }
+  if (cmmd == command::AstDump::name)
+  {
+    return command::AstDump::exec(pathToSelf, args);
+  }
+
+  fmt::print("\nerror: unknown command '{}'\n{}", cmmd, helpString);
+  return 0;
 }
-
-/* TODO
-
-suggest location on missing {[()]} pairs by looking at alignments
-
-{ <-- this stands out
-
-  let a = blk: {
-
-  }
-
-...
-
-*/
