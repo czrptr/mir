@@ -7,7 +7,7 @@
         "isDefault": true
       },
       "type": "shell",
-      "command": "exec ${config:buildFolder}/mir",
+      "command": "exec ${config:buildFolder}/mir ${input:runArgs}",
       "dependsOn": [ "Build (mir)" ],
       "dependsOrder": "sequence",
       "presentation": {
@@ -178,6 +178,11 @@
         "Parser"
       ],
       "description": "Test suite to run"
+    },
+    {
+      "type": "promptString",
+      "id": "runArgs",
+      "description": "Arguments for the compiler cli"
     }
   ],
   "version": "2.0.0"
