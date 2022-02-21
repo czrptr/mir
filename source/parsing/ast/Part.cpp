@@ -1,6 +1,7 @@
 #include "parsing/ast/Part.h"
 
 #include <parsing/ast/TypeExpression.h>
+#include <parsing/ast/FunctionExpression.h>
 
 using namespace ast;
 
@@ -22,10 +23,11 @@ void Part::toStringData(
   }
 
   *nodeName = "Part";
-  if (auto const pParent =
-    std::dynamic_pointer_cast<TypeExpression>(parent().lock()); pParent != nullptr)
+  auto const pParent = parent().lock();
+  if (pParent->is<TypeExpression>())
   {
-    if (pParent->tag() == TypeExpression::Struct)
+    auto const tag = pParent->as<TypeExpression>()->tag();
+    if (tag == TypeExpression::Struct)
     {
       *nodeName = "Field";
     }
@@ -33,6 +35,10 @@ void Part::toStringData(
     {
       *nodeName = "Variant";
     }
+  }
+  else if (pParent->is<FunctionExpression>())
+  {
+    *nodeName = "Parameter";
   }
 
   *additionalInfo = "";

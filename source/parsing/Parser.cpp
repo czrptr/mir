@@ -164,6 +164,7 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
     }
   }
 
+  // TODO make end actual end of the expression and not the Eof
   Position const end = (!isRoot)
     ? match(Token::RBrace, ErrorStrategy::DefaultErrorMessage).end()
     : lastMatchedToken().end();
@@ -183,20 +184,22 @@ FunctionExpression::SPtr Parser::functionExpression()
   match(Token::LParen, ErrorStrategy::DefaultErrorMessage);
 
   size_t commaCount = 0;
-  std::vector<FunctionExpression::Parameter> parameters;
-  while(next(Token::Symbol))
+  std::vector<Part::SPtr> parameters;
+  while(auto pExpr = expressionOrPart())
   {
-    Token const tokName = match(Token::Symbol);
-    Token const tokColon = match(Token::Colon, ErrorStrategy::DefaultErrorMessage);
-    auto const pType = expression("type expression expected", tokColon.end());
+    // TODO check for default values, i.e. all params with default values
+    //   must be grouped at the end
+    if (!pExpr->is<Part>())
+    {
+      throw error(pExpr, "parameter definition expected");
+    }
 
     // force commas between parameters
     if (commaCount != parameters.size())
     {
-      auto const errPos = parameters.back().type->end();
-      throw Error(d_tokenizer.sourcePath(), errPos, errPos, "',' expected");
+      throw error(parameters.back()->end(), "',' expected");
     }
-    parameters.push_back({tokName, pType});
+    parameters.push_back(pExpr->as<Part>());
     commaCount += static_cast<size_t>(skip(Token::Comma));
   }
 

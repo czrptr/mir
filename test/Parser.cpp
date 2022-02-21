@@ -440,6 +440,10 @@ TEST_CASE("blocks (complex)")
 
 /* ================== FunctionExpression ================== */
 
+// TODO
+//  "fn() Type {}" not being parsed as "fn() (Type{})""
+//  tests for Part parameters refactor
+
 TEST_CASE("function parameters must be separated by a comma")
 {
   PARSER_TEXT("fn (a: a a: a) a");
@@ -462,7 +466,7 @@ TEST_CASE("function parameters can have a trailing comma")
   PARSER_TEXT("fn (a: a,) a");
   auto f = prs.expression();
 
-  REQUIRE_AST_EQ(f, fn({{"a", symbol("a")}}, symbol("a")));
+  REQUIRE_AST_EQ(f, fn({part(symbol("a"), symbol("a"), nullptr)}, symbol("a")));
 }
 
 TEST_CASE("function parameters must have types (colon separator)")
@@ -527,7 +531,6 @@ TEST_CASE("function block cannot be labeled")
   {
     std::string const
       msg = fmt::to_string(err),
-      // TODO better error location
       expectedMsg = "<file>:0:8: error: function blocks cannot be labeled";
 
     REQUIRE_EQ(msg, expectedMsg);
@@ -566,7 +569,11 @@ TEST_CASE("function type (complex)")
   auto f = prs.expression();
 
   REQUIRE_AST_EQ(f,
-    fn({{"arg1", symbol("Type1")}, {"arg2", symbol("char")}},
+    fn(
+      {
+        part(symbol("arg1"), symbol("Type1"), nullptr),
+        part(symbol("arg2"), symbol("char"), nullptr)
+      },
       fn({}, symbol("void"))));
 }
 
@@ -589,8 +596,6 @@ TEST_CASE("function (complex)")
   REQUIRE_AST_EQ(f, fn({}, symbol("void"),
     block({let(false, false, "a", symbol("b"))})));
 }
-
-// TODO "fn() Type {}" not being parsed as "fn() (Type{})""
 
 /* ================== Struct ================== */
 

@@ -117,7 +117,7 @@ BlockExpression::SPtr block(
   list<Node::SPtr> statements);
 
 FunctionExpression::SPtr fn(
-  list<std::tuple<std::string, Node::SPtr>> parameters,
+  list<Part::SPtr> parameters,
   Node::SPtr returnType,
   BlockExpression::SPtr body = nullptr);
 

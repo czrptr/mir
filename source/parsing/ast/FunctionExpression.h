@@ -1,6 +1,7 @@
 #pragma once
 
 #include <parsing/ast/Node.h>
+#include <parsing/ast/Part.h>
 #include <parsing/ast/BlockExpression.h>
 
 namespace ast
@@ -10,16 +11,9 @@ struct FunctionExpression final : public Node
 {
   PTR(FunctionExpression)
 
-public:
-  struct Parameter
-  {
-    Token name;
-    Node::SPtr type;
-  };
-
 private:
   Token d_fn;
-  std::vector<Parameter> d_parameters;
+  std::vector<Part::SPtr> d_parameters;
   Node::SPtr d_pReturnType;
   BlockExpression::SPtr d_pBody;
 
@@ -32,7 +26,7 @@ protected:
 public:
   FunctionExpression(
     Token fn,
-    std::vector<Parameter>&& parameters,
+    std::vector<Part::SPtr>&& parameters,
     Node::SPtr pReturnType,
     BlockExpression::SPtr pBody = nullptr,
     Node::SPtr pParent = nullptr)
@@ -47,14 +41,14 @@ public:
   virtual Position end() const override { return (d_pBody != nullptr ? d_pBody : d_pReturnType)->end(); }
   virtual bool isExpression() const override { return true; }
 
-  std::vector<Parameter> const& parameters() const { return d_parameters; }
+  std::vector<Part::SPtr> const& parameters() const { return d_parameters; }
   Node::SPtr returnType() const { return d_pReturnType; }
   bool isType() const { return d_pBody == nullptr; }
   BlockExpression::SPtr body() const { return d_pBody; }
 
   static FunctionExpression::SPtr make_shared(
     Token fn,
-    std::vector<Parameter>&& arguments,
+    std::vector<Part::SPtr>&& parameters,
     Node::SPtr pReturnType,
     BlockExpression::SPtr pBody = nullptr,
     Node::SPtr pParent = nullptr);
