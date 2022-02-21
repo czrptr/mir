@@ -11,6 +11,13 @@ static constexpr Operator::Tag Bar = Operator::BitOr;
 
 }
 
+ast::TypeExpression::SPtr Parser::root()
+{
+  auto pRoot = typeExpression(true);
+  match(Token::Eof, ErrorStrategy::DefaultErrorMessage);
+  return pRoot;
+}
+
 TokenExpression::SPtr Parser::tokenExpression()
 {
   if (next(Token::Symbol))

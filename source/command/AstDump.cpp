@@ -26,7 +26,7 @@ int AstDump::exec(std::string_view pathToSelf, std::vector<std::string_view> con
   try
   {
     auto parser = Parser(Tokenizer(pathToFile));
-    auto const pAst = parser.typeExpression(true);
+    auto const pAst = parser.root();
     fmt::print("\n{}\n\n", pAst->toString());
   }
   catch(Error const& err)

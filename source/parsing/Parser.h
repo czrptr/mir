@@ -48,6 +48,8 @@ public:
   }
 
 public:
+  ast::TypeExpression::SPtr root();
+
   ast::TokenExpression::SPtr tokenExpression();
 
   ast::TypeExpression::SPtr typeExpression(bool isRoot = false);
