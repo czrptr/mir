@@ -6,36 +6,64 @@
 
 #include <fmt/core.h>
 
+#include <iostream>
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
 using namespace command;
 
 int AstDump::exec(std::string_view pathToSelf, std::vector<std::string_view> const& args)
 {
   (void)pathToSelf;
 
+  // TODO parse arguments
 
-
+  ast::Node::SPtr pAst = nullptr;
   if (args.empty())
   {
-    // TODO Refactor tokenizer to take a std::istream and not to construct one
-    fmt::print("error: TODO ast-dump stdin\n");
+    auto parser = Parser(Tokenizer(std::cin, "<stdout>"));
+
+    fmt::print("Waiting for import from stdout...   (Use Ctrl+D to stop)\n\n");
+
+    try
+    {
+      pAst = parser.root();
+    }
+    catch(Error const& err)
+    {
+      // TODO +1 to all line info
+      fmt::print("\n{}\n\n", err);
+    }
+  }
+  else
+  {
+    std::string const path = args[0].data();
+    if (!fs::exists(path))
+    {
+      fmt::print("error: file '{}' doesn't exist", path);
+    }
+
+    auto fileStream = std::ifstream(path, std::ios::in);
+    auto parser = Parser(Tokenizer(fileStream, path));
+    try
+    {
+      pAst = parser.root();
+    }
+    catch(Error const& err)
+    {
+      // TODO +1 to all line info
+      fmt::print("\n{}\n\n", err);
+    }
+    fileStream.close();
+  }
+
+  if (pAst == nullptr)
+  {
     return 1;
   }
 
-  std::string const pathToFile(args[0].data());
-
-  try
-  {
-    auto parser = Parser(Tokenizer(pathToFile));
-    auto const pAst = parser.root();
-    fmt::print("\n{}\n\n", pAst->toString());
-  }
-  catch(Error const& err)
-  {
-    // TODO +1 to all line info
-    fmt::print("\n{}\n\n", err);
-  }
-
-  // TODO parse arguments
+  fmt::print("\n{}\n\n", pAst->toString());
 
   return 0;
 }

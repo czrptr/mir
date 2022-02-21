@@ -2,16 +2,6 @@
 #include <ParsingUtils.h>
 #include <parsing/Parser.h>
 
-namespace
-{
-
-Parser parser(std::string const& text)
-{
-  return Parser(Tokenizer(text, "<file>"));
-}
-
-} // anonymous namespace
-
 #define REQUIRE_AST_EQ(ast1, ast2) REQUIRE(equal((ast1), (ast2)))
 
 TEST_SUITE_BEGIN("Parser");
@@ -32,7 +22,8 @@ TEST_SUITE_BEGIN("Parser");
 
 TEST_CASE("symbols")
 {
-  auto prs = parser("main Ab__2c");
+  PARSER_TEXT("main Ab__2c");
+
   auto s1 = prs.expression();
   auto s2 = prs.expression();
 
@@ -42,7 +33,7 @@ TEST_CASE("symbols")
 
 TEST_CASE("builtins")
 {
-  auto prs = parser("@TypeOf @type_info");
+  PARSER_TEXT("@TypeOf @type_info");
   auto b1 = prs.expression();
   auto b2 = prs.expression();
 
@@ -52,7 +43,7 @@ TEST_CASE("builtins")
 
 TEST_CASE("string literals")
 {
-  auto prs = parser("\"er gw \\r etewr\" \"\"");
+  PARSER_TEXT("\"er gw \\r etewr\" \"\"");
   auto s1 = prs.expression();
   auto s2 = prs.expression();
 
@@ -62,7 +53,7 @@ TEST_CASE("string literals")
 
 TEST_CASE("number literals")
 {
-  auto prs = parser("0004324 4353.43463");
+  PARSER_TEXT("0004324 4353.43463");
   auto n1 = prs.expression();
   auto n2 = prs.expression();
 
@@ -72,7 +63,7 @@ TEST_CASE("number literals")
 
 TEST_CASE("boolean literals")
 {
-  auto prs = parser("true false");
+  PARSER_TEXT("true false");
   auto b1 = prs.expression();
   auto b2 = prs.expression();
 
@@ -82,7 +73,7 @@ TEST_CASE("boolean literals")
 
 TEST_CASE("null")
 {
-  auto prs = parser("null");
+  PARSER_TEXT("null");
   auto n = prs.expression();
 
   REQUIRE_AST_EQ(n, null());
@@ -90,7 +81,7 @@ TEST_CASE("null")
 
 TEST_CASE("undefined")
 {
-  auto prs = parser("undefined");
+  PARSER_TEXT("undefined");
   auto u = prs.expression();
 
   REQUIRE_AST_EQ(u, undefined());
@@ -98,7 +89,7 @@ TEST_CASE("undefined")
 
 TEST_CASE("unreachable")
 {
-  auto prs = parser("unreachable");
+  PARSER_TEXT("unreachable");
   auto u = prs.expression();
 
   REQUIRE_AST_EQ(u, unreachable());
@@ -108,7 +99,7 @@ TEST_CASE("unreachable")
 
 TEST_CASE("let statements cannot be empty")
 {
-  auto prs = parser("let");
+  PARSER_TEXT("let");
 
   try
   {
@@ -126,7 +117,7 @@ TEST_CASE("let statements cannot be empty")
 
 TEST_CASE("use 'undefined' to leave variables uninitialzed")
 {
-  auto prs = parser("let mut a = undefined");
+  PARSER_TEXT("let mut a = undefined");
 
   try
   {
@@ -144,7 +135,7 @@ TEST_CASE("use 'undefined' to leave variables uninitialzed")
 
 TEST_CASE("constants must be initialized")
 {
-  auto prs = parser("let a");
+  PARSER_TEXT("let a");
 
   try
   {
@@ -162,7 +153,7 @@ TEST_CASE("constants must be initialized")
 
 TEST_CASE("constants must be initialized with a proper value")
 {
-  auto prs = parser("let a = undefined");
+  PARSER_TEXT("let a = undefined");
 
   try
   {
@@ -180,7 +171,7 @@ TEST_CASE("constants must be initialized with a proper value")
 
 TEST_CASE("let statement parts must be separated by a comma")
 {
-  auto prs = parser("let a = a b = b");
+  PARSER_TEXT("let a = a b = b");
   try
   {
     prs.expression();
@@ -197,7 +188,7 @@ TEST_CASE("let statement parts must be separated by a comma")
 
 TEST_CASE("let statement parts can have a trailing comma")
 {
-  auto prs = parser("let a = a,");
+  PARSER_TEXT("let a = a,");
   auto l = prs.expression();
 
   REQUIRE_AST_EQ(l,
@@ -206,7 +197,7 @@ TEST_CASE("let statement parts can have a trailing comma")
 
 TEST_CASE("let statement parts trailing comma is optional")
 {
-  auto prs = parser("let a = a");
+  PARSER_TEXT("let a = a");
   auto l = prs.expression();
 
   REQUIRE_AST_EQ(l,
@@ -215,7 +206,7 @@ TEST_CASE("let statement parts trailing comma is optional")
 
 TEST_CASE("let statement parts must be assigned a value")
 {
-  auto prs = parser("let a = ");
+  PARSER_TEXT("let a = ");
 
   try
   {
@@ -233,7 +224,7 @@ TEST_CASE("let statement parts must be assigned a value")
 
 TEST_CASE("pub let statements")
 {
-  auto prs = parser("pub let a = 0");
+  PARSER_TEXT("pub let a = 0");
   auto l = prs.expression();
 
   REQUIRE_AST_EQ(l,
@@ -242,7 +233,7 @@ TEST_CASE("pub let statements")
 
 TEST_CASE("mut let statements")
 {
-  auto prs = parser("let mut a = 0");
+  PARSER_TEXT("let mut a = 0");
   auto l = prs.expression();
 
   REQUIRE_AST_EQ(l,
@@ -251,7 +242,7 @@ TEST_CASE("mut let statements")
 
 TEST_CASE("pub mut let statements")
 {
-  auto prs = parser("pub let mut a = 0");
+  PARSER_TEXT("pub let mut a = 0");
   auto l = prs.expression();
 
   REQUIRE_AST_EQ(l,
@@ -260,7 +251,7 @@ TEST_CASE("pub mut let statements")
 
 TEST_CASE("let statements with types")
 {
-  auto prs = parser("let a: isize = 0");
+  PARSER_TEXT("let a: isize = 0");
   auto l = prs.expression();
 
   REQUIRE_AST_EQ(l,
@@ -269,7 +260,7 @@ TEST_CASE("let statements with types")
 
 TEST_CASE("let statements (multiple parts)")
 {
-  auto prs = parser("let a = 0, b = c, d = \"AAH\"");
+  PARSER_TEXT("let a = 0, b = c, d = \"AAH\"");
   auto l = prs.expression();
 
   REQUIRE_AST_EQ(l,
@@ -282,7 +273,7 @@ TEST_CASE("let statements (multiple parts)")
 
 TEST_CASE("let statements (complex)")
 {
-  auto prs = parser("pub let mut a: isize = 0, b = c, d: string = \"AAH\"");
+  PARSER_TEXT("pub let mut a: isize = 0, b = c, d: string = \"AAH\"");
   auto l = prs.expression();
 
   REQUIRE_AST_EQ(l,
@@ -297,7 +288,7 @@ TEST_CASE("let statements (complex)")
 
 TEST_CASE("block labels")
 {
-  auto prs = parser("labelName : {}");
+  PARSER_TEXT("labelName : {}");
 
   try
   {
@@ -315,7 +306,7 @@ TEST_CASE("block labels")
 
 TEST_CASE("blocks must end")
 {
-  auto prs = parser("{");
+  PARSER_TEXT("{");
 
   try
   {
@@ -333,7 +324,7 @@ TEST_CASE("blocks must end")
 
 TEST_CASE("only blocks, if and loops can be labeled")
 {
-  auto prs = parser("labelName: let a = 0;");
+  PARSER_TEXT("labelName: let a = 0;");
 
   try
   {
@@ -351,7 +342,7 @@ TEST_CASE("only blocks, if and loops can be labeled")
 
 TEST_CASE("superfluous statement enders are illigal (part 1)")
 {
-  auto prs = parser("{ a;;; }");
+  PARSER_TEXT("{ a;;; }");
 
   try
   {
@@ -369,7 +360,7 @@ TEST_CASE("superfluous statement enders are illigal (part 1)")
 
 TEST_CASE("blocks")
 {
-  auto prs = parser("{} {{}}");
+  PARSER_TEXT("{} {{}}");
   auto b1 = prs.expression();
   auto b2 = prs.expression();
 
@@ -379,7 +370,7 @@ TEST_CASE("blocks")
 
 TEST_CASE("labeled blocks")
 {
-  auto prs = parser("blk: {}");
+  PARSER_TEXT("blk: {}");
   auto b = prs.expression();
 
   REQUIRE_AST_EQ(b, block("blk", {}));
@@ -387,7 +378,7 @@ TEST_CASE("labeled blocks")
 
 TEST_CASE("blocks (complex)")
 {
-  auto prs = parser(
+  PARSER_TEXT(
     "blk: {\n"
     "  pub let a = 0;\n"
     "  {\n"
@@ -407,7 +398,7 @@ TEST_CASE("blocks (complex)")
 
 TEST_CASE("function parameters must be separated by a comma")
 {
-  auto prs = parser("fn (a: a a: a) a");
+  PARSER_TEXT("fn (a: a a: a) a");
   try
   {
     prs.expression();
@@ -424,7 +415,7 @@ TEST_CASE("function parameters must be separated by a comma")
 
 TEST_CASE("function parameters can have a trailing comma")
 {
-  auto prs = parser("fn (a: a,) a");
+  PARSER_TEXT("fn (a: a,) a");
   auto f = prs.expression();
 
   REQUIRE_AST_EQ(f, fn({{"a", symbol("a")}}, symbol("a")));
@@ -432,7 +423,7 @@ TEST_CASE("function parameters can have a trailing comma")
 
 TEST_CASE("function parameters must have types (colon separator)")
 {
-  auto prs = parser("fn (a) a");
+  PARSER_TEXT("fn (a) a");
   try
   {
     prs.expression();
@@ -449,7 +440,7 @@ TEST_CASE("function parameters must have types (colon separator)")
 
 TEST_CASE("function parameters must have types")
 {
-  auto prs = parser("fn (a:) a");
+  PARSER_TEXT("fn (a:) a");
   try
   {
     prs.expression();
@@ -466,7 +457,7 @@ TEST_CASE("function parameters must have types")
 
 TEST_CASE("function return type must be an expression")
 {
-  auto prs = parser("fn () let a = 0");
+  PARSER_TEXT("fn () let a = 0");
   try
   {
     prs.expression();
@@ -483,7 +474,7 @@ TEST_CASE("function return type must be an expression")
 
 TEST_CASE("function block cannot be labeled")
 {
-  auto prs = parser("fn () a a: {}");
+  PARSER_TEXT("fn () a a: {}");
   try
   {
     prs.expression();
@@ -501,7 +492,7 @@ TEST_CASE("function block cannot be labeled")
 
 TEST_CASE("only blocks accepted after function return types")
 {
-  auto prs = parser("fn () a a");
+  PARSER_TEXT("fn () a a");
   try
   {
     prs.expression();
@@ -519,7 +510,7 @@ TEST_CASE("only blocks accepted after function return types")
 
 TEST_CASE("function type")
 {
-  auto prs = parser("fn () void");
+  PARSER_TEXT("fn () void");
   auto f = prs.expression();
 
   REQUIRE_AST_EQ(f, fn({}, symbol("void")));
@@ -527,7 +518,7 @@ TEST_CASE("function type")
 
 TEST_CASE("function type (complex)")
 {
-  auto prs = parser("fn (arg1: Type1, arg2: char) fn () void");
+  PARSER_TEXT("fn (arg1: Type1, arg2: char) fn () void");
   auto f = prs.expression();
 
   REQUIRE_AST_EQ(f,
@@ -537,7 +528,7 @@ TEST_CASE("function type (complex)")
 
 TEST_CASE("function")
 {
-  auto prs = parser("fn () void {}");
+  PARSER_TEXT("fn () void {}");
   auto f = prs.expression();
 
   REQUIRE_AST_EQ(f, fn({}, symbol("void"), block({})));
@@ -545,7 +536,7 @@ TEST_CASE("function")
 
 TEST_CASE("function (complex)")
 {
-  auto prs = parser(
+  PARSER_TEXT(
     "fn () void {\n"
     "  let a = b;\n"
     "}");
@@ -561,7 +552,7 @@ TEST_CASE("function (complex)")
 
 TEST_CASE("struct fields must be separated by a comma")
 {
-  auto prs = parser("struct { a: a b: b }");
+  PARSER_TEXT("struct { a: a b: b }");
   try
   {
     prs.expression();
@@ -578,7 +569,7 @@ TEST_CASE("struct fields must be separated by a comma")
 
 TEST_CASE("struct fields can have a trailing comma")
 {
-  auto prs = parser("struct { a: a, }");
+  PARSER_TEXT("struct { a: a, }");
   auto s = prs.expression();
 
   REQUIRE_AST_EQ(s, _struct(
@@ -589,7 +580,7 @@ TEST_CASE("struct fields can have a trailing comma")
 
 TEST_CASE("struct fields trailing comma is optional")
 {
-  auto prs = parser("struct { a: a,}");
+  PARSER_TEXT("struct { a: a,}");
   auto s = prs.expression();
 
   REQUIRE_AST_EQ(s, _struct(
@@ -600,7 +591,7 @@ TEST_CASE("struct fields trailing comma is optional")
 
 TEST_CASE("struct fields must be grouped together")
 {
-  auto prs = parser(
+  PARSER_TEXT(
     "struct {\n"
     "  a: i128,\n"
     "  let A = 0;\n"
@@ -622,7 +613,7 @@ TEST_CASE("struct fields must be grouped together")
 
 TEST_CASE("struct fields must have type annotations")
 {
-  auto prs = parser("struct { a, }");
+  PARSER_TEXT("struct { a, }");
   try
   {
     prs.expression();
@@ -639,7 +630,7 @@ TEST_CASE("struct fields must have type annotations")
 
 TEST_CASE("struct fields cannot have default values")
 {
-  auto prs = parser("struct { a: u0 = 0, }");
+  PARSER_TEXT("struct { a: u0 = 0, }");
   try
   {
     prs.expression();
@@ -656,7 +647,7 @@ TEST_CASE("struct fields cannot have default values")
 
 TEST_CASE("superfluous statement enders are illigal (part 2)")
 {
-  auto prs = parser("struct { let a = a;;; }");
+  PARSER_TEXT("struct { let a = a;;; }");
 
   try
   {
@@ -674,7 +665,7 @@ TEST_CASE("superfluous statement enders are illigal (part 2)")
 
 TEST_CASE("structs")
 {
-  auto prs = parser("struct {}");
+  PARSER_TEXT("struct {}");
   auto s = prs.expression();
 
   REQUIRE_AST_EQ(s, _struct({}, {}, {}));
@@ -682,7 +673,7 @@ TEST_CASE("structs")
 
 TEST_CASE("structs (complex)")
 {
-  auto prs = parser(
+  PARSER_TEXT(
     "struct {\n"
     "  let Self = @Self;\n"
     "\n"
@@ -705,7 +696,7 @@ TEST_CASE("structs (complex)")
 
 TEST_CASE("enum variants must be separated by a comma (case 1)")
 {
-  auto prs = parser("enum { a b = b }");
+  PARSER_TEXT("enum { a b = b }");
   try
   {
     prs.expression();
@@ -722,7 +713,7 @@ TEST_CASE("enum variants must be separated by a comma (case 1)")
 
 TEST_CASE("enum expects an underyling type if not block")
 {
-  auto prs = parser("enum |");
+  PARSER_TEXT("enum |");
   try
   {
     prs.expression();
@@ -739,7 +730,7 @@ TEST_CASE("enum expects an underyling type if not block")
 
 TEST_CASE("enum variants must be separated by a comma (case 2)")
 {
-  auto prs = parser("enum { a = a b = b }");
+  PARSER_TEXT("enum { a = a b = b }");
   try
   {
     prs.expression();
@@ -756,7 +747,7 @@ TEST_CASE("enum variants must be separated by a comma (case 2)")
 
 TEST_CASE("enum variants can have a trailing comma (case 1)")
 {
-  auto prs = parser("enum { a, }");
+  PARSER_TEXT("enum { a, }");
   auto e = prs.expression();
 
   REQUIRE_AST_EQ(e, _enum(
@@ -767,7 +758,7 @@ TEST_CASE("enum variants can have a trailing comma (case 1)")
 
 TEST_CASE("enum variants can have a trailing comma (case 2)")
 {
-  auto prs = parser("enum { a = a, }");
+  PARSER_TEXT("enum { a = a, }");
   auto e = prs.expression();
 
   REQUIRE_AST_EQ(e, _enum(
@@ -778,7 +769,7 @@ TEST_CASE("enum variants can have a trailing comma (case 2)")
 
 TEST_CASE("enum variants trailing comma is optional (case 1)")
 {
-  auto prs = parser("enum { a, }");
+  PARSER_TEXT("enum { a, }");
   auto e = prs.expression();
 
   REQUIRE_AST_EQ(e, _enum(
@@ -789,7 +780,7 @@ TEST_CASE("enum variants trailing comma is optional (case 1)")
 
 TEST_CASE("enum variants trailing comma is optional (case 2)")
 {
-  auto prs = parser("enum { a = a }");
+  PARSER_TEXT("enum { a = a }");
   auto e = prs.expression();
 
   REQUIRE_AST_EQ(e, _enum(
@@ -800,7 +791,7 @@ TEST_CASE("enum variants trailing comma is optional (case 2)")
 
 TEST_CASE("enum variants must be grouped together")
 {
-  auto prs = parser(
+  PARSER_TEXT(
     "enum {\n"
     "  a,\n"
     "  let B = 0;\n"
@@ -822,7 +813,7 @@ TEST_CASE("enum variants must be grouped together")
 
 TEST_CASE("enum variants cannot have type annotations")
 {
-  auto prs = parser("enum { a, }");
+  PARSER_TEXT("enum { a, }");
   try
   {
     prs.expression();
@@ -841,7 +832,7 @@ TEST_CASE("enum variants cannot have type annotations")
 
 TEST_CASE("enums")
 {
-  auto prs = parser("enum {}");
+  PARSER_TEXT("enum {}");
   auto e = prs.expression();
 
   REQUIRE_AST_EQ(e, _enum({}, {}, {}));
@@ -849,7 +840,7 @@ TEST_CASE("enums")
 
 TEST_CASE("enums with explicity underlying types")
 {
-  auto prs = parser("enum u8 {}");
+  PARSER_TEXT("enum u8 {}");
   auto e = prs.expression();
 
   REQUIRE_AST_EQ(e, _enum(symbol("u8"), {}, {}, {}));
@@ -857,7 +848,7 @@ TEST_CASE("enums with explicity underlying types")
 
 TEST_CASE("enum (complex)")
 {
-  auto prs = parser(
+  PARSER_TEXT(
     "enum ceva {\n"
     "  let Self = @Self;\n"
     "\n"
@@ -884,7 +875,7 @@ TEST_CASE("enum (complex)")
 
 TEST_CASE("union variants must be separated by a comma")
 {
-  auto prs = parser("union { a: a b: b }");
+  PARSER_TEXT("union { a: a b: b }");
   try
   {
     prs.expression();
@@ -901,7 +892,7 @@ TEST_CASE("union variants must be separated by a comma")
 
 TEST_CASE("union variants can have a trailing comma")
 {
-  auto prs = parser("union { a: a, }");
+  PARSER_TEXT("union { a: a, }");
   auto u = prs.expression();
 
   REQUIRE_AST_EQ(u, _union(
@@ -912,7 +903,7 @@ TEST_CASE("union variants can have a trailing comma")
 
 TEST_CASE("union variants trailing comma is optional")
 {
-  auto prs = parser("union { a: a,}");
+  PARSER_TEXT("union { a: a,}");
   auto u = prs.expression();
 
   REQUIRE_AST_EQ(u, _union(
@@ -923,7 +914,7 @@ TEST_CASE("union variants trailing comma is optional")
 
 TEST_CASE("union variants must be grouped together")
 {
-  auto prs = parser(
+  PARSER_TEXT(
     "union {\n"
     "  a: i128,\n"
     "  let A = 0;\n"
@@ -945,7 +936,7 @@ TEST_CASE("union variants must be grouped together")
 
 TEST_CASE("union variants must have type annotations")
 {
-  auto prs = parser("union { a, }");
+  PARSER_TEXT("union { a, }");
   try
   {
     prs.expression();
@@ -962,7 +953,7 @@ TEST_CASE("union variants must have type annotations")
 
 TEST_CASE("union variants cannot have default values")
 {
-  auto prs = parser("union { a: u0 = 0, }");
+  PARSER_TEXT("union { a: u0 = 0, }");
   try
   {
     prs.expression();
@@ -979,7 +970,7 @@ TEST_CASE("union variants cannot have default values")
 
 TEST_CASE("unions")
 {
-  auto prs = parser("union {}");
+  PARSER_TEXT("union {}");
   auto u = prs.expression();
 
   REQUIRE_AST_EQ(u, _union({}, {}, {}));
@@ -987,7 +978,7 @@ TEST_CASE("unions")
 
 TEST_CASE("unions (complex)")
 {
-  auto prs = parser(
+  PARSER_TEXT(
     "union {\n"
     "  let Self = @Self;\n"
     "\n"
@@ -1012,7 +1003,7 @@ TEST_CASE("unions (complex)")
 
 TEST_CASE("if clauses must have conditions")
 {
-  auto prs = parser("if |a| {}");
+  PARSER_TEXT("if |a| {}");
   try
   {
     prs.expression();
@@ -1029,7 +1020,7 @@ TEST_CASE("if clauses must have conditions")
 
 TEST_CASE("else if clauses must have conditions")
 {
-  auto prs = parser("else if |a| {}");
+  PARSER_TEXT("else if |a| {}");
   try
   {
     prs.expression();
@@ -1046,7 +1037,7 @@ TEST_CASE("else if clauses must have conditions")
 
 TEST_CASE("else clause must have a preceding if clause")
 {
-  auto prs = parser("else {}");
+  PARSER_TEXT("else {}");
   try
   {
     prs.expression();
@@ -1063,7 +1054,7 @@ TEST_CASE("else clause must have a preceding if clause")
 
 TEST_CASE("else if clause must have a preceding if clause")
 {
-  auto prs = parser("else if a {}");
+  PARSER_TEXT("else if a {}");
   try
   {
     prs.expression();
@@ -1080,7 +1071,7 @@ TEST_CASE("else if clause must have a preceding if clause")
 
 TEST_CASE("else clauses don't have conditions")
 {
-  auto prs = parser("else a {}");
+  PARSER_TEXT("else a {}");
   try
   {
     prs.expression();
@@ -1097,7 +1088,7 @@ TEST_CASE("else clauses don't have conditions")
 
 TEST_CASE("if clauses unfinished capture (part 1)")
 {
-  auto prs = parser("if a |a {}");
+  PARSER_TEXT("if a |a {}");
   try
   {
     prs.expression();
@@ -1114,7 +1105,7 @@ TEST_CASE("if clauses unfinished capture (part 1)")
 
 TEST_CASE("if clauses unfinished capture (part 2)")
 {
-  auto prs = parser("if a |");
+  PARSER_TEXT("if a |");
   try
   {
     prs.expression();
@@ -1131,7 +1122,7 @@ TEST_CASE("if clauses unfinished capture (part 2)")
 
 TEST_CASE("else if clauses unfinished capture (part 1)")
 {
-  auto prs = parser("if a {} else if a |a {}");
+  PARSER_TEXT("if a {} else if a |a {}");
   try
   {
     prs.expression();
@@ -1148,7 +1139,7 @@ TEST_CASE("else if clauses unfinished capture (part 1)")
 
 TEST_CASE("else if clauses unfinished capture (part 2)")
 {
-  auto prs = parser("if a {} else if a |");
+  PARSER_TEXT("if a {} else if a |");
   try
   {
     prs.expression();
@@ -1165,7 +1156,7 @@ TEST_CASE("else if clauses unfinished capture (part 2)")
 
 TEST_CASE("else clauses unfinished capture (part 1)")
 {
-  auto prs = parser("if a {} else |a {}");
+  PARSER_TEXT("if a {} else |a {}");
   try
   {
     prs.expression();
@@ -1182,7 +1173,7 @@ TEST_CASE("else clauses unfinished capture (part 1)")
 
 TEST_CASE("else clauses unfinished capture (part 2)")
 {
-  auto prs = parser("if a {} else |");
+  PARSER_TEXT("if a {} else |");
   try
   {
     prs.expression();
@@ -1199,7 +1190,7 @@ TEST_CASE("else clauses unfinished capture (part 2)")
 
 TEST_CASE("if clauses must have blocks (part 1)")
 {
-  auto prs = parser("if a");
+  PARSER_TEXT("if a");
   try
   {
     prs.expression();
@@ -1216,7 +1207,7 @@ TEST_CASE("if clauses must have blocks (part 1)")
 
 TEST_CASE("if clauses must have blocks (part 2)")
 {
-  auto prs = parser("if a |a|");
+  PARSER_TEXT("if a |a|");
   try
   {
     prs.expression();
@@ -1233,7 +1224,7 @@ TEST_CASE("if clauses must have blocks (part 2)")
 
 TEST_CASE("else if clauses must have blocks (part 1)")
 {
-  auto prs = parser("if a else if b");
+  PARSER_TEXT("if a else if b");
   try
   {
     prs.expression();
@@ -1250,7 +1241,7 @@ TEST_CASE("else if clauses must have blocks (part 1)")
 
 TEST_CASE("else if clauses must have blocks (part 2)")
 {
-  auto prs = parser("if a else if b |b|");
+  PARSER_TEXT("if a else if b |b|");
   try
   {
     prs.expression();
@@ -1267,7 +1258,7 @@ TEST_CASE("else if clauses must have blocks (part 2)")
 
 TEST_CASE("else clauses must have blocks (part 1)")
 {
-  auto prs = parser("if a else");
+  PARSER_TEXT("if a else");
   try
   {
     prs.expression();
@@ -1284,7 +1275,7 @@ TEST_CASE("else clauses must have blocks (part 1)")
 
 TEST_CASE("else clauses must have blocks (part 2)")
 {
-  auto prs = parser("if a else |b|");
+  PARSER_TEXT("if a else |b|");
   try
   {
     prs.expression();
@@ -1301,7 +1292,7 @@ TEST_CASE("else clauses must have blocks (part 2)")
 
 TEST_CASE("missing block inside internal clause")
 {
-  auto prs = parser("if a {} else if b else {}");
+  PARSER_TEXT("if a {} else if b else {}");
   try
   {
     prs.expression();
@@ -1318,7 +1309,7 @@ TEST_CASE("missing block inside internal clause")
 
 TEST_CASE("whole if must be labeled (part 1)")
 {
-  auto prs = parser("if a blk: {}");
+  PARSER_TEXT("if a blk: {}");
   try
   {
     prs.expression();
@@ -1337,7 +1328,7 @@ TEST_CASE("whole if must be labeled (part 1)")
 
 TEST_CASE("whole if must be labeled (part 2)")
 {
-  auto prs = parser("if a {} else if a blk: {}");
+  PARSER_TEXT("if a {} else if a blk: {}");
   try
   {
     prs.expression();
@@ -1356,7 +1347,7 @@ TEST_CASE("whole if must be labeled (part 2)")
 
 TEST_CASE("whole if must be labeled (part 3)")
 {
-  auto prs = parser("if a {} else blk: {}");
+  PARSER_TEXT("if a {} else blk: {}");
   try
   {
     prs.expression();
@@ -1375,7 +1366,7 @@ TEST_CASE("whole if must be labeled (part 3)")
 
 TEST_CASE("if")
 {
-  auto prs = parser("if a {}");
+  PARSER_TEXT("if a {}");
   auto i = prs.expression();
 
   REQUIRE_AST_EQ(i, _if(symbol("a"), nullptr, block({})));
@@ -1383,7 +1374,7 @@ TEST_CASE("if")
 
 TEST_CASE("labeled if")
 {
-  auto prs = parser("blk: if a {}");
+  PARSER_TEXT("blk: if a {}");
   auto i = prs.expression();
 
   REQUIRE_AST_EQ(i, _if("blk", symbol("a"), nullptr, block({})));
@@ -1391,7 +1382,7 @@ TEST_CASE("labeled if")
 
 TEST_CASE("if with capture")
 {
-  auto prs = parser("if a |a| {}");
+  PARSER_TEXT("if a |a| {}");
   auto i = prs.expression();
 
   REQUIRE_AST_EQ(i, _if(symbol("a"), symbol("a"), block({})));
@@ -1399,7 +1390,7 @@ TEST_CASE("if with capture")
 
 TEST_CASE("labeled if with capture")
 {
-  auto prs = parser("blk: if a |a| {}");
+  PARSER_TEXT("blk: if a |a| {}");
   auto i = prs.expression();
 
   REQUIRE_AST_EQ(i, _if("blk", symbol("a"), symbol("a"), block({})));
@@ -1407,7 +1398,7 @@ TEST_CASE("labeled if with capture")
 
 TEST_CASE("else if")
 {
-  auto prs = parser("if a {} else if b {}");
+  PARSER_TEXT("if a {} else if b {}");
   auto i = prs.expression();
 
   // fmt::print("\n{}\n", i->toString());
@@ -1419,7 +1410,7 @@ TEST_CASE("else if")
 
 TEST_CASE("else if with capture")
 {
-  auto prs = parser("if a {} else if b |b| {}");
+  PARSER_TEXT("if a {} else if b |b| {}");
   auto i = prs.expression();
 
   REQUIRE_AST_EQ(i, _if(symbol("a"), nullptr, block({}), {
@@ -1429,7 +1420,7 @@ TEST_CASE("else if with capture")
 
 TEST_CASE("else")
 {
-  auto prs = parser("if a {} else {}");
+  PARSER_TEXT("if a {} else {}");
   auto i = prs.expression();
 
   REQUIRE_AST_EQ(i, _if(symbol("a"), nullptr, block({}), {
@@ -1439,7 +1430,7 @@ TEST_CASE("else")
 
 TEST_CASE("else with capture")
 {
-  auto prs = parser("if a {} else |b| {}");
+  PARSER_TEXT("if a {} else |b| {}");
   auto i = prs.expression();
 
   REQUIRE_AST_EQ(i, _if(symbol("a"), nullptr, block({}), {
@@ -1449,7 +1440,7 @@ TEST_CASE("else with capture")
 
 TEST_CASE("if (complex)")
 {
-  auto prs = parser(
+  PARSER_TEXT(
     "blk: if a |a| {} else if b {} "
     "else if c |c| {} else |d| {}");
   auto i = prs.expression();
@@ -1465,7 +1456,7 @@ TEST_CASE("if (complex)")
 
 TEST_CASE("loops must have conditions")
 {
-  auto prs = parser("loop |a| {}");
+  PARSER_TEXT("loop |a| {}");
   try
   {
     prs.expression();
@@ -1482,7 +1473,7 @@ TEST_CASE("loops must have conditions")
 
 TEST_CASE("loops must have conditions")
 {
-  auto prs = parser("loop |a| {}");
+  PARSER_TEXT("loop |a| {}");
   try
   {
     prs.expression();
@@ -1499,7 +1490,7 @@ TEST_CASE("loops must have conditions")
 
 TEST_CASE("loop unfinished capture (part 1)")
 {
-  auto prs = parser("loop a |a");
+  PARSER_TEXT("loop a |a");
   try
   {
     prs.expression();
@@ -1516,7 +1507,7 @@ TEST_CASE("loop unfinished capture (part 1)")
 
 TEST_CASE("loop unfinished capture (part 2)")
 {
-  auto prs = parser("loop a |");
+  PARSER_TEXT("loop a |");
   try
   {
     prs.expression();
@@ -1533,7 +1524,7 @@ TEST_CASE("loop unfinished capture (part 2)")
 
 TEST_CASE("loops must have blocks (part 1)")
 {
-  auto prs = parser("loop a");
+  PARSER_TEXT("loop a");
   try
   {
     prs.expression();
@@ -1550,7 +1541,7 @@ TEST_CASE("loops must have blocks (part 1)")
 
 TEST_CASE("loops must have blocks (part 2)")
 {
-  auto prs = parser("loop a else {}");
+  PARSER_TEXT("loop a else {}");
   try
   {
     prs.expression();
@@ -1567,7 +1558,7 @@ TEST_CASE("loops must have blocks (part 2)")
 
 TEST_CASE("loop else clause unfinished capture (part 1)")
 {
-  auto prs = parser("loop a {} else |a");
+  PARSER_TEXT("loop a {} else |a");
   try
   {
     prs.expression();
@@ -1584,7 +1575,7 @@ TEST_CASE("loop else clause unfinished capture (part 1)")
 
 TEST_CASE("loop else clause unfinished capture (part 2)")
 {
-  auto prs = parser("loop a {} else |");
+  PARSER_TEXT("loop a {} else |");
   try
   {
     prs.expression();
@@ -1601,7 +1592,7 @@ TEST_CASE("loop else clause unfinished capture (part 2)")
 
 TEST_CASE("loop else clauses must have blocks")
 {
-  auto prs = parser("loop a {} else");
+  PARSER_TEXT("loop a {} else");
   try
   {
     prs.expression();
@@ -1618,7 +1609,7 @@ TEST_CASE("loop else clauses must have blocks")
 
 TEST_CASE("loop else clauses don't have conditions")
 {
-  auto prs = parser("loop a {} else a");
+  PARSER_TEXT("loop a {} else a");
   try
   {
     prs.expression();
@@ -1636,7 +1627,7 @@ TEST_CASE("loop else clauses don't have conditions")
 
 TEST_CASE("whole loop must be labeled (part 1)")
 {
-  auto prs = parser("loop a blk: {} else {}");
+  PARSER_TEXT("loop a blk: {} else {}");
   try
   {
     prs.expression();
@@ -1655,7 +1646,7 @@ TEST_CASE("whole loop must be labeled (part 1)")
 
 TEST_CASE("whole loop must be labeled (part 2)")
 {
-  auto prs = parser("loop a {} else blk: {}");
+  PARSER_TEXT("loop a {} else blk: {}");
   try
   {
     prs.expression();
@@ -1674,7 +1665,7 @@ TEST_CASE("whole loop must be labeled (part 2)")
 
 TEST_CASE("loop")
 {
-  auto prs = parser("loop a |a| {}");
+  PARSER_TEXT("loop a |a| {}");
   auto l = prs.expression();
 
   REQUIRE_AST_EQ(l, loop(symbol("a"), symbol("a"), block({})));
@@ -1682,7 +1673,7 @@ TEST_CASE("loop")
 
 TEST_CASE("loop (complex)")
 {
-  auto prs = parser("blk: loop a |a| {} else |b| {}");
+  PARSER_TEXT("blk: loop a |a| {} else |b| {}");
   auto l = prs.expression();
 
   REQUIRE_AST_EQ(l,
@@ -1695,7 +1686,7 @@ TEST_CASE("loop (complex)")
 
 TEST_CASE("switches must have values")
 {
-  auto prs = parser("switch {}");
+  PARSER_TEXT("switch {}");
 
   // TODO for now the block parses as the switch value
   //   BlockExpression::isExpression() needs to be
@@ -1717,7 +1708,7 @@ TEST_CASE("switches must have values")
 
 TEST_CASE("switches must have blocks")
 {
-  auto prs = parser("switch a");
+  PARSER_TEXT("switch a");
 
   try
   {
@@ -1735,7 +1726,7 @@ TEST_CASE("switches must have blocks")
 
 TEST_CASE("switch block cannot be labeled")
 {
-  auto prs = parser("switch a blk: {}");
+  PARSER_TEXT("switch a blk: {}");
 
   try
   {
@@ -1753,7 +1744,7 @@ TEST_CASE("switch block cannot be labeled")
 
 TEST_CASE("switch arrow expected")
 {
-  auto prs = parser("switch a { a a }");
+  PARSER_TEXT("switch a { a a }");
 
   try
   {
@@ -1771,7 +1762,7 @@ TEST_CASE("switch arrow expected")
 
 TEST_CASE("switch case result expected")
 {
-  auto prs = parser("switch a { a =>");
+  PARSER_TEXT("switch a { a =>");
 
   try
   {
@@ -1789,7 +1780,7 @@ TEST_CASE("switch case result expected")
 
 TEST_CASE("switch block must end")
 {
-  auto prs = parser("switch a { a => a");
+  PARSER_TEXT("switch a { a => a");
 
   try
   {
@@ -1807,7 +1798,7 @@ TEST_CASE("switch block must end")
 
 TEST_CASE("switch cases must be separated by a comma")
 {
-  auto prs = parser("switch a { a => a a => a }");
+  PARSER_TEXT("switch a { a => a a => a }");
 
   try
   {
@@ -1825,7 +1816,7 @@ TEST_CASE("switch cases must be separated by a comma")
 
 TEST_CASE("switch cases can have a trailing comma")
 {
-  auto prs = parser("switch a { a => a, }");
+  PARSER_TEXT("switch a { a => a, }");
   auto s = prs.expression();
 
   REQUIRE_AST_EQ(s,
@@ -1836,7 +1827,7 @@ TEST_CASE("switch cases can have a trailing comma")
 
 TEST_CASE("switch (complex)")
 {
-  auto prs = parser("switch a { a => a, b |c| => {} }");
+  PARSER_TEXT("switch a { a => a, b |c| => {} }");
   auto s = prs.expression();
 
   REQUIRE_AST_EQ(s,

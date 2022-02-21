@@ -6,12 +6,9 @@
 #include <Utils.h>
 
 #include <string_view>
-#include <filesystem>
 #include <map>
 #include <cassert>
 #include <cstring>
-
-namespace fs = std::filesystem;
 
 #define SWITCH_CURRENT_CHAR(state) case state: { switch (d_currentChar)
 
@@ -20,15 +17,6 @@ namespace fs = std::filesystem;
 #define END() } break
 
 namespace {
-
-void customDeleter(std::istream* pStream)
-{
-  if (auto* pStreamFile = dynamic_cast<std::ifstream*>(pStream); pStreamFile != nullptr)
-  {
-    pStreamFile->close();
-  }
-  delete pStream;
-}
 
 std::map<std::string_view, Token::Tag> const keywords
 {
@@ -61,40 +49,12 @@ std::map<std::string_view, Token::Tag> const keywords
 } // anonymous
 
 // TODO support for utf8 unicode & better error messages
-Tokenizer::Tokenizer(
-    std::string const& text,
-    std::string const& sourcePath)
-  : d_sourcePath(sourcePath)
+Tokenizer::Tokenizer(std::istream& input, std::string const& sourcePath)
+  : d_inputStream(input)
+  , d_sourcePath(sourcePath)
   , d_currentPos(0, 0)
   , d_nextPos(0, 0)
-{
-  if (text.empty())
-  {
-    throw Error(d_sourcePath, "source text is empty");
-  }
-  d_pInputStream = InputStream(new std::istringstream(text, std::ios::in), customDeleter);
-  d_pInputStream->exceptions(std::ios::failbit | std::ios::badbit);
-}
-
-Tokenizer::Tokenizer(std::string const& sourcePath)
-  : d_sourcePath(sourcePath)
-  , d_currentPos(0, 0)
-  , d_nextPos(0, 0)
-{
-  fs::path filePath(sourcePath);
-  if (!fs::exists(filePath))
-  {
-    throw Error(d_sourcePath, "file doesn't exist");
-  }
-
-  if (fs::file_size(filePath) == 0)
-  {
-    throw Error(d_sourcePath, "source text is empty");
-  }
-
-  d_pInputStream = InputStream(new std::ifstream(sourcePath, std::ios::in), customDeleter);
-  d_pInputStream->exceptions(std::ios::failbit | std::ios::badbit);
-}
+{}
 
 Token Tokenizer::next()
 {
@@ -229,6 +189,10 @@ Token Tokenizer::next()
       {
         tokenStart(Token::StringLiteral);
       }
+      break;
+
+      case '\0':
+        return Token(Token::Eof, d_currentPos, d_currentPos, "");
       break;
 
       default:
@@ -503,35 +467,21 @@ std::string const& Tokenizer::sourcePath() const
 
 bool Tokenizer::inputStreamFinished() const
 {
-  return d_pInputStream->eof() && !d_leftOver;
+  return d_inputStream.eof() && !d_leftOver;
 }
 
 char Tokenizer::inputPeek()
 {
   // TODO return \0 on Eof
-  try
-  {
-    return static_cast<char>(d_pInputStream->peek());
-  }
-  catch (std::ios::failure const& err)
-  {
-    throw error(err.what());
-  }
+  return static_cast<char>(d_inputStream.peek());
 }
 
 char Tokenizer::inputNext()
 {
   // TODO return \0 on Eof
-  try
-  {
-    char res;
-    d_pInputStream->get(res);
-    return res;
-  }
-  catch (std::ios::failure const& err)
-  {
-    throw error(err.what());
-  }
+  char res;
+  d_inputStream.get(res);
+  return res;
 }
 
 void Tokenizer::advance()
@@ -541,7 +491,7 @@ void Tokenizer::advance()
   if (!d_leftOver)
   {
     d_currentChar = inputNext();
-    d_nextChar = inputPeek(); // maybe get rid of this?
+    d_nextChar = inputPeek();
   }
   else
   {

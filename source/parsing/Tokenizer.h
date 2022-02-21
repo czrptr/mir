@@ -34,11 +34,8 @@ private:
   static_assert(static_cast<int>(State::StringLiteral) == static_cast<int>(Token::StringLiteral));
   static_assert(static_cast<int>(State::Operator) == static_cast<int>(Token::Operator));
 
-  using Deleter = std::function<void(std::istream*)>;
-  using InputStream = std::unique_ptr<std::istream, Deleter>;
-
   // Data
-  InputStream d_pInputStream;
+  std::istream& d_inputStream;
 
 	std::string const d_sourcePath;
 
@@ -56,11 +53,9 @@ private:
 
 public:
   // Constructors
-	Tokenizer(
-    std::string const& text,
+  Tokenizer(
+    std::istream& input,
     std::string const& sourcePath);
-
-  explicit Tokenizer(std::string const& sourcePath);
 
   // Methods
 	Token next();

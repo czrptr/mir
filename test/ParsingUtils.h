@@ -1,8 +1,10 @@
 #pragma once
 
 #include <parsing/Intern.h>
-#include <parsing/ast/Nodes.h>
+#include <parsing/Tokenizer.h>
 #include <parsing/Token.h>
+
+#include <parsing/ast/Nodes.h>
 
 #include <initializer_list>
 #include <tuple>
@@ -13,6 +15,18 @@ using namespace ast;
 
 template<typename T>
 using list = std::initializer_list<T>;
+
+#define TOKENIZER_TEXT(text) \
+  auto textStream = std::istringstream((text), std::ios::in); \
+  auto tk = Tokenizer(textStream, "<file>")
+
+#define TOKENIZER_FILE(path) \
+  auto fileStream = std::ifstream((path), std::ios::in); \
+  auto tk = Tokenizer(fileStream, path)
+
+#define PARSER_TEXT(text) \
+  auto textStream = std::istringstream((text), std::ios::in); \
+  auto prs = Parser(Tokenizer(textStream, "<file>"))
 
 Token t(
   Token::Tag tag,

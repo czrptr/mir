@@ -8,67 +8,38 @@ TEST_SUITE_BEGIN("Tokenizer");
 
 TEST_CASE("string source text is empty")
 {
-  std::string const filePath = "<file>";
-  try
-  {
-    auto tk = Tokenizer("", filePath);
-    FAIL("unreachable");
-  }
-  catch (Error const& err)
-  {
-    std::string const msg = fmt::format("{}", err);
-    REQUIRE_EQ(msg, fmt::format("{}: source text is empty", filePath));
-  }
-}
+  TOKENIZER_TEXT("");
 
-TEST_CASE("file doesn't exist")
-{
-  std::string const filePath = "./test/files/I_DONT_EXIST.mir";
-  try
-  {
-    auto tk = Tokenizer(filePath);
-    FAIL("unreachable");
-  }
-  catch (Error const& err)
-  {
-    std::string const msg = fmt::format("{}", err);
-    REQUIRE_EQ(msg, fmt::format("{}: file doesn't exist", filePath));
-  }
+  REQUIRE_EQ(tk.next(), t(Token::Eof, 0, 0, 0, 0, ""));
 }
 
 TEST_CASE("file source text is empty")
 {
-  std::string const filePath = "./test/files/empty.mir";
-  try
-  {
-    auto tk = Tokenizer(filePath);
-    FAIL("unreachable");
-  }
-  catch (Error const& err)
-  {
-    std::string const msg = fmt::format("{}", err);
-    REQUIRE_EQ(msg, fmt::format("{}: source text is empty", filePath));
-  }
+  TOKENIZER_FILE("./test/files/empty.mir");
+
+  REQUIRE_EQ(tk.next(), t(Token::Eof, 0, 0, 0, 0, ""));
+  fileStream.close();
 }
 
 TEST_CASE("last multi char token ends on Eof")
 {
   std::string const text = "aLpH4_Num3r1C";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT(text);
+
   REQUIRE_EQ(tk.next(), t(Token::Symbol, 0, 0, 0, text.length(), text));
 }
 
 TEST_CASE("symbols (builtins)")
 {
   std::string const text = "@aLpH4_Num3r1C";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT(text);
+
   REQUIRE_EQ(tk.next(), t(Token::Symbol, 0, 0, 0, text.length(), text));
 }
 
 TEST_CASE("symbols (builtins) wrong format")
 {
-  std::string const text = "@buil@in";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT("@buil@in");
   try
   {
     tk.next();
@@ -84,10 +55,10 @@ TEST_CASE("symbols (builtins) wrong format")
   }
 }
 
-TEST_CASE("operator (runes)")
+TEST_CASE("operators")
 {
-  std::string const text = "*%= try not orelse catch and or return break continue defer";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT("*%= try not orelse catch and or return break continue defer");
+
   REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 0, 0, 3, "*%="));
   REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 4, 0, 7, "try"));
   REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 8, 0, 11, "not"));
@@ -101,43 +72,34 @@ TEST_CASE("operator (runes)")
   REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 54, 0, 59, "defer"));
 }
 
-TEST_CASE("operator (keywords)")
-{
-  std::string const text = "not catch orelse and or";
-  Tokenizer tk(text, "<file>");
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 0, 0, 3, "not"));
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 4, 0, 9, "catch"));
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 10, 0, 16, "orelse"));
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 17, 0, 20, "and"));
-  REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 21, 0, 23, "or"));
-}
-
 TEST_CASE("number literals (ints base 10)")
 {
   std::string const text = "000124234286579";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT(text);
+
   REQUIRE_EQ(tk.next(), t(Token::NumberLiteral, 0, 0, 0, text.length(), text));
 }
 
 TEST_CASE("number literals (floats base 10)")
 {
   std::string const text = "000124234286579.3463452";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT(text);
+
   REQUIRE_EQ(tk.next(), t(Token::NumberLiteral, 0, 0, 0, text.length(), text));
 }
 
 TEST_CASE("number literals can't start with decimal separator")
 {
-  std::string const text = ".14";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT(".14");
+
   REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 0, 0, 1, "."));
   REQUIRE_EQ(tk.next(), t(Token::NumberLiteral, 0, 1, 0, 3, "14"));
 }
 
 TEST_CASE("number literals can't end with decimal separator")
 {
-  std::string const text = "3.";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT("3.");
+
   REQUIRE_EQ(tk.next(), t(Token::NumberLiteral, 0, 0, 0, 1, "3"));
   REQUIRE_EQ(tk.next(), t(Token::Operator, 0, 1, 0, 2, "."));
 }
@@ -145,14 +107,14 @@ TEST_CASE("number literals can't end with decimal separator")
 TEST_CASE("string literals")
 {
   std::string const text = "\"fwe gre \\\\ \\n \\t \\r \\\" 8468&^*646&^%&# \"";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT(text);
+
   REQUIRE_EQ(tk.next(), t(Token::StringLiteral, 0, 0, 0, text.length(), text));
 }
 
 TEST_CASE("string literals can't contain unescaped newlines")
 {
-  std::string const text = "\"stri\nng\"";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT("\"stri\nng\"");
   try
   {
     tk.next();
@@ -169,8 +131,7 @@ TEST_CASE("string literals can't contain unescaped newlines")
 
 TEST_CASE("string literals can't contain unescaped tabs")
 {
-  std::string const text = "\"stri\tng\"";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT("\"stri\tng\"");
   try
   {
     tk.next();
@@ -187,8 +148,7 @@ TEST_CASE("string literals can't contain unescaped tabs")
 
 TEST_CASE("string literals can't contain unescaped carriage returns")
 {
-  std::string const text = "\"stri\rng\"";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT("\"stri\rng\"");
   try
   {
     tk.next();
@@ -205,8 +165,7 @@ TEST_CASE("string literals can't contain unescaped carriage returns")
 
 TEST_CASE("string literals can't contain unknown unescape sequences")
 {
-  std::string const text = "\" \\x \"";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT("\" \\x \"");
   try
   {
     tk.next();
@@ -223,8 +182,7 @@ TEST_CASE("string literals can't contain unknown unescape sequences")
 
 TEST_CASE("string literals must end")
 {
-  std::string const text = " \" ";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT(" \" ");
   try
   {
     tk.next();
@@ -243,7 +201,8 @@ TEST_CASE("string literals must end")
 
 TEST_CASE("runes")
 {
-  Tokenizer tk(",:;()[]{}=>", "<file>");
+  TOKENIZER_TEXT(",:;()[]{}=>");
+
   REQUIRE_EQ(tk.next(), t(Token::Comma, 0, 0, 0, 1, ","));
   REQUIRE_EQ(tk.next(), t(Token::Colon, 0, 1, 0, 2, ":"));
   REQUIRE_EQ(tk.next(), t(Token::Semicolon, 0, 2, 0, 3, ";"));
@@ -258,11 +217,11 @@ TEST_CASE("runes")
 
 TEST_CASE("keywords")
 {
-  std::string const text =
+  TOKENIZER_TEXT(
     "pub let mut comptime struct enum union fn "
-    "if else switch loop import";
+    "if else switch loop import"
+  );
 
-  Tokenizer tk(text, "<file>");
   REQUIRE_EQ(tk.next(), t(Token::KwPub, 0, 0, 0, 3, "pub"));
   REQUIRE_EQ(tk.next(), t(Token::KwLet, 0, 4, 0, 7, "let"));
   REQUIRE_EQ(tk.next(), t(Token::KwMut, 0, 8, 0, 11, "mut"));
@@ -281,54 +240,63 @@ TEST_CASE("keywords")
 TEST_CASE("last single char token ends on Eof")
 {
   std::string const text = ";";
-  Tokenizer tk(text, "<file>");
-  REQUIRE_EQ(tk.next(), t(Token::Semicolon, 0, 0, 0, 1, text));
+  TOKENIZER_TEXT(text);
+
+  REQUIRE_EQ(tk.next(), t(Token::Semicolon, 0, 0, 0, text.length(), text));
 }
 
 TEST_CASE("correct Eof after single char token")
 {
   std::string const text = ",";
-  Tokenizer tk(text, "<file>");
-  REQUIRE_EQ(tk.next(), t(Token::Comma, 0, 0, 0, 1, text));
-  REQUIRE_EQ(tk.next(), t(Token::Eof, 0, 1, 0, 1, ""));
+  size_t const length = text.length();
+  TOKENIZER_TEXT(text);
+
+  REQUIRE_EQ(tk.next(), t(Token::Comma, 0, 0, 0, length, text));
+  REQUIRE_EQ(tk.next(), t(Token::Eof, 0, length, 0, length, ""));
 }
 
 TEST_CASE("correct Eof after multi char token")
 {
   std::string const text = "id3nti_fier";
-  Tokenizer tk(text, "<file>");
-  REQUIRE_EQ(tk.next(), t(Token::Symbol, 0, 0, 0, text.length(), text));
-  REQUIRE_EQ(tk.next(), t(Token::Eof, 0, text.length(), 0, text.length(), ""));
+  size_t const length = text.length();
+  TOKENIZER_TEXT(text);
+
+  REQUIRE_EQ(tk.next(), t(Token::Symbol, 0, 0, 0, length, text));
+  REQUIRE_EQ(tk.next(), t(Token::Eof, 0, length, 0, length, ""));
 }
 
 TEST_CASE("Eof remains correct on multiple calls")
 {
   std::string const text = ",";
-  Tokenizer tk(text, "<file>");
-  REQUIRE_EQ(tk.next(), t(Token::Comma, 0, 0, 0, 1, text));
-  REQUIRE_EQ(tk.next(), t(Token::Eof, 0, 1, 0, 1, ""));
-  REQUIRE_EQ(tk.next(), t(Token::Eof, 0, 1, 0, 1, ""));
-  REQUIRE_EQ(tk.next(), t(Token::Eof, 0, 1, 0, 1, ""));
+  size_t const length = text.length();
+  TOKENIZER_TEXT(text);
+
+  REQUIRE_EQ(tk.next(), t(Token::Comma, 0, 0, 0, length, text));
+  REQUIRE_EQ(tk.next(), t(Token::Eof, 0, length, 0, length, ""));
+  REQUIRE_EQ(tk.next(), t(Token::Eof, 0, length, 0, length, ""));
+  REQUIRE_EQ(tk.next(), t(Token::Eof, 0, length, 0, length, ""));
 }
 
 TEST_CASE("line comments")
 {
   std::string const text = "// comment // /* this is not a block comment */ ";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT(text);
+
   REQUIRE_EQ(tk.next(), t(Token::Comment, 0, 0, 0, text.length(), text));
 }
 
 TEST_CASE("line comments (minimal)")
 {
   std::string const text = "//";
-  Tokenizer tk(text, "<file>");
-  REQUIRE_EQ(tk.next(), t(Token::Comment, 0, 0, 0, 2, "//"));
+  TOKENIZER_TEXT(text);
+
+  REQUIRE_EQ(tk.next(), t(Token::Comment, 0, 0, 0, text.length(), text));
 }
 
 TEST_CASE("line comments end on new line but doesn't contain it")
 {
-  std::string const text = "// comment\n";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT("// comment\n");
+
   REQUIRE_EQ(tk.next(), t(Token::Comment, 0, 0, 0, 10, "// comment"));
 }
 
@@ -344,15 +312,16 @@ TEST_CASE("block comments")
     "    text in nested block comment\n"
     "  */\n"
     "*/";
+  TOKENIZER_TEXT(text);
 
-  Tokenizer tk(text, "<file>");
   REQUIRE_EQ(tk.next(), t(Token::Comment, 0, 0, 8, 2, text));
 }
 
 TEST_CASE("block comments (minimal)")
 {
   std::string const text = "/**/";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT(text);
+
   REQUIRE_EQ(tk.next(), t(Token::Comment, 0, 0, 0, text.length(), text));
 }
 
@@ -361,9 +330,7 @@ TEST_CASE("block comments must end")
   // TODO how to treat "/* */ */", special error on operator '*/' ?
   // TODO how to treat "/* /* */" ?
 
-  std::string const text = "/* /* */";
-  Tokenizer tk(text, "<file>");
-
+  TOKENIZER_TEXT("/* /* */");
   try
   {
     tk.next();
@@ -383,7 +350,7 @@ TEST_CASE("block comments must end")
 
 TEST_CASE("line info is correct")
 {
-  std::string const text =
+  TOKENIZER_TEXT(
     "i     i\n"
     "// comment\n"
     "  iiii   i   \n"
@@ -393,9 +360,9 @@ TEST_CASE("line info is correct")
     "    /**/\n"
     "  */\n"
     "*/ i\n"
-    "i";
+    "i"
+  );
 
-  Tokenizer tk(text, "<file>");
   REQUIRE_EQ(tk.next(), t(Token::Symbol, 0, 0, 0, 1, "i"));
   REQUIRE_EQ(tk.next(), t(Token::Symbol, 0, 6, 0, 7, "i"));
   REQUIRE_EQ(tk.next(), t(Token::Comment, 1, 0, 1, 10, "// comment"));
@@ -413,8 +380,7 @@ TEST_CASE("line info is correct")
 
 TEST_CASE("operators (runes) must be valid")
 {
-  std::string const text = "<==^|^==>";
-  Tokenizer tk(text, "<file>");
+  TOKENIZER_TEXT("<==^|^==>");
   try
   {
     tk.next();
