@@ -15,5 +15,6 @@
   // project
   "buildFolder": "${workspaceFolder}/build",
   "vendorFolder": "${workspaceFolder}/vendor",
-  "makeJobsCount": 8
+  "makeJobsCount": 8,
+  "valgrindArgs": "--tool=memcheck --leak-check=full --show-reachable=yes --track-origins=yes --error-exitcode=1"
 }

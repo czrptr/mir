@@ -141,15 +141,7 @@
       "label": "Valgrind (memcheck)",
       "group": "test",
       "type": "shell",
-      "command": "valgrind",
-      "args": [
-        "--tool=memcheck",
-        "--leak-check=full",
-        "--show-reachable=yes",
-        "--track-origins=yes",
-        "--error-exitcode=1",
-        "${config:buildFolder}/mir"
-      ],
+      "command": "valgrind ${config:valgrindArgs} ${config:buildFolder}/mir ${input:runArgs}",
       "dependsOn": [ "Build (mir)" ],
       "dependsOrder": "sequence",
       "presentation": {
