@@ -65,8 +65,6 @@ TokenExpression::SPtr Parser::tokenExpression()
 
 TypeExpression::SPtr Parser::typeExpression(bool isRoot)
 {
-  using Field = TypeExpression::Field;
-
   Token tokTag { Token::KwStruct, Position(0, 0), Position(0, 0), "" };
   TypeExpression::Tag tag = TypeExpression::Struct;
   Node::SPtr pUnderlyingType = nullptr;
@@ -92,30 +90,39 @@ TypeExpression::SPtr Parser::typeExpression(bool isRoot)
       return nullptr;
     }
 
-    // TODO error for struct and variant: "{}s don't have underlying types"
     if (tag == TypeExpression::Enum && !next(Token::LBrace))
     {
-      pUnderlyingType = expression("type expression or enum body (block) expected", tokTag.end().nextColumn());
+      pUnderlyingType = expression("type expression or block expected", tokTag.end().nextColumn());
     }
-    match(Token::LBrace, ErrorStrategy::DefaultErrorMessage);
+
+    Position const fallback = (pUnderlyingType != nullptr)
+      ? pUnderlyingType->end().nextColumn()
+      : tokTag.end().nextColumn();
+
+    match(Token::LBrace, "block expected", fallback);
   }
 
-  std::vector<Field::SPtr> fields;
+  std::vector<Part::SPtr> fields;
   std::vector<LetStatement::SPtr>
     declsPre, declsPost, *decls = &declsPre;
 
   size_t commaCount = 0;
-  while (auto pExpr = expressionOrField())
+  while (auto pExpr = expressionOrPart())
   {
     if (pExpr->is<LetStatement>())
     {
       decls->push_back(pExpr->as<LetStatement>());
       matchStatementEnder();
     }
-    else if (pExpr->is<Field>())
+    else if (pExpr->is<Part>())
     {
-      auto const pField = pExpr->as<Field>();
+      auto const pField = pExpr->as<Part>();
       decls = &declsPost;
+
+      if (pExpr->isComptime())
+      {
+        throw error(pField, fmt::format("{:field}s cannot be comptime", tag));
+      }
 
       if (!fields.empty() && !declsPost.empty())
       {
@@ -211,6 +218,9 @@ FunctionExpression::SPtr Parser::functionExpression()
 
 LetStatement::SPtr Parser::letStatement()
 {
+  // TODO parse comptime here
+  //  "pub comptime let" not "comptime pub let"
+
   auto start = Position::invalid();
   bool
     isPub = false,
@@ -234,6 +244,11 @@ LetStatement::SPtr Parser::letStatement()
     return nullptr;
   }
 
+  if (next(Token::KwComptime))
+  {
+    throw error(match(Token::KwComptime), "move the 'comptime' keyword before the 'let'");
+  }
+
   if (skip(Token::KwMut))
   {
     isMut = true;
@@ -243,6 +258,12 @@ LetStatement::SPtr Parser::letStatement()
   std::vector<Part::SPtr> parts;
   while (auto pPart = part())
   {
+    if (pPart->isComptime())
+    {
+      throw error(pPart->tokComptime(), "individual let statement parts cannot be comptime")
+        .note(tokLet.start(), "mark the whole statement as comptime here");
+    }
+
     if (!pPart->hasValue())
     {
       if (isMut)
@@ -283,6 +304,9 @@ Part::SPtr Parser::part()
   {
     return nullptr;
   }
+  // TODO
+  //  change to expression
+  //  add check for destructuring
   Token const tokSymbol = match(Token::Symbol);
 
   // TODO implement workaround when a = b expression will be implemented and this code will break
@@ -547,8 +571,7 @@ SwitchExpression::SPtr Parser::switchExpression()
 
 Node::SPtr Parser::expression()
 {
-  // TODO parse comptime here
-  // add marked comptime field to Node?
+  auto const [tokComptime, isComptime] = comptime();
 
   auto const [tokLabel, isLabeled] = label();
 
@@ -586,19 +609,38 @@ Node::SPtr Parser::expression()
     pRes = tokenExpression();
   }
 
+  if (isComptime)
+  {
+    if (pRes != nullptr)
+    {
+      pRes->setIsComptime(tokComptime);
+    }
+    else
+    {
+      throw error(tokLabel.end().nextColumn(), "expression expected");
+    }
+  }
+
   if (isLabeled)
   {
-    if (!pRes->is<LabeledNode>())
+    if (pRes != nullptr)
     {
-      // TODO? error for labeled nothing (pRes == nullptr)?
-      throw error(tokLabel, "only block, ifs and loops can be labeled");
+      if (!pRes->is<LabeledNode>())
+      {
+        // TODO? error for labeled nothing (pRes == nullptr)?
+        throw error(tokLabel, "only block, ifs and loops can be labeled");
+      }
+      pRes->as<LabeledNode>()->setLabel(tokLabel);
     }
-    pRes->as<LabeledNode>()->setLabel(tokLabel);
+    else
+    {
+      throw error(tokLabel.end().nextColumn(), "expression expected");
+    }
   }
   return pRes;
 }
 
-Node::SPtr Parser::expressionOrField()
+Node::SPtr Parser::expressionOrPart()
 {
   /*
     this fixes: a: b = c,
@@ -608,11 +650,30 @@ Node::SPtr Parser::expressionOrField()
       ->expression()
         ->part() a = c
   */
+  setRollbackPoint();
+  auto const [tokComptime, isComptime] = comptime();
+
   if (auto pRes = part(); pRes != nullptr)
   {
+    if (isComptime)
+    {
+      pRes->setIsComptime(tokComptime);
+    }
+    commit();
     return pRes;
   }
+  // expression also parses "comptime"
+  rollback();
   return expression();
+}
+
+std::tuple<Token, bool> Parser::comptime()
+{
+  if (!next(Token::KwComptime))
+  {
+    return {Token(), false};
+  }
+  return {match(Token::KwComptime), true};
 }
 
 std::tuple<Token, bool> Parser::label()

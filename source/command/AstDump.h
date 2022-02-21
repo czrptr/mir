@@ -9,6 +9,9 @@ namespace command
 struct AstDump
 {
 
+// rename into ast-check
+// add --dump flag
+
 static constexpr std::string_view name = "ast-dump";
 
 static constexpr std::string_view helpString = R"TEXT(

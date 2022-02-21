@@ -71,7 +71,9 @@ public:
 private:
   ast::Part::SPtr part();
 
-  ast::Node::SPtr expressionOrField(); // use only in typeExpression()
+  ast::Node::SPtr expressionOrPart(); // use only in typeExpression()
+
+  std::tuple<Token, bool> comptime();
 
   std::tuple<Token, bool> label();
 

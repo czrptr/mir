@@ -53,28 +53,28 @@ UnreachableExpression::SPtr unreachable()
 }
 
 TypeExpression::SPtr _struct(
-  list<LetStatement::SPtr> declsPre, list<TypeExpression::Field::SPtr> fields, list<LetStatement::SPtr> declsPost)
+  list<LetStatement::SPtr> declsPre, list<Part::SPtr> fields, list<LetStatement::SPtr> declsPost)
 {
   return TypeExpression::make_shared(TypeExpression::Struct, Position::invalid(), Position::invalid(),
     fields, declsPre, declsPost);
 }
 
 TypeExpression::SPtr _enum(
-  list<LetStatement::SPtr> declsPre, list<TypeExpression::Field::SPtr> fields, list<LetStatement::SPtr> declsPost)
+  list<LetStatement::SPtr> declsPre, list<Part::SPtr> fields, list<LetStatement::SPtr> declsPost)
 {
   return TypeExpression::make_shared(TypeExpression::Enum, Position::invalid(), Position::invalid(),
     fields, declsPre, declsPost);
 }
 
 TypeExpression::SPtr _enum(
-  Node::SPtr underlyingType, list<LetStatement::SPtr> declsPre, list<TypeExpression::Field::SPtr> fields, list<LetStatement::SPtr> declsPost)
+  Node::SPtr underlyingType, list<LetStatement::SPtr> declsPre, list<Part::SPtr> fields, list<LetStatement::SPtr> declsPost)
 {
   return TypeExpression::make_shared(TypeExpression::Enum, Position::invalid(), Position::invalid(),
     fields, declsPre, declsPost, underlyingType);
 }
 
 TypeExpression::SPtr _union(
-  list<LetStatement::SPtr> declsPre, list<TypeExpression::Field::SPtr> fields, list<LetStatement::SPtr> declsPost)
+  list<LetStatement::SPtr> declsPre, list<Part::SPtr> fields, list<LetStatement::SPtr> declsPost)
 {
   return TypeExpression::make_shared(TypeExpression::Union, Position::invalid(), Position::invalid(),
     fields, declsPre, declsPost);
@@ -92,13 +92,13 @@ Part::SPtr part(
   return Part::make_shared(t(Token::Symbol, name), nullptr, value);
 }
 
-TypeExpression::Field::SPtr field(
+Part::SPtr field(
   std::string const& name, Node::SPtr type, Node::SPtr value)
 {
   return part(name, type, value);
 }
 
-TypeExpression::Field::SPtr field(
+Part::SPtr field(
   std::string const& name, Node::SPtr value)
 {
   return part(name, nullptr, value);
@@ -271,6 +271,10 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
   if (node1 == nullptr && node2 == nullptr)
     return true;
 
+  if (node1 != nullptr && node2 != nullptr
+    && node1->isComptime() != node2->isComptime())
+    return false;
+
   if (nodesAre(SymbolExpression))
     return n1->name() == n2->name();
 
@@ -364,7 +368,7 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
     return true;
   }
 
-  if (nodesAre(TypeExpression::Field))
+  if (nodesAre(Part))
   {
     if (n1->name() != n2->name())
       return false;

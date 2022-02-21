@@ -13,7 +13,7 @@ struct Operator final
 public:
 
   // TODO
-  //  infer, comptime
+  //  infer
   //  add? a! (a orelse unreachable)
   enum Tag
   {

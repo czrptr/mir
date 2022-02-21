@@ -22,13 +22,11 @@ public:
     Union,
   };
 
-  using Field = Part;
-
 private:
   Tag d_tag;
   Position d_start;
   Position d_end;
-  std::vector<Field::SPtr> d_fields;
+  std::vector<Part::SPtr> d_fields;
   std::vector<LetStatement::SPtr> d_declsPre;
   std::vector<LetStatement::SPtr> d_declsPost;
   Node::SPtr d_pUnderlyingType; // in case of enum
@@ -44,7 +42,7 @@ public:
     Tag tag,
     Position start,
     Position end,
-    std::vector<Field::SPtr>&& fields,
+    std::vector<Part::SPtr>&& fields,
     std::vector<LetStatement::SPtr>&& declsPre,
     std::vector<LetStatement::SPtr>&& declsPost,
     Node::SPtr pUnderlyingType = nullptr,
@@ -64,7 +62,7 @@ public:
   virtual bool isExpression() const override { return true; }
 
   Tag tag() const { return d_tag; }
-  std::vector<Field::SPtr> const& fields() const { return d_fields; }
+  std::vector<Part::SPtr> const& fields() const { return d_fields; }
   std::vector<LetStatement::SPtr> const& declsPre() const { return d_declsPre; }
   std::vector<LetStatement::SPtr> const& declsPost() const { return d_declsPost; }
   std::vector<LetStatement::SPtr> decls() const;
@@ -75,7 +73,7 @@ public:
     Tag tag,
     Position start,
     Position end,
-    std::vector<Field::SPtr>&& fields,
+    std::vector<Part::SPtr>&& fields,
     std::vector<LetStatement::SPtr>&& declsPre,
     std::vector<LetStatement::SPtr>&& declsPost,
     Node::SPtr pUnderlyingType = nullptr,

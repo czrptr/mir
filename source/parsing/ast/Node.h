@@ -25,10 +25,13 @@ struct Node : public std::enable_shared_from_this<Node>
 
 private:
   Node::WPtr d_pParent;
+  Token d_tokComptime;
+  bool d_isComptime;
 
 protected:
   Node(Node::SPtr pParent)
     : d_pParent(pParent)
+    , d_isComptime(false)
   {}
 
   virtual void toStringData(
@@ -38,6 +41,11 @@ protected:
 
 public:
   virtual ~Node() = default;
+
+  bool isComptime() const { return d_isComptime; }
+  void setIsComptime(Token tokComptime);
+  void setIsComptime(bool value);
+  Token tokComptime() const { return d_tokComptime; }
 
   virtual Position start() const = 0;
   virtual Position end() const = 0;

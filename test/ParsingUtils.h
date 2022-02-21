@@ -54,23 +54,23 @@ UnreachableExpression::SPtr unreachable();
 
 TypeExpression::SPtr _struct(
   list<LetStatement::SPtr> declsPre,
-  list<TypeExpression::Field::SPtr> fields,
+  list<Part::SPtr> fields,
   list<LetStatement::SPtr> declsPost);
 
 TypeExpression::SPtr _enum(
   list<LetStatement::SPtr> declsPre,
-  list<TypeExpression::Field::SPtr> fields,
+  list<Part::SPtr> fields,
   list<LetStatement::SPtr> declsPost);
 
 TypeExpression::SPtr _enum(
   Node::SPtr underlyingType,
   list<LetStatement::SPtr> declsPre,
-  list<TypeExpression::Field::SPtr> fields,
+  list<Part::SPtr> fields,
   list<LetStatement::SPtr> declsPost);
 
 TypeExpression::SPtr _union(
   list<LetStatement::SPtr> declsPre,
-  list<TypeExpression::Field::SPtr> fields,
+  list<Part::SPtr> fields,
   list<LetStatement::SPtr> declsPost);
 
 Part::SPtr part(
@@ -82,12 +82,12 @@ Part::SPtr part(
   std::string const& name,
   Node::SPtr value);
 
-TypeExpression::Field::SPtr field(
+Part::SPtr field(
   std::string const& name,
   Node::SPtr type,
   Node::SPtr value);
 
-TypeExpression::Field::SPtr field(
+Part::SPtr field(
   std::string const& name,
   Node::SPtr value);
 

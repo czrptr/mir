@@ -37,7 +37,7 @@ TypeExpression::SPtr TypeExpression::make_shared(
     Tag tag,
     Position start,
     Position end,
-    std::vector<Field::SPtr>&& fields,
+    std::vector<Part::SPtr>&& fields,
     std::vector<LetStatement::SPtr>&& declsPre,
     std::vector<LetStatement::SPtr>&& declsPost,
     Node::SPtr pUnderlyingType,
@@ -51,9 +51,9 @@ TypeExpression::SPtr TypeExpression::make_shared(
     pUnderlyingType,
     pParent);
 
-  for (auto pField : pRes->d_fields)
+  for (auto pPart : pRes->d_fields)
   {
-    pField->setParent(pRes);
+    pPart->setParent(pRes);
   }
   for (auto pDecl : pRes->d_declsPre)
   {

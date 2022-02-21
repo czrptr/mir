@@ -3,6 +3,11 @@
 #include <fmt/core.h>
 #include <fmt/color.h>
 
+using namespace ast;
+
+namespace
+{
+
 std::string hUnderline(std::string const& str)
 {
   static constexpr auto style = fmt::emphasis::bold | fmt::fg(fmt::color::medium_spring_green);
@@ -91,7 +96,7 @@ std::string childrenToString(std::vector<T> const& nodes, size_t indent, std::ve
   return res;
 }
 
-using namespace ast;
+} // anonymous
 
 std::string Node::toString(size_t indent = 0, std::vector<size_t> lines = {}, bool isLast = false) const
 {
@@ -99,10 +104,32 @@ std::string Node::toString(size_t indent = 0, std::vector<size_t> lines = {}, bo
   std::string name, additionalInfo;
   toStringData(&subNodes, &name, &additionalInfo);
 
+  std::string comptime = isComptime()
+    ? fmt::format(fmt::fg(fmt::color::gray), " comptime")
+    : "";
+
   return fmt::format(
     "{}{}{}{}",
     prefix(indent, lines, isLast),
     header(name, start(), end(), !subNodes.empty()),
-    (additionalInfo.empty() ? "" : (" " + additionalInfo)),
+    (additionalInfo.empty() ? "" : (" " + additionalInfo)) + comptime,
     (subNodes.empty() ? "" : ("\n" + childrenToString(subNodes, indent, lines))));
+}
+
+
+void Node::setIsComptime(Token tokComptime)
+{
+  d_tokComptime = tokComptime;
+  d_isComptime = true;
+}
+
+void Node::setIsComptime(bool value)
+{
+  d_isComptime = value;
+  if (value)
+  {
+    // nodes can be comptime implicitly so we need to treat the edge
+    // case where d_isComptime == true without a tokComptime being set
+    d_tokComptime = Token(Token::KwComptime, start(), start(), "");
+  }
 }

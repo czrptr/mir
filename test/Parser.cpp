@@ -16,6 +16,8 @@ TEST_SUITE_BEGIN("Parser");
   if cond |. capture the operator and split it
 
   destructuring check on let statements
+
+  comptime tests
 */
 
 /* ================== TokenExpression ================== */
@@ -164,6 +166,48 @@ TEST_CASE("constants must be initialized with a proper value")
     std::string const
       msg = fmt::to_string(err),
       expectedMsg = "<file>:0:4: error: constants must be initialized with a proper value";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("let statement consistent 'comptime' placement")
+{
+  PARSER_TEXT("let comptime mut a = a");
+
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:4: error: move the 'comptime' keyword before the 'let'";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("individual let statement parts cannot be comptime")
+{
+  PARSER_TEXT(
+    "let mut\n"
+    "  a = a,\n"
+    "  comptime b = b,"
+  );
+
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg =
+        "<file>:2:2: error: individual let statement parts cannot be comptime\n"
+        "<file>:0:0: note: mark the whole statement as comptime here";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -550,6 +594,40 @@ TEST_CASE("function (complex)")
 
 /* ================== Struct ================== */
 
+TEST_CASE("structs must have blocks")
+{
+  PARSER_TEXT("struct");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:7: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("struct fields cannot be comptime")
+{
+  PARSER_TEXT("struct { comptime a: a }");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:18: error: struct fields cannot be comptime";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
 TEST_CASE("struct fields must be separated by a comma")
 {
   PARSER_TEXT("struct { a: a b: b }");
@@ -694,6 +772,40 @@ TEST_CASE("structs (complex)")
 
 /* ================== Enum ================== */
 
+TEST_CASE("enums must have blocks (part 1)")
+{
+  PARSER_TEXT("enum");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:5: error: type expression or block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("enums must have blocks (part 2)")
+{
+  PARSER_TEXT("enum a");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:7: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
 TEST_CASE("enum variants must be separated by a comma (case 1)")
 {
   PARSER_TEXT("enum { a b = b }");
@@ -711,9 +823,9 @@ TEST_CASE("enum variants must be separated by a comma (case 1)")
   }
 }
 
-TEST_CASE("enum expects an underyling type if not block")
+TEST_CASE("enum variants cannot be comptime")
 {
-  PARSER_TEXT("enum |");
+  PARSER_TEXT("enum { comptime a = 0}");
   try
   {
     prs.expression();
@@ -722,7 +834,7 @@ TEST_CASE("enum expects an underyling type if not block")
   {
     std::string const
       msg = fmt::to_string(err),
-      expectedMsg = "<file>:0:5: error: type expression or enum body (block) expected";
+      expectedMsg = "<file>:0:16: error: enum variants cannot be comptime";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -873,6 +985,24 @@ TEST_CASE("enum (complex)")
 
 /* ================== Union ================== */
 
+
+TEST_CASE("unions must have blocks")
+{
+  PARSER_TEXT("union");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:6: error: block expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
 TEST_CASE("union variants must be separated by a comma")
 {
   PARSER_TEXT("union { a: a b: b }");
@@ -899,6 +1029,23 @@ TEST_CASE("union variants can have a trailing comma")
     {},
     {field("a", symbol("a"), nullptr)},
     {}));
+}
+
+TEST_CASE("union variants cannot be comptime")
+{
+  PARSER_TEXT("union { comptime a: a}");
+  try
+  {
+    prs.expression();
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:17: error: union variants cannot be comptime";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
 }
 
 TEST_CASE("union variants trailing comma is optional")
