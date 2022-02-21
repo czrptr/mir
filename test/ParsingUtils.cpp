@@ -81,27 +81,27 @@ TypeExpression::SPtr _union(
 }
 
 Part::SPtr part(
-  std::string const& name, Node::SPtr type, Node::SPtr value)
+  Node::SPtr asign, Node::SPtr type, Node::SPtr value)
 {
-  return Part::make_shared(t(Token::Symbol, name), type, value);
+  return Part::make_shared(asign, type, value);
 }
 
 Part::SPtr part(
-  std::string const& name, Node::SPtr value)
+  Node::SPtr asign, Node::SPtr value)
 {
-  return Part::make_shared(t(Token::Symbol, name), nullptr, value);
+  return Part::make_shared(asign, nullptr, value);
 }
 
 Part::SPtr field(
   std::string const& name, Node::SPtr type, Node::SPtr value)
 {
-  return part(name, type, value);
+  return part(symbol(name), type, value);
 }
 
 Part::SPtr field(
   std::string const& name, Node::SPtr value)
 {
-  return part(name, nullptr, value);
+  return part(symbol(name), nullptr, value);
 }
 
 LetStatement::SPtr let(
@@ -113,13 +113,13 @@ LetStatement::SPtr let(
 LetStatement::SPtr let(
   bool isPub, bool isMut, std::string const& name, Node::SPtr value)
 {
-  return LetStatement::make_shared(Position::invalid(), isPub, isMut, {part(name, value)});
+  return LetStatement::make_shared(Position::invalid(), isPub, isMut, {part(symbol(name), value)});
 }
 
 LetStatement::SPtr let(
   bool isPub, bool isMut, std::string const& name, Node::SPtr type, Node::SPtr value)
 {
-  return LetStatement::make_shared(Position::invalid(), isPub, isMut, {part(name, type, value)});
+  return LetStatement::make_shared(Position::invalid(), isPub, isMut, {part(symbol(name), type, value)});
 }
 
 BlockExpression::SPtr block(list<Node::SPtr> statements)
@@ -301,7 +301,7 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
 
   if (nodesAre(Part))
   {
-    if (n1->name() != n2->name())
+    if (!equal(n1->asign(), n2->asign()))
       return false;
 
     if (!equal(n1->type(), n2->type()))
@@ -366,17 +366,6 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
         return false;
     }
     return true;
-  }
-
-  if (nodesAre(Part))
-  {
-    if (n1->name() != n2->name())
-      return false;
-
-    if (!equal(n1->type(), n2->type()))
-      return false;
-
-    return equal(n1->value(), n2->value());
   }
 
   if (nodesAre(TypeExpression))

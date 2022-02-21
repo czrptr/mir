@@ -10,7 +10,8 @@ void Part::toStringData(
   std::string* additionalInfo) const
 {
   assert(subNodes->empty());
-  subNodes->reserve(2);
+  subNodes->reserve(3);
+  subNodes->push_back(asign());
   if (hasType())
   {
     subNodes->push_back(type());
@@ -34,7 +35,7 @@ void Part::toStringData(
     }
   }
 
-  *additionalInfo = fmt::format("'{}'", name());
+  *additionalInfo = "";
 }
 
 Position Part::end() const
@@ -45,16 +46,17 @@ Position Part::end() const
   }
   return d_pType != nullptr
     ? d_pType->end()
-    : d_name.end();
+    : d_pAsign->end();
 }
 
 Part::SPtr Part::make_shared(
-  Token name,
+  Node::SPtr pAsign,
   Node::SPtr pType,
   Node::SPtr pValue,
   Node::SPtr pParent)
 {
-  auto pRes = std::make_shared<Part>(name, pType, pValue, pParent);
+  auto pRes = std::make_shared<Part>(pAsign, pType, pValue, pParent);
+  pAsign->setParent(pRes);
   if (pType != nullptr)
   {
     pType->setParent(pRes);

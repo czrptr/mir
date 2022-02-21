@@ -74,12 +74,12 @@ TypeExpression::SPtr _union(
   list<LetStatement::SPtr> declsPost);
 
 Part::SPtr part(
-  std::string const& name,
+  Node::SPtr asign,
   Node::SPtr type,
   Node::SPtr value);
 
 Part::SPtr part(
-  std::string const& name,
+  Node::SPtr asign,
   Node::SPtr value);
 
 Part::SPtr field(

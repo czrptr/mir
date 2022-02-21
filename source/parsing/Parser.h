@@ -19,8 +19,7 @@ private:
   enum ExpressionArgs : size_t
   {
     Optional = 1 << 0,
-    CanBeStatement = 1 << 1,
-    Destructuring = 1 << 2,
+    CanBeStatement = 1 << 1
   };
 
   enum class State
@@ -87,11 +86,8 @@ private:
   {
     bool const
       optional = args & Optional,
-      canBeStatement = args & CanBeStatement,
-      destrcuturing = args & Destructuring; // TODO
+      canBeStatement = args & CanBeStatement;
 
-    if (canBeStatement) assert(!destrcuturing);
-    if (destrcuturing) assert(!canBeStatement);
     if (!optional) assert(fallback.isValid());
 
     auto pRes = expression();
@@ -155,4 +151,6 @@ private:
   State currentState() const;
   State popState();
   void pushState(State state);
+
+  static bool isDestructuringExpression(ast::Node::SPtr expression);
 };

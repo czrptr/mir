@@ -11,7 +11,7 @@ static constexpr Operator::Tag Bar = Operator::BitOr;
 
 }
 
-ast::TypeExpression::SPtr Parser::root()
+TypeExpression::SPtr Parser::root()
 {
   auto pRoot = typeExpression(true);
   match(Token::Eof, ErrorStrategy::DefaultErrorMessage);
@@ -300,21 +300,41 @@ LetStatement::SPtr Parser::letStatement()
 
 Part::SPtr Parser::part()
 {
-  if (!next(Token::Symbol))
+  // TODO implement workaround when a = b expression will be implemented and this code will break
+
+  Node::SPtr pAsign = nullptr;
+
+  setRollbackPoint();
+  auto const [tokLabel, isLabeled] = label();
+  if (isLabeled)
+  {
+    rollback();
+    pAsign = tokenExpression(); // garanteed SymbolExpression
+  }
+  else
+  {
+    commit();
+
+    setRollbackPoint();
+    pAsign = expression();
+    if (!isDestructuringExpression(pAsign))
+    {
+      rollback();
+      return nullptr;
+    }
+    commit();
+  }
+
+  if (pAsign == nullptr)
   {
     return nullptr;
   }
-  // TODO
-  //  change to expression
-  //  add check for destructuring
-  Token const tokSymbol = match(Token::Symbol);
-
-  // TODO implement workaround when a = b expression will be implemented and this code will break
 
   Node::SPtr pType = nullptr;
-  if (skip(Token::Colon))
+  if (next(Token::Colon))
   {
-    pType = expression(Optional, "type expression expected");
+    Token const tokColon = match(Token::Colon);
+    pType = expression("type expression expected", tokColon.end());
   }
 
   Node::SPtr pValue = nullptr;
@@ -324,7 +344,7 @@ Part::SPtr Parser::part()
     pValue = expression("expression expected", tokEq.end());
   }
 
-  return Part::make_shared(tokSymbol, pType, pValue);
+  return Part::make_shared(pAsign, pType, pValue);
 }
 
 BlockExpression::SPtr Parser::blockExpression()
@@ -712,7 +732,11 @@ std::tuple<Node::SPtr, Token> Parser::capture()
   if (next(Runes::Bar))
   {
     Token const tokBar = match(Runes::Bar);
-    pCapture = expression(Destructuring, "destructuring expression expected", tokBar.end());
+    pCapture = expression("destructuring expression expected", tokBar.end());
+    if (!isDestructuringExpression(pCapture))
+    {
+      throw error(pCapture, "destructuring expression expected");
+    }
     tokClosingBar = match(Runes::Bar, "'|' expected", pCapture->end());
   }
   return {pCapture, tokClosingBar};
@@ -896,4 +920,10 @@ Parser::State Parser::popState()
 void Parser::pushState(State state)
 {
   d_stateStack.push(state);
+}
+
+bool Parser::isDestructuringExpression(ast::Node::SPtr expression)
+{
+  // TODO tuple, array
+  return expression->is<SymbolExpression>();
 }

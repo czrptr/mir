@@ -309,9 +309,9 @@ TEST_CASE("let statements (multiple parts)")
 
   REQUIRE_AST_EQ(l,
     let(false, false, {
-      part("a", number("0")),
-      part("b", symbol("c")),
-      part("d", string("AAH"))
+      part(symbol("a"), number("0")),
+      part(symbol("b"), symbol("c")),
+      part(symbol("d"), string("AAH"))
     }));
 }
 
@@ -322,9 +322,9 @@ TEST_CASE("let statements (complex)")
 
   REQUIRE_AST_EQ(l,
     let(true, true, {
-      part("a", symbol("isize"), number("0")),
-      part("b", symbol("c")),
-      part("d", symbol("string"), string("AAH"))
+      part(symbol("a"), symbol("isize"), number("0")),
+      part(symbol("b"), symbol("c")),
+      part(symbol("d"), symbol("string"), string("AAH"))
     }));
 }
 
