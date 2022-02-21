@@ -64,3 +64,21 @@ int main(int argc, char** argv)
   fmt::print("\nerror: unknown command '{}'\n{}", cmmd, helpString);
   return 0;
 }
+
+/* TODO
+
+suggest location on missing {[()]} pairs by looking at alignments
+
+{ <-- this stands out
+
+  let a = blk: {
+
+  }
+
+...
+
+Precedence      Expression
+0               [1, 2, 3], []    // array literals
+6               [5]a       []a   // array type literals
+
+*/
