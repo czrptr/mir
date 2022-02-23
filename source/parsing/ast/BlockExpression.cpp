@@ -1,5 +1,8 @@
 #include "parsing/ast/BlockExpression.h"
 
+#include <fmt/core.h>
+#include <fmt/color.h>
+
 using namespace ast;
 
 void BlockExpression::toStringData(
@@ -9,7 +12,7 @@ void BlockExpression::toStringData(
 {
   *subNodes = statements();
   *nodeName = "BlockExpression";
-  *additionalInfo = isLabeled() ? labelName() : "";
+  *additionalInfo = isLabeled() ? fmt::format(fmt::emphasis::italic, "{}", label().text()) : "";
 }
 
 BlockExpression::SPtr BlockExpression::make_shared(

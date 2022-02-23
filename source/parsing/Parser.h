@@ -65,7 +65,11 @@ public:
 
   ast::SwitchExpression::SPtr switchExpression();
 
-  ast::Node::SPtr expression();
+  ast::Node::SPtr pred15();
+
+  ast::Node::SPtr atomic();
+
+  inline ast::Node::SPtr expression() { return pred15(); }
 
 private:
   ast::Part::SPtr part();
@@ -75,6 +79,8 @@ private:
   std::tuple<Token, bool> comptime();
 
   std::tuple<Token, bool> label();
+
+  std::tuple<Token, bool> jumpLabel();
 
   std::tuple<ast::Node::SPtr, Token> capture();
 
@@ -136,7 +142,7 @@ private:
   Token match(Operator::Tag tag, ErrorStrategy strategy = ErrorStrategy::Unreachable, Position position = Position::invalid());
   bool skip(Operator::Tag tag);
 
-  void matchStatementEnder();
+  void matchStatementEnder(Position fallback = Position::invalid());
 
   Token lastMatchedToken();
 

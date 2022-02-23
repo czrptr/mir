@@ -370,8 +370,13 @@ BlockExpression::SPtr Parser::blockExpression()
     if (!pStmt->is<BlockExpression>()
       && !pStmt->is<IfExpression>()
       && !pStmt->is<LoopExpression>()
-      && !pStmt->is<SwitchExpression>())
-    matchStatementEnder();
+      && !pStmt->is<SwitchExpression>()
+      && !(pStmt->is<DeferStatement>()
+        && pStmt->as<DeferStatement>()->target()
+          ->is<BlockExpression>()))
+    {
+      matchStatementEnder(pStmt->end());
+    }
   }
   Token const tokRBrace = match(Token::RBrace, ErrorStrategy::DefaultErrorMessage);
 
@@ -592,7 +597,58 @@ SwitchExpression::SPtr Parser::switchExpression()
   return SwitchExpression::make_shared(tokSwitch, pValue, std::move(cases), tokRBrace.end());
 }
 
-Node::SPtr Parser::expression()
+Node::SPtr Parser::pred15()
+{
+  if (next(Operator::Return))
+  {
+    Token const tokBreak = match(Operator::Return);
+
+    auto const [tokLabel, isLabeled] = jumpLabel();
+    if (isLabeled)
+    {
+      throw error(tokLabel, "return statements don't take labels");
+    }
+
+    auto const pTarget = atomic();
+
+    return ReturnStatement::make_shared(tokBreak, pTarget);
+  }
+  if (next(Operator::Break))
+  {
+    Token const tokBreak = match(Operator::Break);
+    auto const [tokLabel, isLabeled] = jumpLabel();
+    auto const pTarget = atomic();
+
+    return BreakStatement::make_shared(tokBreak, isLabeled, tokLabel, pTarget);
+  }
+  if (next(Operator::Continue))
+  {
+    Token const tokContinue = match(Operator::Continue);
+    auto const [tokLabel, isLabeled] = jumpLabel();
+
+    return std::make_shared<ContinueStatement>(tokContinue, isLabeled, tokLabel);
+  }
+  if (next(Operator::Defer))
+  {
+    Token const tokDefer = match(Operator::Defer);
+
+    auto const [tokLabel, isLabeled] = jumpLabel();
+    if (isLabeled)
+    {
+      throw error(tokLabel, "defer statements don't take labels");
+    }
+
+    auto const pTarget = atomic();
+    if (pTarget == nullptr)
+    {
+      throw error(tokDefer.end().nextColumn(), "expression expected");
+    }
+    return DeferStatement::make_shared(tokDefer, pTarget);
+  }
+  return atomic();
+}
+
+Node::SPtr Parser::atomic()
 {
   auto const [tokComptime, isComptime] = comptime();
 
@@ -728,6 +784,35 @@ std::tuple<Token, bool> Parser::label()
   return {toklabel, true};
 }
 
+std::tuple<Token, bool> Parser::jumpLabel()
+{
+  std::tuple<Token, bool> const fail = {Token(), false};
+
+  if (!next(Token::Colon))
+  {
+    return fail;
+  }
+
+  setRollbackPoint();
+  Token const tokColon = match(Token::Colon);
+
+  if (!next(Token::Symbol))
+  {
+    rollback();
+    return fail;
+  }
+
+  Token const tokLabel = match(Token::Symbol);
+  if (tokColon.end() != tokLabel.start())
+  {
+    // jumping labels must be symbols prefixed with ':'
+    throw error(tokLabel, fmt::format("did you mean ':{}'", tokLabel.text()));
+  }
+
+  commit();
+  return {tokLabel, true};
+}
+
 std::tuple<Node::SPtr, Token> Parser::capture()
 {
   Node::SPtr pCapture = nullptr;
@@ -855,9 +940,9 @@ bool Parser::skip(Operator::Tag tag)
   return false;
 }
 
-void Parser::matchStatementEnder()
+void Parser::matchStatementEnder(Position fallback)
 {
-  match(Token::Semicolon, ErrorStrategy::DefaultErrorMessage);
+  match(Token::Semicolon, ErrorStrategy::DefaultErrorMessage, fallback);
   if (next(Token::Semicolon))
   {
     Token const tokSemicolon = match(Token::Semicolon);

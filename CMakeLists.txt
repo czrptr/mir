@@ -6,7 +6,6 @@ set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 
-
 if(MSVC)
   add_compile_options(/WX /W4)
 else()
@@ -55,6 +54,10 @@ set(MIR_SOURCES
   ${CMAKE_SOURCE_DIR}/source/parsing/ast/IfExpression.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/ast/LoopExpression.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/ast/SwitchExpression.cpp
+  ${CMAKE_SOURCE_DIR}/source/parsing/ast/ReturnStatement.cpp
+  ${CMAKE_SOURCE_DIR}/source/parsing/ast/BreakStatement.cpp
+  ${CMAKE_SOURCE_DIR}/source/parsing/ast/ContinueStatement.cpp
+  ${CMAKE_SOURCE_DIR}/source/parsing/ast/DeferStatement.cpp
   ${CMAKE_SOURCE_DIR}/source/parsing/Parser.cpp)
 
 add_library(impl OBJECT

@@ -18,6 +18,8 @@ TEST_SUITE_BEGIN("Parser");
   destructuring check on let statements
 
   comptime tests
+
+  pred15 tests
 */
 
 /* ================== TokenExpression ================== */

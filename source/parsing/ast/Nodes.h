@@ -10,6 +10,10 @@
 #include <parsing/ast/IfExpression.h>
 #include <parsing/ast/LoopExpression.h>
 #include <parsing/ast/SwitchExpression.h>
+#include <parsing/ast/ReturnStatement.h>
+#include <parsing/ast/BreakStatement.h>
+#include <parsing/ast/ContinueStatement.h>
+#include <parsing/ast/DeferStatement.h>
 
 #undef SPTR
 #undef WPTR
