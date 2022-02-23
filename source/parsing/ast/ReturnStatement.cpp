@@ -8,9 +8,9 @@ void ReturnStatement::toStringData(
   std::string* additionalInfo) const
 {
   assert(subNodes->empty());
-  if (target() != nullptr)
+  if (value() != nullptr)
   {
-    subNodes->push_back(target());
+    subNodes->push_back(value());
   }
 
   *nodeName = "Return";
@@ -20,22 +20,22 @@ void ReturnStatement::toStringData(
 
 Position ReturnStatement::end() const
 {
-  if (target() != nullptr)
+  if (value() != nullptr)
   {
-    return target()->end();
+    return value()->end();
   }
   return d_tokReturn.end();
 }
 
 ReturnStatement::SPtr ReturnStatement::make_shared(
   Token defer,
-  Node::SPtr pTarget,
+  Node::SPtr pValue,
   Node::SPtr pParent)
 {
-  auto pRes = std::make_shared<ReturnStatement>(defer, pTarget, pParent);
-  if (pTarget != nullptr)
+  auto pRes = std::make_shared<ReturnStatement>(defer, pValue, pParent);
+  if (pValue != nullptr)
   {
-    pTarget->setParent(pRes);
+    pValue->setParent(pRes);
   }
   return pRes;
 }

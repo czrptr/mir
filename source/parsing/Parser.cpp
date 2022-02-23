@@ -216,6 +216,30 @@ FunctionExpression::SPtr Parser::functionExpression()
   {
     throw error(pBody->label().start(), "function blocks cannot be labeled");
   }
+
+  if (pBody != nullptr)
+  {
+    // this is a function definition
+    for (auto const& param : parameters)
+    {
+      if (!param->hasType())
+      {
+        throw error(param, "function parameters must have type annotations");
+      }
+    }
+  }
+  else
+  {
+    // this is a function type
+    for (auto const& param : parameters)
+    {
+      if (param->hasValue())
+      {
+        throw error(param, "function type parameters cannot have default values");
+      }
+    }
+  }
+
   return FunctionExpression::make_shared(tokFn, std::move(parameters), pReturnType, pBody);
 }
 
@@ -259,8 +283,14 @@ LetStatement::SPtr Parser::letStatement()
 
   size_t commaCount = 0;
   std::vector<Part::SPtr> parts;
-  while (auto pPart = part())
+  while (auto pExpr = expressionOrPart())
   {
+    if (!pExpr->is<Part>())
+    {
+      throw error(pExpr, "let statement part expected");
+    }
+    auto const pPart = pExpr->as<Part>();
+
     if (pPart->isComptime())
     {
       throw error(pPart->tokComptime(), "individual let statement parts cannot be comptime")
@@ -305,6 +335,8 @@ Part::SPtr Parser::part()
 {
   // TODO implement workaround when a = b expression will be implemented and this code will break
 
+  auto const [tokComptime, isComptime] = comptime();
+
   Node::SPtr pAsign = nullptr;
 
   setRollbackPoint();
@@ -347,7 +379,12 @@ Part::SPtr Parser::part()
     pValue = expression("expression expected", tokEq.end());
   }
 
-  return Part::make_shared(pAsign, pType, pValue);
+  auto pRes = Part::make_shared(pAsign, pType, pValue);
+  if (isComptime)
+  {
+    pRes->setIsComptime(tokComptime);
+  }
+  return pRes;
 }
 
 BlockExpression::SPtr Parser::blockExpression()
@@ -597,6 +634,51 @@ SwitchExpression::SPtr Parser::switchExpression()
   return SwitchExpression::make_shared(tokSwitch, pValue, std::move(cases), tokRBrace.end());
 }
 
+Node::SPtr Parser::expression()
+{
+  auto const [tokComptime, isComptime] = comptime();
+
+  auto const [tokLabel, isLabeled] = label();
+
+  auto pRes = pred15();
+
+  if (isComptime)
+  {
+    if (pRes != nullptr)
+    {
+      if (pRes->is<LetStatement>())
+      {
+        // TODO add note with let location
+        throw error(tokComptime, "move the 'comptime' keyword before the 'let'");
+      }
+      pRes->setIsComptime(tokComptime);
+    }
+    else
+    {
+      throw error(tokComptime.end().nextColumn(), "expression expected");
+    }
+  }
+
+  if (isLabeled)
+  {
+    if (pRes != nullptr)
+    {
+      if (!pRes->is<LabeledNode>())
+      {
+        // TODO? error for labeled nothing (pRes == nullptr)?
+        throw error(tokLabel, "only block, ifs and loops can be labeled");
+      }
+      pRes->as<LabeledNode>()->setLabel(tokLabel);
+    }
+    else
+    {
+      throw error(tokLabel.end().nextColumn(), "expression expected");
+    }
+  }
+
+  return pRes;
+}
+
 Node::SPtr Parser::pred15()
 {
   if (next(Operator::Return))
@@ -606,7 +688,9 @@ Node::SPtr Parser::pred15()
     auto const [tokLabel, isLabeled] = jumpLabel();
     if (isLabeled)
     {
-      throw error(tokLabel, "return statements don't take labels");
+      Position pos = tokLabel.start();
+      pos.column -= 1;
+      throw error(pos, "return statements don't take labels");
     }
 
     auto const pTarget = atomic();
@@ -650,73 +734,35 @@ Node::SPtr Parser::pred15()
 
 Node::SPtr Parser::atomic()
 {
-  auto const [tokComptime, isComptime] = comptime();
-
-  auto const [tokLabel, isLabeled] = label();
-
-  Node::SPtr pRes = nullptr;
-  if (auto pTemp = typeExpression(); pTemp != nullptr)
+  if (auto pRes = typeExpression(); pRes != nullptr)
   {
-    pRes = pTemp;
+    return pRes;
   }
-  else if (auto pTemp = functionExpression(); pTemp != nullptr)
+  if (auto pRes = functionExpression(); pRes != nullptr)
   {
-    pRes = pTemp;
+    return pRes;
   }
-  else if (auto pTemp = letStatement(); pTemp != nullptr)
+  if (auto pRes = letStatement(); pRes != nullptr)
   {
-    pRes = pTemp;
+    return pRes;
   }
-  else if (auto pTemp = blockExpression(); pTemp != nullptr)
+  if (auto pRes = blockExpression(); pRes != nullptr)
   {
-    pRes = pTemp;
+    return pRes;
   }
-  else if (auto pTemp = ifExpression(); pTemp != nullptr)
+  if (auto pRes = ifExpression(); pRes != nullptr)
   {
-    pRes = pTemp;
+    return pRes;
   }
-  else if (auto pTemp = loopExpression(); pTemp != nullptr)
+  if (auto pRes = loopExpression(); pRes != nullptr)
   {
-    pRes = pTemp;
+    return pRes;
   }
-  else if (auto pTemp = switchExpression(); pTemp != nullptr)
+  if (auto pRes = switchExpression(); pRes != nullptr)
   {
-    pRes = pTemp;
+    return pRes;
   }
-  else
-  {
-    pRes = tokenExpression();
-  }
-
-  if (isComptime)
-  {
-    if (pRes != nullptr)
-    {
-      pRes->setIsComptime(tokComptime);
-    }
-    else
-    {
-      throw error(tokLabel.end().nextColumn(), "expression expected");
-    }
-  }
-
-  if (isLabeled)
-  {
-    if (pRes != nullptr)
-    {
-      if (!pRes->is<LabeledNode>())
-      {
-        // TODO? error for labeled nothing (pRes == nullptr)?
-        throw error(tokLabel, "only block, ifs and loops can be labeled");
-      }
-      pRes->as<LabeledNode>()->setLabel(tokLabel);
-    }
-    else
-    {
-      throw error(tokLabel.end().nextColumn(), "expression expected");
-    }
-  }
-  return pRes;
+  return tokenExpression();
 }
 
 Node::SPtr Parser::expressionOrPart()
@@ -729,20 +775,11 @@ Node::SPtr Parser::expressionOrPart()
       ->expression()
         ->part() a = c
   */
-  setRollbackPoint();
-  auto const [tokComptime, isComptime] = comptime();
 
   if (auto pRes = part(); pRes != nullptr)
   {
-    if (isComptime)
-    {
-      pRes->setIsComptime(tokComptime);
-    }
-    commit();
     return pRes;
   }
-  // expression also parses "comptime"
-  rollback();
   return expression();
 }
 

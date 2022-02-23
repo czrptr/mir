@@ -239,6 +239,38 @@ SwitchExpression::SPtr _switch(
     t(Token::KwSwitch, "switch"), value, cases, Position::invalid());
 }
 
+ReturnStatement::SPtr _return(
+  Node::SPtr value)
+{
+  return ReturnStatement::make_shared(t(Token::Operator, "return"), value);
+}
+
+BreakStatement::SPtr _break(
+  std::string const label,
+  Node::SPtr value)
+{
+  return BreakStatement::make_shared(
+    t(Token::Operator, "break"),
+    !label.empty(),
+    t(Token::Symbol, label),
+    value);
+}
+
+ContinueStatement::SPtr _continue(
+  std::string const label)
+{
+  return std::make_shared<ContinueStatement>(
+    t(Token::Operator, "continue"),
+    !label.empty(),
+    t(Token::Symbol, label));
+}
+
+DeferStatement::SPtr defer(
+  Node::SPtr target)
+{
+  return DeferStatement::make_shared(t(Token::Operator, "defer"), target);
+}
+
 /* ================== Equality ================== */
 
 template<typename T>
@@ -460,6 +492,36 @@ bool equal(Node::SPtr node1, Node::SPtr node2)
         return false;
     }
     return true;
+  }
+
+  if (nodesAre(ReturnStatement))
+  {
+    return equal(n1->value(), n2->value());
+  }
+
+  if (nodesAre(BreakStatement))
+  {
+    if (n1->isLabeled() != n2->isLabeled())
+      return false;
+
+    if (n1->isLabeled() && n1->label().text() != n2->label().text())
+      return false;
+
+    return equal(n1->value(), n2->value());
+  }
+
+  if (nodesAre(ContinueStatement))
+  {
+    if (n1->isLabeled() != n2->isLabeled())
+      return false;
+
+    return n1->isLabeled()
+      && n1->label().text() == n2->label().text();
+  }
+
+  if (nodesAre(DeferStatement))
+  {
+    return equal(n1->target(), n2->target());
   }
   return false;
 }

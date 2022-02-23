@@ -65,11 +65,11 @@ public:
 
   ast::SwitchExpression::SPtr switchExpression();
 
+  ast::Node::SPtr expression();
+
   ast::Node::SPtr pred15();
 
   ast::Node::SPtr atomic();
-
-  inline ast::Node::SPtr expression() { return pred15(); }
 
 private:
   ast::Part::SPtr part();

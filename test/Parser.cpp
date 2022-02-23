@@ -17,8 +17,6 @@ TEST_SUITE_BEGIN("Parser");
 
   destructuring check on let statements
 
-  comptime tests
-
   pred15 tests
 */
 
@@ -108,6 +106,7 @@ TEST_CASE("let statements cannot be empty")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -121,11 +120,12 @@ TEST_CASE("let statements cannot be empty")
 
 TEST_CASE("use 'undefined' to leave variables uninitialzed")
 {
-  PARSER_TEXT("let mut a = undefined");
+  PARSER_TEXT("let mut a");
 
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -144,6 +144,7 @@ TEST_CASE("constants must be initialized")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -162,6 +163,7 @@ TEST_CASE("constants must be initialized with a proper value")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -173,13 +175,14 @@ TEST_CASE("constants must be initialized with a proper value")
   }
 }
 
-TEST_CASE("let statement consistent 'comptime' placement")
+TEST_CASE("let statement consistent 'comptime' placement (part 1)")
 {
   PARSER_TEXT("let comptime mut a = a");
 
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -191,24 +194,42 @@ TEST_CASE("let statement consistent 'comptime' placement")
   }
 }
 
-TEST_CASE("individual let statement parts cannot be comptime")
+TEST_CASE("let statement consistent 'comptime' placement (part 2)")
+{
+  PARSER_TEXT("comptime pub let mut a = a");
+
+  try
+  {
+    prs.expression();
+    FAIL("unreachable");
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:0: error: move the 'comptime' keyword before the 'let'";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("let statement consistent 'comptime' placement (part 3)")
 {
   PARSER_TEXT(
-    "let mut\n"
-    "  a = a,\n"
-    "  comptime b = b,"
+    "let mut comptime b = b,"
   );
 
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
     std::string const
       msg = fmt::to_string(err),
       expectedMsg =
-        "<file>:2:2: error: individual let statement parts cannot be comptime\n"
+        "<file>:0:8: error: individual let statement parts cannot be comptime\n"
         "<file>:0:0: note: mark the whole statement as comptime here";
 
     REQUIRE_EQ(msg, expectedMsg);
@@ -221,6 +242,7 @@ TEST_CASE("let statement parts must be separated by a comma")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -257,6 +279,7 @@ TEST_CASE("let statement parts must be assigned a value")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -339,6 +362,7 @@ TEST_CASE("block labels")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -357,6 +381,7 @@ TEST_CASE("blocks must end")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -375,6 +400,7 @@ TEST_CASE("only blocks, if and loops can be labeled")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -393,6 +419,7 @@ TEST_CASE("superfluous statement enders are illigal (part 1)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -452,6 +479,7 @@ TEST_CASE("function parameters must be separated by a comma")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -471,18 +499,19 @@ TEST_CASE("function parameters can have a trailing comma")
   REQUIRE_AST_EQ(f, fn({part(symbol("a"), symbol("a"), nullptr)}, symbol("a")));
 }
 
-TEST_CASE("function parameters must have types (colon separator)")
+TEST_CASE("function parameters must have type annotations")
 {
-  PARSER_TEXT("fn (a) a");
+  PARSER_TEXT("fn (a) a {}");
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
     std::string const
       msg = fmt::to_string(err),
-      expectedMsg = "<file>:0:5: error: ':' expected";
+      expectedMsg = "<file>:0:4: error: function parameters must have type annotations";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -494,6 +523,7 @@ TEST_CASE("function parameters must have types")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -505,12 +535,31 @@ TEST_CASE("function parameters must have types")
   }
 }
 
+TEST_CASE("function type parameters names cannot have default values")
+{
+  PARSER_TEXT("fn (a: a = a) a");
+  try
+  {
+    prs.expression();
+    FAIL("unreachable");
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:4: error: function type parameters cannot have default values";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
 TEST_CASE("function return type must be an expression")
 {
   PARSER_TEXT("fn () let a = 0");
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -528,6 +577,7 @@ TEST_CASE("function block cannot be labeled")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -545,6 +595,7 @@ TEST_CASE("only blocks accepted after function return types")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -555,6 +606,14 @@ TEST_CASE("only blocks accepted after function return types")
 
     REQUIRE_EQ(msg, expectedMsg);
   }
+}
+
+TEST_CASE("function type parameter names are optional")
+{
+  PARSER_TEXT("fn (a) a");
+  auto f = prs.expression();
+
+  REQUIRE_AST_EQ(f, fn({part(symbol("a"), nullptr)}, symbol("a")));
 }
 
 TEST_CASE("function type")
@@ -590,12 +649,12 @@ TEST_CASE("function")
 TEST_CASE("function (complex)")
 {
   PARSER_TEXT(
-    "fn () void {\n"
+    "fn (a: a = a) void {\n"
     "  let a = b;\n"
     "}");
   auto f = prs.expression();
 
-  REQUIRE_AST_EQ(f, fn({}, symbol("void"),
+  REQUIRE_AST_EQ(f, fn({part(symbol("a"), symbol("a"), symbol("a"))}, symbol("void"),
     block({let(false, false, "a", symbol("b"))})));
 }
 
@@ -607,6 +666,7 @@ TEST_CASE("structs must have blocks")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -624,6 +684,7 @@ TEST_CASE("struct fields cannot be comptime")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -641,6 +702,7 @@ TEST_CASE("struct fields must be separated by a comma")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -685,6 +747,7 @@ TEST_CASE("struct fields must be grouped together")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -702,6 +765,7 @@ TEST_CASE("struct fields must have type annotations")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -719,6 +783,7 @@ TEST_CASE("struct fields cannot have default values")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -737,6 +802,7 @@ TEST_CASE("superfluous statement enders are illigal (part 2)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -785,6 +851,7 @@ TEST_CASE("enums must have blocks (part 1)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -802,6 +869,7 @@ TEST_CASE("enums must have blocks (part 2)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -819,6 +887,7 @@ TEST_CASE("enum variants must be separated by a comma (case 1)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -836,6 +905,7 @@ TEST_CASE("enum variants cannot be comptime")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -853,6 +923,7 @@ TEST_CASE("enum variants must be separated by a comma (case 2)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -919,6 +990,7 @@ TEST_CASE("enum variants must be grouped together")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -932,17 +1004,18 @@ TEST_CASE("enum variants must be grouped together")
 
 TEST_CASE("enum variants cannot have type annotations")
 {
-  PARSER_TEXT("enum { a, }");
+  PARSER_TEXT("enum { a: a, }");
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
     std::string const
       msg = fmt::to_string(err),
       expectedMsg =
-        "<file>:0:7: error: enum variants cannot have type annotations"
+        "<file>:0:7: error: enum variants cannot have type annotations\n"
         "<file>:0:7: note: all enum variants share the same underlying type";
 
     REQUIRE_EQ(msg, expectedMsg);
@@ -999,6 +1072,7 @@ TEST_CASE("unions must have blocks")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -1016,6 +1090,7 @@ TEST_CASE("union variants must be separated by a comma")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -1044,6 +1119,7 @@ TEST_CASE("union variants cannot be comptime")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -1077,6 +1153,7 @@ TEST_CASE("union variants must be grouped together")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -1094,6 +1171,7 @@ TEST_CASE("union variants must have type annotations")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -1111,6 +1189,7 @@ TEST_CASE("union variants cannot have default values")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch(Error const& err)
   {
@@ -1161,12 +1240,13 @@ TEST_CASE("if clauses must have conditions")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:3: error: if clauses must have conditions";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:3: error: if clauses must have conditions";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1178,12 +1258,13 @@ TEST_CASE("else if clauses must have conditions")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:8: error: else if clauses must have conditions";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:8: error: else if clauses must have conditions";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1195,12 +1276,13 @@ TEST_CASE("else clause must have a preceding if clause")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:0: error: else clause must have a preceding if clause";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:0: error: else clause must have a preceding if clause";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1212,12 +1294,13 @@ TEST_CASE("else if clause must have a preceding if clause")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:0: error: else if clause must have a preceding if clause";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:0: error: else if clause must have a preceding if clause";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1229,12 +1312,13 @@ TEST_CASE("else clauses don't have conditions")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:5: error: block expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:5: error: block expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1246,12 +1330,13 @@ TEST_CASE("if clauses unfinished capture (part 1)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:7: error: '|' expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:7: error: '|' expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1263,12 +1348,13 @@ TEST_CASE("if clauses unfinished capture (part 2)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:6: error: destructuring expression expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:6: error: destructuring expression expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1280,12 +1366,13 @@ TEST_CASE("else if clauses unfinished capture (part 1)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:20: error: '|' expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:20: error: '|' expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1297,12 +1384,13 @@ TEST_CASE("else if clauses unfinished capture (part 2)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:19: error: destructuring expression expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:19: error: destructuring expression expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1314,12 +1402,13 @@ TEST_CASE("else clauses unfinished capture (part 1)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:15: error: '|' expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:15: error: '|' expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1331,12 +1420,13 @@ TEST_CASE("else clauses unfinished capture (part 2)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:14: error: destructuring expression expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:14: error: destructuring expression expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1348,12 +1438,13 @@ TEST_CASE("if clauses must have blocks (part 1)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:5: error: block expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:5: error: block expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1365,12 +1456,13 @@ TEST_CASE("if clauses must have blocks (part 2)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:9: error: block expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:9: error: block expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1382,12 +1474,13 @@ TEST_CASE("else if clauses must have blocks (part 1)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:15: error: block expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:15: error: block expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1399,12 +1492,13 @@ TEST_CASE("else if clauses must have blocks (part 2)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:19: error: block expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:19: error: block expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1416,12 +1510,13 @@ TEST_CASE("else clauses must have blocks (part 1)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:10: error: block expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:10: error: block expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1433,12 +1528,13 @@ TEST_CASE("else clauses must have blocks (part 2)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:14: error: block expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:14: error: block expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1450,12 +1546,13 @@ TEST_CASE("missing block inside internal clause")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:18: error: block expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:18: error: block expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1467,14 +1564,15 @@ TEST_CASE("whole if must be labeled (part 1)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg =
-      "<file>:0:5: error: individual clause blocks cannot be labeled\n"
-      "<file>:0:0: note: place the label 'blk:' here";
+      msg = fmt::to_string(err),
+      expectedMsg =
+        "<file>:0:5: error: individual clause blocks cannot be labeled\n"
+        "<file>:0:0: note: place the label 'blk:' here";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1486,14 +1584,15 @@ TEST_CASE("whole if must be labeled (part 2)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg =
-      "<file>:0:18: error: individual clause blocks cannot be labeled\n"
-      "<file>:0:0: note: place the label 'blk:' here";
+      msg = fmt::to_string(err),
+      expectedMsg =
+        "<file>:0:18: error: individual clause blocks cannot be labeled\n"
+        "<file>:0:0: note: place the label 'blk:' here";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1505,14 +1604,15 @@ TEST_CASE("whole if must be labeled (part 3)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg =
-      "<file>:0:13: error: individual clause blocks cannot be labeled\n"
-      "<file>:0:0: note: place the label 'blk:' here";
+      msg = fmt::to_string(err),
+      expectedMsg =
+        "<file>:0:13: error: individual clause blocks cannot be labeled\n"
+        "<file>:0:0: note: place the label 'blk:' here";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1554,8 +1654,6 @@ TEST_CASE("else if")
 {
   PARSER_TEXT("if a {} else if b {}");
   auto i = prs.expression();
-
-  // fmt::print("\n{}\n", i->toString());
 
   REQUIRE_AST_EQ(i, _if(symbol("a"), nullptr, block({}), {
     _elseIf(symbol("b"), nullptr, block({}))
@@ -1614,12 +1712,13 @@ TEST_CASE("loops must have conditions")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:5: error: expression expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:5: error: expression expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1631,12 +1730,13 @@ TEST_CASE("loops must have conditions")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:5: error: expression expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:5: error: expression expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1648,12 +1748,13 @@ TEST_CASE("loop unfinished capture (part 1)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:9: error: '|' expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:9: error: '|' expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1665,12 +1766,13 @@ TEST_CASE("loop unfinished capture (part 2)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:8: error: destructuring expression expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:8: error: destructuring expression expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1682,12 +1784,13 @@ TEST_CASE("loops must have blocks (part 1)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:7: error: block expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:7: error: block expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1699,12 +1802,13 @@ TEST_CASE("loops must have blocks (part 2)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:7: error: block expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:7: error: block expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1716,12 +1820,13 @@ TEST_CASE("loop else clause unfinished capture (part 1)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:17: error: '|' expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:17: error: '|' expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1733,12 +1838,13 @@ TEST_CASE("loop else clause unfinished capture (part 2)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:16: error: destructuring expression expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:16: error: destructuring expression expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1750,12 +1856,13 @@ TEST_CASE("loop else clauses must have blocks")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:15: error: block expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:15: error: block expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1767,12 +1874,13 @@ TEST_CASE("loop else clauses don't have conditions")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:15: error: block expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:15: error: block expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1785,14 +1893,15 @@ TEST_CASE("whole loop must be labeled (part 1)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg =
-      "<file>:0:7: error: individual clause blocks cannot be labeled\n"
-      "<file>:0:0: note: place the label 'blk:' here";
+      msg = fmt::to_string(err),
+      expectedMsg =
+        "<file>:0:7: error: individual clause blocks cannot be labeled\n"
+        "<file>:0:0: note: place the label 'blk:' here";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1804,14 +1913,15 @@ TEST_CASE("whole loop must be labeled (part 2)")
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg =
-      "<file>:0:15: error: individual clause blocks cannot be labeled\n"
-      "<file>:0:0: note: place the label 'blk:' here";
+      msg = fmt::to_string(err),
+      expectedMsg =
+        "<file>:0:15: error: individual clause blocks cannot be labeled\n"
+        "<file>:0:0: note: place the label 'blk:' here";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1849,12 +1959,13 @@ TEST_CASE("switches must have values")
   // try
   // {
   //   prs.expression();
+  //   FAIL("unreachable");
   // }
   // catch (Error const& err)
   // {
   //   std::string const
-  //   msg = fmt::to_string(err),
-  //   expectedMsg = "<file>:0:6: error: expression expected";
+  //     msg = fmt::to_string(err),
+  //     expectedMsg = "<file>:0:6: error: expression expected";
 
   //   REQUIRE_EQ(msg, expectedMsg);
   // }
@@ -1863,16 +1974,16 @@ TEST_CASE("switches must have values")
 TEST_CASE("switches must have blocks")
 {
   PARSER_TEXT("switch a");
-
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:9: error: block expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:9: error: block expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1881,16 +1992,16 @@ TEST_CASE("switches must have blocks")
 TEST_CASE("switch block cannot be labeled")
 {
   PARSER_TEXT("switch a blk: {}");
-
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:9: error: switch blocks cannot be labeled";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:9: error: switch blocks cannot be labeled";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1899,16 +2010,16 @@ TEST_CASE("switch block cannot be labeled")
 TEST_CASE("switch arrow expected")
 {
   PARSER_TEXT("switch a { a a }");
-
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:13: error: '=>' expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:13: error: '=>' expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1917,16 +2028,16 @@ TEST_CASE("switch arrow expected")
 TEST_CASE("switch case result expected")
 {
   PARSER_TEXT("switch a { a =>");
-
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:16: error: expression expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:16: error: expression expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1935,16 +2046,16 @@ TEST_CASE("switch case result expected")
 TEST_CASE("switch block must end")
 {
   PARSER_TEXT("switch a { a => a");
-
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
     std::string const
-    msg = fmt::to_string(err),
-    expectedMsg = "<file>:0:18: error: '}' expected";
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:18: error: '}' expected";
 
     REQUIRE_EQ(msg, expectedMsg);
   }
@@ -1953,10 +2064,10 @@ TEST_CASE("switch block must end")
 TEST_CASE("switch cases must be separated by a comma")
 {
   PARSER_TEXT("switch a { a => a a => a }");
-
   try
   {
     prs.expression();
+    FAIL("unreachable");
   }
   catch (Error const& err)
   {
@@ -1989,6 +2100,134 @@ TEST_CASE("switch (complex)")
       {symbol("a"), nullptr, symbol("a")},
       {symbol("b"), symbol("c"), block({})},
     }));
+}
+
+/* ================== ReturnStatement ================== */
+
+TEST_CASE("return statements don't take labels")
+{
+  PARSER_TEXT("return :lbl");
+  try
+  {
+    prs.expression();
+    FAIL("unreachable");
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:7: error: return statements don't take labels";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("return without value")
+{
+  PARSER_TEXT("return");
+  auto r = prs.expression();
+
+  REQUIRE_AST_EQ(r, _return());
+}
+
+TEST_CASE("return without value")
+{
+  PARSER_TEXT("return a");
+  auto r = prs.expression();
+
+  REQUIRE_AST_EQ(r, _return(symbol("a")));
+}
+
+/* ================== BreakStatement ================== */
+
+TEST_CASE("jump label format")
+{
+  PARSER_TEXT("break : blk");
+  try
+  {
+    prs.expression();
+    FAIL("unreachable");
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:8: error: did you mean ':blk'";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+TEST_CASE("break (simple)")
+{
+  PARSER_TEXT("break");
+  auto b = prs.expression();
+
+  REQUIRE_AST_EQ(b, _break());
+}
+
+TEST_CASE("break with label")
+{
+  PARSER_TEXT("break :blk");
+  auto b = prs.expression();
+
+  REQUIRE_AST_EQ(b, _break("blk"));
+}
+
+TEST_CASE("break with value")
+{
+  PARSER_TEXT("break a");
+  auto b = prs.expression();
+
+  REQUIRE_AST_EQ(b, _break("", symbol("a")));
+}
+
+TEST_CASE("break with label and value")
+{
+  PARSER_TEXT("break :blk a");
+  auto b = prs.expression();
+
+  REQUIRE_AST_EQ(b, _break("blk", symbol("a")));
+}
+
+/* ================== Comptime ================== */
+
+TEST_CASE("comptime requires expression after")
+{
+  PARSER_TEXT("comptime");
+  try
+  {
+    prs.expression();
+    FAIL("unreachable");
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:9: error: expression expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
+}
+
+/* ================== Labels ================== */
+
+TEST_CASE("labels require expressions after")
+{
+  PARSER_TEXT("lbl:");
+  try
+  {
+    prs.expression();
+    FAIL("unreachable");
+  }
+  catch(Error const& err)
+  {
+    std::string const
+      msg = fmt::to_string(err),
+      expectedMsg = "<file>:0:4: error: expression expected";
+
+    REQUIRE_EQ(msg, expectedMsg);
+  }
 }
 
 TEST_SUITE_END();

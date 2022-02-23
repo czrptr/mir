@@ -11,9 +11,9 @@ void BreakStatement::toStringData(
   std::string* additionalInfo) const
 {
   assert(subNodes->empty());
-  if (target() != nullptr)
+  if (value() != nullptr)
   {
-    subNodes->push_back(target());
+    subNodes->push_back(value());
   }
 
   *nodeName = "Break";
@@ -23,9 +23,9 @@ void BreakStatement::toStringData(
 
 Position BreakStatement::end() const
 {
-  if (target() != nullptr)
+  if (value() != nullptr)
   {
-    return target()->end();
+    return value()->end();
   }
   if (isLabeled())
   {
@@ -38,13 +38,13 @@ BreakStatement::SPtr BreakStatement::make_shared(
   Token _break,
   bool isLabeled,
   Token label,
-  Node::SPtr pTarget,
+  Node::SPtr pValue,
   Node::SPtr pParent)
 {
-  auto pRes = std::make_shared<BreakStatement>(_break, isLabeled, label, pTarget, pParent);
-  if (pTarget != nullptr)
+  auto pRes = std::make_shared<BreakStatement>(_break, isLabeled, label, pValue, pParent);
+  if (pValue != nullptr)
   {
-    pTarget->setParent(pRes);
+    pValue->setParent(pRes);
   }
   return pRes;
 }

@@ -11,7 +11,7 @@ struct ReturnStatement final : public Node
 
 private:
   Token d_tokReturn;
-  Node::SPtr d_pTarget;
+  Node::SPtr d_pValue;
 
 protected:
   virtual void toStringData(
@@ -22,11 +22,11 @@ protected:
 public:
   ReturnStatement(
     Token _return,
-    Node::SPtr pTarget,
+    Node::SPtr pValue,
     Node::SPtr pParent = nullptr)
     : Node(pParent)
     , d_tokReturn(_return)
-    , d_pTarget(pTarget)
+    , d_pValue(pValue)
   {}
 
   virtual Position start() const override { return d_tokReturn.start(); }
@@ -34,11 +34,11 @@ public:
 
   virtual bool isExpression() const override { return false; }
 
-  Node::SPtr target() const { return d_pTarget; }
+  Node::SPtr value() const { return d_pValue; }
 
   static ReturnStatement::SPtr make_shared(
     Token _return,
-    Node::SPtr pTarget,
+    Node::SPtr pValue,
     Node::SPtr pParent = nullptr);
 };
 

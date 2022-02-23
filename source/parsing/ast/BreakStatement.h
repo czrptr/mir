@@ -13,7 +13,7 @@ private:
   Token d_tokBreak;
   bool d_isLabeled;
   Token d_tokLabel;
-  Node::SPtr d_pTarget;
+  Node::SPtr d_pValue;
 
 protected:
   virtual void toStringData(
@@ -26,13 +26,13 @@ public:
     Token _break,
     bool isLabeled,
     Token label,
-    Node::SPtr pTarget,
+    Node::SPtr pValue,
     Node::SPtr pParent = nullptr)
     : Node(pParent)
     , d_tokBreak(_break)
     , d_isLabeled(isLabeled)
     , d_tokLabel(label)
-    , d_pTarget(pTarget)
+    , d_pValue(pValue)
   {}
 
   virtual Position start() const override { return d_tokBreak.start(); }
@@ -42,13 +42,13 @@ public:
 
   bool isLabeled() const { return d_isLabeled; }
   Token label() const { return d_tokLabel; }
-  Node::SPtr target() const { return d_pTarget; }
+  Node::SPtr value() const { return d_pValue; }
 
   static BreakStatement::SPtr make_shared(
     Token _break,
     bool isLabeled,
     Token label,
-    Node::SPtr pTarget,
+    Node::SPtr pValue,
     Node::SPtr pParent = nullptr);
 };
 

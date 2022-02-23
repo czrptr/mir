@@ -173,4 +173,17 @@ SwitchExpression::SPtr _switch(
   Node::SPtr value,
   list<SwitchExpression::Case> cases);
 
+ReturnStatement::SPtr _return(
+  Node::SPtr value = nullptr);
+
+BreakStatement::SPtr _break(
+  std::string const label = "",
+  Node::SPtr value = nullptr);
+
+ContinueStatement::SPtr _continue(
+  std::string const label = "");
+
+DeferStatement::SPtr defer(
+  Node::SPtr target);
+
 bool equal(Node::SPtr node1, Node::SPtr node2);
