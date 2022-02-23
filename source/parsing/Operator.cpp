@@ -539,6 +539,9 @@ std::string Operator::tableWithInfo(bool color, bool ascii)
   lines.insert(indexOf(Operator::Defer),
     {Operator::Dot, 15, "continue :label", "Continue to (outer) label", false, Associativity::RightToLeft});
 
+  lines.insert(lines.end(),
+    {Operator::Dot, 15, "comptime a", "Evaluate a at compile time", false, Associativity::RightToLeft});
+
   // Data
   table << fort::endr << "0" << "\"atomic\"" << "Literals\nControl statements" << "No" << "-";
 
